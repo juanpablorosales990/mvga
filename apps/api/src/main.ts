@@ -8,7 +8,15 @@ async function bootstrap() {
 
   // Enable CORS
   app.enableCors({
-    origin: ['http://localhost:3000', 'http://localhost:3001', 'https://mvga.io'],
+    origin: [
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'https://mvga.io',
+      'https://www.mvga.io',
+      'https://app.mvga.io',
+      'https://mvga-web.vercel.app',
+      'https://mvga-wallet.vercel.app',
+    ],
     credentials: true,
   });
 
