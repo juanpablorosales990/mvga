@@ -1,0 +1,293 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ============================================================================
+// User & Authentication
+// ============================================================================
+
+model User {
+  id            String   @id @default(uuid())
+  walletAddress String   @unique
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  stakes        Stake[]
+  offers        P2POffer[]     @relation("SellerOffers")
+  buyerTrades   P2PTrade[]     @relation("BuyerTrades")
+  sellerTrades  P2PTrade[]     @relation("SellerTrades")
+  reputation    UserReputation?
+  votes         Vote[]
+
+  @@index([walletAddress])
+}
+
+model UserReputation {
+  id              String @id @default(uuid())
+  userId          String @unique
+  user            User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  totalTrades     Int    @default(0)
+  completedTrades Int    @default(0)
+  disputesWon     Int    @default(0)
+  disputesLost    Int    @default(0)
+  rating          Float  @default(5.0)
+  avgResponseTime Int    @default(0) // in minutes
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// ============================================================================
+// Staking
+// ============================================================================
+
+model Stake {
+  id          String    @id @default(uuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  amount      BigInt    // Amount in smallest unit (lamports)
+  lockPeriod  Int       // Lock period in days (0, 30, 90, 180)
+  lockedUntil DateTime?
+
+  stakeTx     String?   // Solana transaction signature
+  unstakeTx   String?   // Solana transaction signature when unstaked
+
+  status      StakeStatus @default(ACTIVE)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  unstakedAt  DateTime?
+
+  @@index([userId])
+  @@index([status])
+}
+
+enum StakeStatus {
+  ACTIVE
+  UNSTAKING
+  UNSTAKED
+}
+
+// ============================================================================
+// P2P Exchange
+// ============================================================================
+
+model P2POffer {
+  id                  String   @id @default(uuid())
+  sellerId            String
+  seller              User     @relation("SellerOffers", fields: [sellerId], references: [id], onDelete: Cascade)
+
+  type                P2POfferType  // BUY or SELL crypto
+  cryptoAmount        BigInt        // Total amount in smallest unit
+  availableAmount     BigInt        // Remaining amount
+  cryptoCurrency      String        // USDC, MVGA, etc.
+
+  paymentMethod       PaymentMethod
+  paymentInstructions String?
+
+  rate                Float         // Exchange rate (1.0 = market rate)
+  minAmount           BigInt        // Min trade amount in USD cents
+  maxAmount           BigInt        // Max trade amount in USD cents
+
+  status              P2POfferStatus @default(ACTIVE)
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+
+  trades              P2PTrade[]
+
+  @@index([sellerId])
+  @@index([status])
+  @@index([cryptoCurrency])
+  @@index([paymentMethod])
+}
+
+enum P2POfferType {
+  BUY
+  SELL
+}
+
+enum PaymentMethod {
+  ZELLE
+  VENMO
+  PAYPAL
+  BANK_TRANSFER
+}
+
+enum P2POfferStatus {
+  ACTIVE
+  PAUSED
+  COMPLETED
+  CANCELLED
+}
+
+model P2PTrade {
+  id           String   @id @default(uuid())
+  offerId      String
+  offer        P2POffer @relation(fields: [offerId], references: [id])
+
+  buyerId      String
+  buyer        User     @relation("BuyerTrades", fields: [buyerId], references: [id])
+  sellerId     String
+  seller       User     @relation("SellerTrades", fields: [sellerId], references: [id])
+
+  amount       BigInt   // Trade amount in USD cents
+  cryptoAmount BigInt   // Crypto amount in smallest unit
+
+  status       P2PTradeStatus @default(PENDING)
+  escrowTx     String?        // Solana tx locking funds
+  releaseTx    String?        // Solana tx releasing funds
+
+  disputeReason String?
+  disputeEvidence String?
+  disputeResolution String?
+
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  paidAt       DateTime?
+  completedAt  DateTime?
+
+  @@index([offerId])
+  @@index([buyerId])
+  @@index([sellerId])
+  @@index([status])
+}
+
+enum P2PTradeStatus {
+  PENDING
+  ESCROW_LOCKED
+  PAID
+  COMPLETED
+  DISPUTED
+  CANCELLED
+  REFUNDED
+}
+
+// ============================================================================
+// Business Grants
+// ============================================================================
+
+model GrantProposal {
+  id               String   @id @default(uuid())
+
+  businessName     String
+  businessLocation String
+  description      String   @db.Text
+  requestedAmount  BigInt   // In USD cents
+  videoUrl         String?
+
+  applicantAddress String
+
+  status           GrantStatus @default(VOTING)
+  votesFor         Int         @default(0)
+  votesAgainst     Int         @default(0)
+
+  votingStartedAt  DateTime    @default(now())
+  votingEndsAt     DateTime
+
+  fundedAt         DateTime?
+  fundingTx        String?     // Solana transaction signature
+
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  votes            Vote[]
+  updates          GrantUpdate[]
+
+  @@index([status])
+  @@index([applicantAddress])
+}
+
+enum GrantStatus {
+  VOTING
+  APPROVED
+  REJECTED
+  FUNDED
+  COMPLETED
+}
+
+model Vote {
+  id          String   @id @default(uuid())
+  proposalId  String
+  proposal    GrantProposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+
+  voterId     String
+  voter       User     @relation(fields: [voterId], references: [id], onDelete: Cascade)
+
+  weight      BigInt   // Based on staked MVGA
+  direction   VoteDirection
+
+  createdAt   DateTime @default(now())
+
+  @@unique([proposalId, voterId])
+  @@index([proposalId])
+  @@index([voterId])
+}
+
+enum VoteDirection {
+  FOR
+  AGAINST
+}
+
+model GrantUpdate {
+  id          String   @id @default(uuid())
+  proposalId  String
+  proposal    GrantProposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+
+  title       String
+  content     String   @db.Text
+  imageUrls   String[] @default([])
+
+  createdAt   DateTime @default(now())
+
+  @@index([proposalId])
+}
+
+// ============================================================================
+// Transaction Logging
+// ============================================================================
+
+model TransactionLog {
+  id            String   @id @default(uuid())
+
+  walletAddress String
+  type          TransactionType
+
+  signature     String   @unique // Solana transaction signature
+  amount        BigInt?
+  token         String?
+
+  status        TransactionLogStatus @default(PENDING)
+  error         String?
+
+  createdAt     DateTime @default(now())
+  confirmedAt   DateTime?
+
+  @@index([walletAddress])
+  @@index([type])
+  @@index([signature])
+}
+
+enum TransactionType {
+  STAKE
+  UNSTAKE
+  P2P_ESCROW_LOCK
+  P2P_ESCROW_RELEASE
+  P2P_ESCROW_REFUND
+  GRANT_FUNDING
+  SWAP
+  TRANSFER
+}
+
+enum TransactionLogStatus {
+  PENDING
+  CONFIRMED
+  FAILED
+}

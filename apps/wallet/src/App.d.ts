@@ -1,0 +1,4 @@
+import '@solana/wallet-adapter-react-ui/styles.css';
+declare function App(): import("react/jsx-runtime").JSX.Element;
+export default App;
+//# sourceMappingURL=App.d.ts.map

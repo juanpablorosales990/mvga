@@ -1,0 +1,154 @@
+import { Injectable, BadRequestException } from '@nestjs/common';
+
+export interface JupiterQuote {
+  inputMint: string;
+  inAmount: string;
+  outputMint: string;
+  outAmount: string;
+  otherAmountThreshold: string;
+  swapMode: string;
+  slippageBps: number;
+  priceImpactPct: string;
+  routePlan: Array<{
+    swapInfo: {
+      ammKey: string;
+      label: string;
+      inputMint: string;
+      outputMint: string;
+      inAmount: string;
+      outAmount: string;
+      feeAmount: string;
+      feeMint: string;
+    };
+    percent: number;
+  }>;
+}
+
+export interface SwapQuoteRequest {
+  inputMint: string;
+  outputMint: string;
+  amount: number;
+  slippageBps?: number;
+}
+
+export interface SwapExecuteRequest {
+  quoteResponse: JupiterQuote;
+  userPublicKey: string;
+}
+
+@Injectable()
+export class SwapService {
+  private readonly JUPITER_QUOTE_API = 'https://quote-api.jup.ag/v6';
+
+  // Common token mints
+  readonly TOKENS = {
+    SOL: 'So11111111111111111111111111111111111111112',
+    USDC: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+    USDT: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB',
+  };
+
+  async getQuote(request: SwapQuoteRequest): Promise<JupiterQuote> {
+    const { inputMint, outputMint, amount, slippageBps = 50 } = request;
+
+    if (inputMint === outputMint) {
+      throw new BadRequestException('Input and output tokens cannot be the same');
+    }
+
+    if (amount <= 0) {
+      throw new BadRequestException('Amount must be greater than 0');
+    }
+
+    try {
+      const url = new URL(`${this.JUPITER_QUOTE_API}/quote`);
+      url.searchParams.set('inputMint', inputMint);
+      url.searchParams.set('outputMint', outputMint);
+      url.searchParams.set('amount', amount.toString());
+      url.searchParams.set('slippageBps', slippageBps.toString());
+
+      const response = await fetch(url.toString());
+
+      if (!response.ok) {
+        const error = await response.text();
+        throw new BadRequestException(`Jupiter API error: ${error}`);
+      }
+
+      const quote = await response.json();
+      return quote;
+    } catch (error) {
+      if (error instanceof BadRequestException) throw error;
+      throw new BadRequestException(`Failed to get quote: ${(error as Error).message}`);
+    }
+  }
+
+  async getSwapTransaction(request: SwapExecuteRequest): Promise<{ swapTransaction: string }> {
+    const { quoteResponse, userPublicKey } = request;
+
+    try {
+      const response = await fetch(`${this.JUPITER_QUOTE_API}/swap`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          quoteResponse,
+          userPublicKey,
+          wrapAndUnwrapSol: true,
+          dynamicComputeUnitLimit: true,
+          prioritizationFeeLamports: 'auto',
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.text();
+        throw new BadRequestException(`Jupiter swap error: ${error}`);
+      }
+
+      const result = await response.json();
+      return { swapTransaction: result.swapTransaction };
+    } catch (error) {
+      if (error instanceof BadRequestException) throw error;
+      throw new BadRequestException(`Failed to create swap transaction: ${(error as Error).message}`);
+    }
+  }
+
+  async getTokenPrice(mint: string): Promise<number> {
+    try {
+      // Use Jupiter Price API
+      const response = await fetch(
+        `https://price.jup.ag/v6/price?ids=${mint}`
+      );
+
+      if (!response.ok) {
+        return 0;
+      }
+
+      const data = await response.json();
+      return data.data?.[mint]?.price || 0;
+    } catch {
+      return 0;
+    }
+  }
+
+  async getMultipleTokenPrices(mints: string[]): Promise<Record<string, number>> {
+    try {
+      const response = await fetch(
+        `https://price.jup.ag/v6/price?ids=${mints.join(',')}`
+      );
+
+      if (!response.ok) {
+        return {};
+      }
+
+      const data = await response.json();
+      const prices: Record<string, number> = {};
+
+      for (const mint of mints) {
+        prices[mint] = data.data?.[mint]?.price || 0;
+      }
+
+      return prices;
+    } catch {
+      return {};
+    }
+  }
+}
