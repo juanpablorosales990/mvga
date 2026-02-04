@@ -46,6 +46,7 @@ coverage/
 *.json.backup
 *-keypair.json
 *-wallet.json
+.keys/
 
 # Supabase
 supabase/.temp/

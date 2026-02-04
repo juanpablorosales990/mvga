@@ -15,14 +15,42 @@ const TREASURY_WALLETS: WalletInfo[] = [
   {
     name: 'Main Treasury',
     address: 'H9j1W4u5LEiw8AZdui6c8AmN6t4tKkPQCAULPW8eMiTE',
-    description: 'Primary operational funds - holds all initial tokens',
+    description: 'Primary operational funds and community/liquidity allocation (40%)',
     balance: 0,
     loading: true,
   },
   {
-    name: 'MVGA Token',
-    address: 'DRX65kM2n5CLTpdjJCemZvkUwE98ou4RpHrd8Z3GH5Qh',
-    description: 'Official MVGA token mint address',
+    name: 'Humanitarian Fund',
+    address: '82XeVLtfjniaE6qvrDiY7UaCHvkimyhVximvRDdQsdqS',
+    description: 'Emergency aid and humanitarian support for Venezuelans (15%)',
+    balance: 0,
+    loading: true,
+  },
+  {
+    name: 'Staking Vault',
+    address: 'GNhLCjqThNJAJAdDYvRTr2EfWyGXAFUymaPuKaL1duEh',
+    description: 'Staking rewards pool and locked deposits',
+    balance: 0,
+    loading: true,
+  },
+  {
+    name: 'Team Vesting',
+    address: '8m8L2CGoneYwP3xEYyss5sjbj7GKy7cK3YxDcG2yNbH4',
+    description: 'Team allocation with 2-year vesting schedule (20%)',
+    balance: 0,
+    loading: true,
+  },
+  {
+    name: 'Marketing',
+    address: 'DA5VQFLsx87hNQqL2EsM36oVhGnzM2CnqPSe6E9RFpeo',
+    description: 'Marketing, partnerships, and exchange listings (10%)',
+    balance: 0,
+    loading: true,
+  },
+  {
+    name: 'Advisors',
+    address: 'Huq3ea9KKf6HFb5Qiacdx2pJDSM4c881WdyMCBHXq4hF',
+    description: 'Advisory board compensation with 1-year vesting (5%)',
     balance: 0,
     loading: true,
   },
@@ -223,7 +251,7 @@ export default function TransparencyPage() {
                 No new tokens can ever be minted. Supply is fixed at 1 billion.
               </p>
               <a
-                href="https://solscan.io/token/MVGA_TOKEN_ADDRESS"
+                href="https://solscan.io/token/DRX65kM2n5CLTpdjJCemZvkUwE98ou4RpHrd8Z3GH5Qh"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-primary-500 hover:underline text-sm"
@@ -259,7 +287,7 @@ export default function TransparencyPage() {
                 All code is public on GitHub. Anyone can audit and verify.
               </p>
               <a
-                href="https://github.com/your-repo/mvga"
+                href="https://github.com/juanpablorosales990/mvga"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-primary-500 hover:underline text-sm"
@@ -278,12 +306,12 @@ export default function TransparencyPage() {
           <div className="bg-white/5 rounded-2xl p-6">
             <div className="space-y-4">
               {[
-                { label: 'Community & Liquidity', pct: 40, color: 'bg-primary-500', address: 'COMMUNITY_WALLET' },
-                { label: 'Team (2yr vest)', pct: 20, color: 'bg-secondary-500', address: 'TEAM_VESTING_ADDRESS' },
-                { label: 'Humanitarian Fund', pct: 15, color: 'bg-green-500', address: 'HUMANITARIAN_FUND_ADDRESS' },
-                { label: 'Startup Ecosystem', pct: 10, color: 'bg-purple-500', address: 'STARTUP_FUND_ADDRESS' },
-                { label: 'Marketing', pct: 10, color: 'bg-pink-500', address: 'MARKETING_WALLET_ADDRESS' },
-                { label: 'Advisors (1yr vest)', pct: 5, color: 'bg-gray-500', address: 'ADVISOR_VESTING_ADDRESS' },
+                { label: 'Community & Liquidity', pct: 40, color: 'bg-primary-500', address: 'H9j1W4u5LEiw8AZdui6c8AmN6t4tKkPQCAULPW8eMiTE' },
+                { label: 'Team (2yr vest)', pct: 20, color: 'bg-secondary-500', address: '8m8L2CGoneYwP3xEYyss5sjbj7GKy7cK3YxDcG2yNbH4' },
+                { label: 'Humanitarian Fund', pct: 15, color: 'bg-green-500', address: '82XeVLtfjniaE6qvrDiY7UaCHvkimyhVximvRDdQsdqS' },
+                { label: 'Startup Ecosystem', pct: 10, color: 'bg-purple-500', address: 'H9j1W4u5LEiw8AZdui6c8AmN6t4tKkPQCAULPW8eMiTE' },
+                { label: 'Marketing', pct: 10, color: 'bg-pink-500', address: 'DA5VQFLsx87hNQqL2EsM36oVhGnzM2CnqPSe6E9RFpeo' },
+                { label: 'Advisors (1yr vest)', pct: 5, color: 'bg-gray-500', address: 'Huq3ea9KKf6HFb5Qiacdx2pJDSM4c881WdyMCBHXq4hF' },
               ].map((item) => (
                 <div key={item.label}>
                   <div className="flex justify-between mb-1 text-sm">

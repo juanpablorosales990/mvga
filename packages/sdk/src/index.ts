@@ -35,13 +35,12 @@ export const SUPPORTED_TOKENS = {
 } as const;
 
 export const TREASURY_WALLETS = {
-  // Main deployer wallet - holds all initial tokens
   main: 'H9j1W4u5LEiw8AZdui6c8AmN6t4tKkPQCAULPW8eMiTE',
-  // TODO: Create dedicated wallets for these
-  humanitarian: 'H9j1W4u5LEiw8AZdui6c8AmN6t4tKkPQCAULPW8eMiTE',
-  staking: 'H9j1W4u5LEiw8AZdui6c8AmN6t4tKkPQCAULPW8eMiTE',
-  team: 'H9j1W4u5LEiw8AZdui6c8AmN6t4tKkPQCAULPW8eMiTE',
-  marketing: 'H9j1W4u5LEiw8AZdui6c8AmN6t4tKkPQCAULPW8eMiTE',
+  humanitarian: '82XeVLtfjniaE6qvrDiY7UaCHvkimyhVximvRDdQsdqS',
+  staking: 'GNhLCjqThNJAJAdDYvRTr2EfWyGXAFUymaPuKaL1duEh',
+  team: '8m8L2CGoneYwP3xEYyss5sjbj7GKy7cK3YxDcG2yNbH4',
+  marketing: 'DA5VQFLsx87hNQqL2EsM36oVhGnzM2CnqPSe6E9RFpeo',
+  advisors: 'Huq3ea9KKf6HFb5Qiacdx2pJDSM4c881WdyMCBHXq4hF',
 } as const;
 
 export const STAKING_TIERS = [
