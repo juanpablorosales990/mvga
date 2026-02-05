@@ -10,6 +10,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { P2PService } from './p2p.service';
 import { CreateOfferDto, AcceptOfferDto } from './dto/create-offer.dto';
 import { AuthGuard } from '../auth/auth.guard';
@@ -26,11 +27,15 @@ export class P2PController {
   @ApiOperation({ summary: 'List active P2P offers' })
   @ApiQuery({ name: 'type', required: false, enum: ['BUY', 'SELL'] })
   @ApiQuery({ name: 'cryptoCurrency', required: false, enum: ['USDC', 'MVGA'] })
-  @ApiQuery({ name: 'paymentMethod', required: false, enum: ['ZELLE', 'VENMO', 'PAYPAL', 'BANK_TRANSFER'] })
+  @ApiQuery({
+    name: 'paymentMethod',
+    required: false,
+    enum: ['ZELLE', 'VENMO', 'PAYPAL', 'BANK_TRANSFER'],
+  })
   async getOffers(
     @Query('type') type?: 'BUY' | 'SELL',
     @Query('cryptoCurrency') cryptoCurrency?: string,
-    @Query('paymentMethod') paymentMethod?: string,
+    @Query('paymentMethod') paymentMethod?: string
   ) {
     return this.p2pService.getOffers({ type, cryptoCurrency, paymentMethod });
   }
@@ -42,25 +47,21 @@ export class P2PController {
   }
 
   @Post('offers')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a new P2P offer' })
-  async createOffer(
-    @Body() dto: CreateOfferDto,
-    @CurrentUser('wallet') wallet: string,
-  ) {
+  async createOffer(@Body() dto: CreateOfferDto, @CurrentUser('wallet') wallet: string) {
     dto.sellerAddress = wallet;
     return this.p2pService.createOffer(dto);
   }
 
   @Delete('offers/:id')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Cancel an offer' })
-  async cancelOffer(
-    @Param('id') id: string,
-    @CurrentUser('wallet') wallet: string,
-  ) {
+  async cancelOffer(@Param('id') id: string, @CurrentUser('wallet') wallet: string) {
     await this.p2pService.cancelOffer(id, wallet);
     return { success: true, message: 'Offer cancelled' };
   }
@@ -68,13 +69,14 @@ export class P2PController {
   // ============ TRADES ============
 
   @Post('offers/:offerId/accept')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Accept an offer and start a trade' })
   async acceptOffer(
     @Param('offerId') offerId: string,
     @Body() dto: AcceptOfferDto,
-    @CurrentUser('wallet') wallet: string,
+    @CurrentUser('wallet') wallet: string
   ) {
     dto.buyerAddress = wallet;
     return this.p2pService.acceptOffer(offerId, dto);
@@ -93,13 +95,14 @@ export class P2PController {
   }
 
   @Patch('trades/:id/paid')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Mark trade as paid (buyer action)' })
   async markAsPaid(
     @Param('id') id: string,
     @CurrentUser('wallet') wallet: string,
-    @Body() body: { notes?: string },
+    @Body() body: { notes?: string }
   ) {
     return this.p2pService.updateTradeStatus(id, wallet, {
       status: 'PAID',
@@ -108,24 +111,23 @@ export class P2PController {
   }
 
   @Patch('trades/:id/confirm')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Confirm payment received and release escrow (seller action)' })
-  async confirmTrade(
-    @Param('id') id: string,
-    @CurrentUser('wallet') wallet: string,
-  ) {
+  async confirmTrade(@Param('id') id: string, @CurrentUser('wallet') wallet: string) {
     return this.p2pService.updateTradeStatus(id, wallet, { status: 'CONFIRMED' });
   }
 
   @Post('trades/:id/dispute')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Open a dispute' })
   async openDispute(
     @Param('id') id: string,
     @CurrentUser('wallet') wallet: string,
-    @Body() body: { reason: string; evidence?: string },
+    @Body() body: { reason: string; evidence?: string }
   ) {
     return this.p2pService.updateTradeStatus(id, wallet, {
       status: 'DISPUTED',
@@ -134,13 +136,11 @@ export class P2PController {
   }
 
   @Patch('trades/:id/cancel')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Cancel a trade (only if not yet paid)' })
-  async cancelTrade(
-    @Param('id') id: string,
-    @CurrentUser('wallet') wallet: string,
-  ) {
+  async cancelTrade(@Param('id') id: string, @CurrentUser('wallet') wallet: string) {
     return this.p2pService.updateTradeStatus(id, wallet, { status: 'CANCELLED' });
   }
 
@@ -155,6 +155,7 @@ export class P2PController {
   // ============ ESCROW ============
 
   @Post('trades/:id/lock-escrow')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get escrow info (returns treasury wallet for seller to transfer to)' })
@@ -163,13 +164,11 @@ export class P2PController {
   }
 
   @Post('trades/:id/confirm-escrow')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Confirm escrow lock after seller signs the transfer' })
-  async confirmEscrowLock(
-    @Param('id') id: string,
-    @Body() body: { signature: string },
-  ) {
+  async confirmEscrowLock(@Param('id') id: string, @Body() body: { signature: string }) {
     return this.p2pService.confirmEscrowLock(id, body.signature);
   }
 }

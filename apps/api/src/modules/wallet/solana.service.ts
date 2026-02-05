@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   Connection,
@@ -15,6 +15,7 @@ export interface TokenAccount {
 
 @Injectable()
 export class SolanaService {
+  private readonly logger = new Logger(SolanaService.name);
   private connection: Connection;
 
   constructor(private configService: ConfigService) {
@@ -29,7 +30,7 @@ export class SolanaService {
       const balance = await this.connection.getBalance(publicKey);
       return balance / LAMPORTS_PER_SOL;
     } catch (error) {
-      console.error('Error fetching SOL balance:', error);
+      this.logger.error('Error fetching SOL balance:', error);
       return 0;
     }
   }
@@ -49,14 +50,14 @@ export class SolanaService {
         };
       });
     } catch (error) {
-      console.error('Error fetching token accounts:', error);
+      this.logger.error('Error fetching token accounts:', error);
       return [];
     }
   }
 
   async getTransactionHistory(
     address: string,
-    limit = 20,
+    limit = 20
   ): Promise<
     {
       signature: string;
@@ -88,7 +89,7 @@ export class SolanaService {
 
       return transactions;
     } catch (error) {
-      console.error('Error fetching transactions:', error);
+      this.logger.error('Error fetching transactions:', error);
       return [];
     }
   }

@@ -1,10 +1,11 @@
 import { NavLink } from 'react-router-dom';
 import clsx from 'clsx';
+import { useTranslation } from 'react-i18next';
 
 const navItems = [
   {
     path: '/',
-    label: 'Wallet',
+    labelKey: 'nav.wallet',
     icon: (
       <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path
@@ -17,36 +18,8 @@ const navItems = [
     ),
   },
   {
-    path: '/send',
-    label: 'Send',
-    icon: (
-      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M7 11l5-5m0 0l5 5m-5-5v12"
-        />
-      </svg>
-    ),
-  },
-  {
-    path: '/receive',
-    label: 'Receive',
-    icon: (
-      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M17 13l-5 5m0 0l-5-5m5 5V6"
-        />
-      </svg>
-    ),
-  },
-  {
     path: '/swap',
-    label: 'Swap',
+    labelKey: 'nav.swap',
     icon: (
       <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path
@@ -59,8 +32,22 @@ const navItems = [
     ),
   },
   {
+    path: '/stake',
+    labelKey: 'nav.stake',
+    icon: (
+      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+        />
+      </svg>
+    ),
+  },
+  {
     path: '/p2p',
-    label: 'P2P',
+    labelKey: 'nav.p2p',
     icon: (
       <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path
@@ -72,9 +59,25 @@ const navItems = [
       </svg>
     ),
   },
+  {
+    path: '/more',
+    labelKey: 'nav.more',
+    icon: (
+      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M4 6h16M4 12h16M4 18h16"
+        />
+      </svg>
+    ),
+  },
 ];
 
 export default function BottomNav() {
+  const { t } = useTranslation();
+
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-[#0a0a0a]/95 backdrop-blur-lg border-t border-white/10 safe-bottom">
       <div className="max-w-lg mx-auto flex justify-around py-2">
@@ -90,7 +93,7 @@ export default function BottomNav() {
             }
           >
             {item.icon}
-            <span className="text-xs">{item.label}</span>
+            <span className="text-xs">{t(item.labelKey)}</span>
           </NavLink>
         ))}
       </div>

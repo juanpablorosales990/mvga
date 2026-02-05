@@ -1,18 +1,7 @@
 import { Controller, Post, Body, Get, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { SwapService, SwapQuoteRequest, SwapExecuteRequest } from './swap.service';
-
-class QuoteDto {
-  inputMint: string;
-  outputMint: string;
-  amount: number;
-  slippageBps?: number;
-}
-
-class SwapDto {
-  quoteResponse: any;
-  userPublicKey: string;
-}
+import { QuoteDto, SwapDto } from './swap.dto';
 
 @ApiTags('Swap')
 @Controller('swap')

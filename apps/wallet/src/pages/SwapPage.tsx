@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { VersionedTransaction } from '@solana/web3.js';
+import { useTranslation } from 'react-i18next';
 
 const TOKENS = [
   {
@@ -24,6 +25,13 @@ const TOKENS = [
     decimals: 6,
     logo: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB/logo.svg',
   },
+  {
+    symbol: 'MVGA',
+    name: 'Make Venezuela Great Again',
+    mint: 'DRX65kM2n5CLTpdjJCemZvkUwE98ou4RpHrd8Z3GH5Qh',
+    decimals: 9,
+    logo: 'https://gateway.irys.xyz/J47ckDJCqKGrt5QHo4ZjDSa4LcaitMFXkcEJ3qyM2qnD',
+  },
 ];
 
 interface QuoteResponse {
@@ -41,6 +49,7 @@ interface QuoteResponse {
 }
 
 export default function SwapPage() {
+  const { t } = useTranslation();
   const { connected, publicKey, signTransaction } = useWallet();
   const { connection } = useConnection();
 
@@ -52,6 +61,9 @@ export default function SwapPage() {
   const [swapping, setSwapping] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [txSignature, setTxSignature] = useState<string | null>(null);
+  const [slippageBps, setSlippageBps] = useState(50);
+  const [showSlippage, setShowSlippage] = useState(false);
+  const [customSlippage, setCustomSlippage] = useState('');
 
   // Fetch quote when amount changes
   const fetchQuote = useCallback(async () => {
@@ -67,7 +79,7 @@ export default function SwapPage() {
       const amount = Math.floor(parseFloat(fromAmount) * Math.pow(10, fromToken.decimals));
 
       const response = await fetch(
-        `https://quote-api.jup.ag/v6/quote?inputMint=${fromToken.mint}&outputMint=${toToken.mint}&amount=${amount}&slippageBps=50`
+        `https://quote-api.jup.ag/v6/quote?inputMint=${fromToken.mint}&outputMint=${toToken.mint}&amount=${amount}&slippageBps=${slippageBps}`
       );
 
       if (!response.ok) {
@@ -82,7 +94,7 @@ export default function SwapPage() {
     } finally {
       setLoading(false);
     }
-  }, [fromAmount, fromToken, toToken]);
+  }, [fromAmount, fromToken, toToken, slippageBps]);
 
   // Debounce quote fetching
   useEffect(() => {
@@ -143,7 +155,6 @@ export default function SwapPage() {
       setFromAmount('');
       setQuote(null);
     } catch (err) {
-      console.error('Swap error:', err);
       setError(err instanceof Error ? err.message : 'Swap failed');
     } finally {
       setSwapping(false);
@@ -158,20 +169,77 @@ export default function SwapPage() {
   if (!connected) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-        <p className="text-gray-400">Connect your wallet to swap tokens</p>
+        <p className="text-gray-400">{t('swap.connectPrompt')}</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Swap</h1>
+      <h1 className="text-2xl font-bold">{t('swap.title')}</h1>
 
       <div className="card space-y-4">
+        {/* Slippage Settings */}
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-gray-400">
+            {t('swap.slippage')}: {(slippageBps / 100).toFixed(1)}%
+          </span>
+          <button
+            onClick={() => setShowSlippage(!showSlippage)}
+            className="text-xs text-primary-500 hover:text-primary-400"
+          >
+            {showSlippage ? t('common.cancel') : t('swap.settings')}
+          </button>
+        </div>
+
+        {showSlippage && (
+          <div className="bg-white/5 rounded-xl p-3 space-y-3">
+            <div className="flex gap-2">
+              {[10, 50, 100, 300].map((bps) => (
+                <button
+                  key={bps}
+                  onClick={() => {
+                    setSlippageBps(bps);
+                    setCustomSlippage('');
+                    setShowSlippage(false);
+                  }}
+                  className={`flex-1 py-2 rounded-lg text-xs font-medium transition ${
+                    slippageBps === bps && !customSlippage
+                      ? 'bg-primary-500 text-black'
+                      : 'bg-white/10 text-gray-300 hover:bg-white/20'
+                  }`}
+                >
+                  {(bps / 100).toFixed(1)}%
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                value={customSlippage}
+                onChange={(e) => {
+                  setCustomSlippage(e.target.value);
+                  const val = parseFloat(e.target.value);
+                  if (!isNaN(val) && val > 0 && val <= 50) {
+                    setSlippageBps(Math.round(val * 100));
+                  }
+                }}
+                placeholder={t('swap.customSlippage')}
+                step="0.1"
+                className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary-500"
+              />
+              <span className="text-sm text-gray-400">%</span>
+            </div>
+            {slippageBps > 300 && (
+              <p className="text-xs text-yellow-400">{t('swap.highSlippageWarning')}</p>
+            )}
+          </div>
+        )}
+
         {/* From Token */}
         <div className="bg-white/5 rounded-xl p-4">
           <div className="flex justify-between mb-2">
-            <label className="text-sm text-gray-400">From</label>
+            <label className="text-sm text-gray-400">{t('swap.from')}</label>
           </div>
           <div className="flex gap-3">
             <input
@@ -218,7 +286,7 @@ export default function SwapPage() {
         {/* To Token */}
         <div className="bg-white/5 rounded-xl p-4">
           <div className="flex justify-between mb-2">
-            <label className="text-sm text-gray-400">To</label>
+            <label className="text-sm text-gray-400">{t('swap.to')}</label>
           </div>
           <div className="flex gap-3">
             <div className="flex-1 text-2xl font-semibold">
@@ -249,13 +317,19 @@ export default function SwapPage() {
         {quote && (
           <div className="bg-white/5 rounded-xl p-3 space-y-2 text-sm">
             <div className="flex justify-between text-gray-400">
-              <span>Price Impact</span>
-              <span className={parseFloat(quote.priceImpactPct) > 1 ? 'text-red-400' : 'text-green-400'}>
+              <span>{t('swap.priceImpact')}</span>
+              <span
+                className={parseFloat(quote.priceImpactPct) > 1 ? 'text-red-400' : 'text-green-400'}
+              >
                 {parseFloat(quote.priceImpactPct).toFixed(2)}%
               </span>
             </div>
             <div className="flex justify-between text-gray-400">
-              <span>Route</span>
+              <span>{t('swap.slippage')}</span>
+              <span>{(slippageBps / 100).toFixed(1)}%</span>
+            </div>
+            <div className="flex justify-between text-gray-400">
+              <span>{t('swap.route')}</span>
               <span>{quote.routePlan.map((r) => r.swapInfo.label).join(' → ')}</span>
             </div>
           </div>
@@ -271,7 +345,7 @@ export default function SwapPage() {
         {/* Success */}
         {txSignature && (
           <div className="bg-green-500/10 border border-green-500/30 rounded-xl px-4 py-3 text-green-400 text-sm">
-            <p>Swap successful!</p>
+            <p>{t('swap.success')}</p>
             <a
               href={`https://solscan.io/tx/${txSignature}`}
               target="_blank"
@@ -290,17 +364,15 @@ export default function SwapPage() {
           className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {swapping
-            ? 'Swapping...'
+            ? t('swap.swapping')
             : fromToken.mint === toToken.mint
-            ? 'Select different tokens'
-            : quote
-            ? 'Swap'
-            : 'Enter amount'}
+              ? t('swap.selectDifferent')
+              : quote
+                ? t('swap.swapButton')
+                : t('swap.enterAmount')}
         </button>
 
-        <p className="text-xs text-gray-500 text-center">
-          Powered by Jupiter Aggregator - Best rates across Solana
-        </p>
+        <p className="text-xs text-gray-500 text-center">{t('swap.poweredBy')}</p>
       </div>
     </div>
   );

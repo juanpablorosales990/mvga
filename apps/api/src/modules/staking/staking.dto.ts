@@ -1,9 +1,10 @@
-import { IsString, IsNumber, IsPositive, IsIn } from 'class-validator';
+import { IsNumber, IsPositive, IsIn } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { IsSolanaAddress } from '../../common/validators/solana-address.validator';
 
 export class StakeDto {
   @ApiProperty({ description: 'Wallet address' })
-  @IsString()
+  @IsSolanaAddress()
   address: string;
 
   @ApiProperty({ description: 'Amount of MVGA to stake' })
@@ -19,7 +20,7 @@ export class StakeDto {
 
 export class UnstakeDto {
   @ApiProperty({ description: 'Wallet address' })
-  @IsString()
+  @IsSolanaAddress()
   address: string;
 
   @ApiProperty({ description: 'Amount of MVGA to unstake' })

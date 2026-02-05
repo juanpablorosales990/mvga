@@ -48,7 +48,8 @@ export class SwapService {
   };
 
   async getQuote(request: SwapQuoteRequest): Promise<JupiterQuote> {
-    const { inputMint, outputMint, amount, slippageBps = 50 } = request;
+    const { inputMint, outputMint, amount, slippageBps: rawSlippage = 50 } = request;
+    const slippageBps = Math.min(Math.max(rawSlippage, 1), 500); // Cap at 5%
 
     if (inputMint === outputMint) {
       throw new BadRequestException('Input and output tokens cannot be the same');
@@ -107,15 +108,44 @@ export class SwapService {
       return { swapTransaction: result.swapTransaction };
     } catch (error) {
       if (error instanceof BadRequestException) throw error;
-      throw new BadRequestException(`Failed to create swap transaction: ${(error as Error).message}`);
+      throw new BadRequestException(
+        `Failed to create swap transaction: ${(error as Error).message}`
+      );
+    }
+  }
+
+  // MVGA price via DexScreener (reads from Raydium CPMM pool)
+  private mvgaPriceCache: { price: number; timestamp: number } | null = null;
+  private readonly MVGA_POOL = '9KuzsCCCSeuF15hwBDz6FguqLR2hbgJkmaAZikrTDu1y';
+
+  async getMvgaPrice(): Promise<number> {
+    if (this.mvgaPriceCache && Date.now() - this.mvgaPriceCache.timestamp < 60_000) {
+      return this.mvgaPriceCache.price;
+    }
+
+    try {
+      const response = await fetch(
+        `https://api.dexscreener.com/latest/dex/pairs/solana/${this.MVGA_POOL}`
+      );
+      if (!response.ok) return this.mvgaPriceCache?.price ?? 0.001;
+
+      const data = await response.json();
+      const price = parseFloat(data.pairs?.[0]?.priceUsd ?? '0');
+      if (price > 0) {
+        this.mvgaPriceCache = { price, timestamp: Date.now() };
+        return price;
+      }
+      return this.mvgaPriceCache?.price ?? 0.001;
+    } catch {
+      return this.mvgaPriceCache?.price ?? 0.001;
     }
   }
 
   // Map Solana mint addresses to CoinGecko IDs
   private readonly COINGECKO_IDS: Record<string, string> = {
-    'So11111111111111111111111111111111111111112': 'solana',
-    'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v': 'usd-coin',
-    'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB': 'tether',
+    So11111111111111111111111111111111111111112: 'solana',
+    EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v: 'usd-coin',
+    Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB: 'tether',
   };
 
   async getTokenPrice(mint: string): Promise<number> {
@@ -126,14 +156,12 @@ export class SwapService {
   async getMultipleTokenPrices(mints: string[]): Promise<Record<string, number>> {
     try {
       // Map mints to CoinGecko IDs
-      const geckoIds = mints
-        .map((m) => this.COINGECKO_IDS[m])
-        .filter(Boolean);
+      const geckoIds = mints.map((m) => this.COINGECKO_IDS[m]).filter(Boolean);
 
       if (geckoIds.length === 0) return {};
 
       const response = await fetch(
-        `https://api.coingecko.com/api/v3/simple/price?ids=${geckoIds.join(',')}&vs_currencies=usd`,
+        `https://api.coingecko.com/api/v3/simple/price?ids=${geckoIds.join(',')}&vs_currencies=usd`
       );
 
       if (!response.ok) return {};

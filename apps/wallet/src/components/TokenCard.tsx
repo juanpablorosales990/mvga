@@ -1,3 +1,5 @@
+import FiatValue from './FiatValue';
+
 interface TokenCardProps {
   token: {
     symbol: string;
@@ -31,9 +33,7 @@ export default function TokenCard({ token }: TokenCardProps) {
             maximumFractionDigits: 6,
           })}
         </p>
-        <p className="text-sm text-gray-500">
-          ${token.usdValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-        </p>
+        <FiatValue amount={token.balance} token={token.symbol} />
       </div>
     </div>
   );

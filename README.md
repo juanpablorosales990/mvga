@@ -1,182 +1,128 @@
-# MVGA - Make Venezuela Great Again
+# MVGA — Make Venezuela Great Again
 
-Venezuela's open-source financial infrastructure. Send money, hold stable value, support small businesses.
+Open-source financial infrastructure for Venezuela, built on Solana.
 
-## Project Structure
+**Website:** [mvga.io](https://mvga.io) | **Wallet:** [app.mvga.io](https://app.mvga.io) | **API:** [api.mvga.io](https://api.mvga.io)
+
+## What is MVGA?
+
+MVGA is a crypto-native financial platform designed for Venezuelans. It combines a non-custodial Solana wallet with P2P fiat-to-crypto trading, community grants, and staking — all in Spanish and English.
+
+### Features
+
+- **Wallet** — Send, receive, and swap SOL, USDC, and MVGA tokens
+- **P2P Trading** — Buy and sell crypto with Zelle, Venmo, PayPal, and bank transfers using on-chain escrow
+- **Staking** — Stake MVGA tokens with tiered APY rewards and lock periods
+- **Grants** — Community-funded micro-grants for Venezuelan businesses, voted on by stakers
+- **i18n** — Full Spanish and English support with browser auto-detection
+
+## Architecture
 
 ```
 mvga/
 ├── apps/
-│   ├── web/          # Landing page (Next.js)
-│   ├── wallet/       # PWA Wallet (React + Vite)
-│   └── api/          # Backend API (NestJS)
-├── packages/
-│   ├── sdk/          # Shared SDK (types, constants, utilities)
-│   ├── ui/           # Shared UI components (coming soon)
-│   └── contracts/    # Solana programs (coming soon)
-└── docs/             # Documentation
+│   ├── api/       # NestJS REST API (Prisma + PostgreSQL)
+│   ├── wallet/    # React PWA (Vite + Solana wallet-adapter)
+│   └── web/       # Next.js landing page
+├── LICENSE        # MIT
+├── CONTRIBUTING.md
+└── SECURITY.md
 ```
 
-## Getting Started
+| App      | Stack                      | Deployment |
+| -------- | -------------------------- | ---------- |
+| `api`    | NestJS, Prisma, PostgreSQL | Railway    |
+| `wallet` | React, Vite, Tailwind, PWA | Vercel     |
+| `web`    | Next.js, Tailwind          | Vercel     |
 
-### Prerequisites
-
-- Node.js 18+
-- npm 10+
-- Solana CLI (for token creation)
-- Phantom or Solflare wallet
-
-### Installation
+## Quick Start
 
 ```bash
-# Clone the repository
-git clone https://github.com/your-username/mvga.git
+git clone https://github.com/juanpablorosales990/mvga.git
 cd mvga
 
-# Install dependencies
+# API
+cd apps/api
 npm install
+cp .env.example .env   # Fill in DATABASE_URL, JWT_SECRET
+npx prisma generate && npx prisma db push
+npm run dev             # http://localhost:4000
 
-# Set up environment variables
-cp apps/api/.env.example apps/api/.env
+# Wallet
+cd apps/wallet
+npm install
+npm run dev             # http://localhost:5173
+
+# Web
+cd apps/web
+npm install
+npm run dev             # http://localhost:3000
 ```
-
-### Development
-
-```bash
-# Run all apps in development mode
-npm run dev
-
-# Or run individual apps
-npm run dev --workspace=@mvga/web      # Landing page at http://localhost:3000
-npm run dev --workspace=@mvga/wallet   # Wallet at http://localhost:3001
-npm run dev --workspace=@mvga/api      # API at http://localhost:4000
-```
-
-### Build
-
-```bash
-# Build all apps
-npm run build
-
-# Build individual apps
-npm run build --workspace=@mvga/web
-npm run build --workspace=@mvga/wallet
-npm run build --workspace=@mvga/api
-```
-
-## Token Creation (Solana)
-
-### 1. Install Solana CLI
-
-```bash
-sh -c "$(curl -sSfL https://release.solana.com/stable/install)"
-```
-
-### 2. Create Wallet (if you don't have one)
-
-```bash
-solana-keygen new --outfile ~/mvga-wallet.json
-```
-
-### 3. Fund Wallet
-
-For mainnet, transfer SOL to your wallet address:
-```bash
-solana address -k ~/mvga-wallet.json
-```
-
-### 4. Create Token
-
-```bash
-# Set to mainnet
-solana config set --url mainnet-beta
-
-# Create the token
-spl-token create-token --decimals 9
-
-# Note the token address (mint) that's output
-# Update packages/sdk/src/index.ts with the actual address
-```
-
-### 5. Create Token Account & Mint Supply
-
-```bash
-# Create token account
-spl-token create-account <TOKEN_ADDRESS>
-
-# Mint 1 billion tokens
-spl-token mint <TOKEN_ADDRESS> 1000000000
-```
-
-### 6. Set Up Liquidity
-
-1. Go to [Raydium](https://raydium.io/liquidity/create-pool/)
-2. Create a new pool with MVGA/SOL or MVGA/USDC
-3. Add initial liquidity
-4. Lock LP tokens via [Streamflow](https://app.streamflow.finance/)
 
 ## Environment Variables
 
-### API (.env)
+### API (`apps/api/.env`)
 
-```env
-# Solana
-SOLANA_RPC_URL=https://api.mainnet-beta.solana.com
-# Or use Helius: https://mainnet.helius-rpc.com/?api-key=YOUR_KEY
+| Variable       | Required | Description                  |
+| -------------- | -------- | ---------------------------- |
+| `DATABASE_URL` | Yes      | PostgreSQL connection string |
+| `JWT_SECRET`   | Yes      | Min 32 chars in production   |
+| `SENTRY_DSN`   | No       | Sentry error tracking        |
 
-# Database (when ready)
-DATABASE_URL=postgresql://...
+### Wallet
 
-# Server
-PORT=4000
-```
+| Variable              | Required | Description                                    |
+| --------------------- | -------- | ---------------------------------------------- |
+| `VITE_SOLANA_RPC_URL` | No       | Custom Solana RPC (defaults to public mainnet) |
+| `VITE_SENTRY_DSN`     | No       | Sentry error tracking                          |
 
-## Architecture
+## Token
 
-### Token Flow
-```
-User → Wallet App → Solana Blockchain
-                  ↓
-              Jupiter (swaps)
-                  ↓
-            Staking Vault
-```
+**MVGA** — `DRX65kM2n5CLTpdjJCemZvkUwE98ou4RpHrd8Z3GH5Qh`
 
-### P2P Exchange Flow
+| Wallet            | Address                                        |
+| ----------------- | ---------------------------------------------- |
+| Treasury          | `H9j1W4u5LEiw8AZdui6c8AmN6t4tKkPQCAULPW8eMiTE` |
+| Humanitarian Fund | `82XeVLtfjniaE6qvrDiY7UaCHvkimyhVximvRDdQsdqS` |
+| Staking Vault     | `GNhLCjqThNJAJAdDYvRTr2EfWyGXAFUymaPuKaL1duEh` |
+| Team Vesting      | `8m8L2CGoneYwP3xEYyss5sjbj7GKy7cK3YxDcG2yNbH4` |
+| Marketing         | `DA5VQFLsx87hNQqL2EsM36oVhGnzM2CnqPSe6E9RFpeo` |
+| Advisors          | `Huq3ea9KKf6HFb5Qiacdx2pJDSM4c881WdyMCBHXq4hF` |
+
+## P2P Exchange Flow
+
 ```
 Seller creates offer → Buyer accepts →
 Crypto locked in escrow → Buyer sends fiat →
 Seller confirms → Escrow releases to buyer
 ```
 
+## Testing
+
+```bash
+# API unit tests
+cd apps/api && npm test
+
+# Wallet unit tests
+cd apps/wallet && npx vitest run
+
+# Wallet E2E tests (requires Playwright)
+cd apps/wallet && npx playwright install --with-deps chromium
+npx playwright test
+```
+
 ## Contributing
 
-This is an open-source project. Contributions are welcome!
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+See [CONTRIBUTING.md](CONTRIBUTING.md) for setup instructions, conventions, and PR process.
 
 ## Security
 
-- All wallets are public and auditable
-- LP is locked for 3 years
-- Team tokens vest over 2 years
-- Smart contracts will be audited before mainnet
+See [SECURITY.md](SECURITY.md) for responsible disclosure policy.
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) for details.
-
-## Links
-
-- Website: https://mvga.io
-- Twitter: https://twitter.com/mvga
-- Telegram: https://t.me/mvga
-- GitHub: https://github.com/your-username/mvga
+[MIT](LICENSE)
 
 ---
 
-**Patria y vida. Venezuela será libre.**
+**Patria y vida. Venezuela sera libre.**

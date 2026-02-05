@@ -32,7 +32,7 @@ export class WalletService {
 
   constructor(
     private readonly solanaService: SolanaService,
-    private readonly swapService: SwapService,
+    private readonly swapService: SwapService
   ) {}
 
   async getBalances(address: string): Promise<TokenBalance[]> {
@@ -93,14 +93,17 @@ export class WalletService {
         change24h: 0,
       }));
 
-      // Stablecoins + MVGA fallback
+      // Stablecoins fallback
       for (const p of prices) {
         if ((p.symbol === 'USDC' || p.symbol === 'USDT') && p.price === 0) {
           p.price = 1;
         }
-        if (p.symbol === 'MVGA' && p.price === 0) {
-          p.price = 0.001;
-        }
+      }
+
+      // Real MVGA price from Jupiter/Raydium pool
+      const mvgaEntry = prices.find((p) => p.symbol === 'MVGA');
+      if (mvgaEntry && mvgaEntry.price === 0) {
+        mvgaEntry.price = await this.swapService.getMvgaPrice();
       }
 
       this.priceCache = { prices, timestamp: Date.now() };

@@ -38,6 +38,13 @@ yarn-error.log*
 # Test coverage
 coverage/
 
+# Playwright
+playwright-report/
+test-results/
+
+# PWA dev
+dev-dist/
+
 # Misc
 *.pem
 .vercel

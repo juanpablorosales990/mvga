@@ -1,0 +1,27 @@
+'use client';
+
+export default function Error({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) {
+  return (
+    <main className="min-h-screen bg-[#0a0a0a] text-white flex items-center justify-center">
+      <div className="text-center px-6">
+        <h1 className="text-6xl font-display font-bold text-red-500 mb-4">Error</h1>
+        <p className="text-xl text-gray-400 mb-2">Something went wrong</p>
+        <p className="text-sm text-gray-600 mb-8">
+          {error.digest || 'An unexpected error occurred'}
+        </p>
+        <button
+          onClick={reset}
+          className="inline-block bg-gradient-to-r from-primary-500 to-secondary-500 text-white font-semibold px-8 py-3 rounded-full hover:opacity-90 transition"
+        >
+          Try Again
+        </button>
+      </div>
+    </main>
+  );
+}

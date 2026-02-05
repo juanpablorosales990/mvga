@@ -1,15 +1,10 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../common/prisma.service';
 import { TransactionLoggerService } from '../../common/transaction-logger.service';
 import { SolanaService } from '../wallet/solana.service';
 import { StakeDto, UnstakeDto } from './staking.dto';
-import {
-  Keypair,
-  PublicKey,
-  Transaction,
-  sendAndConfirmTransaction,
-} from '@solana/web3.js';
+import { Keypair, PublicKey, Transaction, sendAndConfirmTransaction } from '@solana/web3.js';
 import {
   getAssociatedTokenAddress,
   createTransferInstruction,
@@ -28,6 +23,7 @@ const MVGA_DECIMALS = 9;
 
 @Injectable()
 export class StakingService {
+  private readonly logger = new Logger(StakingService.name);
   private vaultKeypair: Keypair | null = null;
   private mintPubkey: PublicKey;
 
@@ -69,10 +65,10 @@ export class StakingService {
     private readonly prisma: PrismaService,
     private readonly txLogger: TransactionLoggerService,
     private readonly solana: SolanaService,
-    private readonly config: ConfigService,
+    private readonly config: ConfigService
   ) {
     this.mintPubkey = new PublicKey(
-      this.config.get('MVGA_TOKEN_MINT', 'DRX65kM2n5CLTpdjJCemZvkUwE98ou4RpHrd8Z3GH5Qh'),
+      this.config.get('MVGA_TOKEN_MINT', 'DRX65kM2n5CLTpdjJCemZvkUwE98ou4RpHrd8Z3GH5Qh')
     );
 
     // Load vault keypair from env (base64-encoded JSON array)
@@ -81,9 +77,12 @@ export class StakingService {
       try {
         const decoded = Buffer.from(vaultKeypairStr, 'base64');
         this.vaultKeypair = Keypair.fromSecretKey(new Uint8Array(JSON.parse(decoded.toString())));
+        this.logger.log('Staking vault keypair loaded');
       } catch (e) {
-        console.warn('Failed to load STAKING_VAULT_KEYPAIR:', e);
+        throw new Error(`STAKING_VAULT_KEYPAIR is set but invalid: ${(e as Error).message}`);
       }
+    } else {
+      this.logger.warn('STAKING_VAULT_KEYPAIR not set — unstake/claim will be unavailable');
     }
   }
 
@@ -104,7 +103,10 @@ export class StakingService {
 
     // Get vault on-chain balance
     let rewardPool = 0;
-    const vaultWallet = this.config.get('STAKING_VAULT_WALLET', 'GNhLCjqThNJAJAdDYvRTr2EfWyGXAFUymaPuKaL1duEh');
+    const vaultWallet = this.config.get(
+      'STAKING_VAULT_WALLET',
+      'GNhLCjqThNJAJAdDYvRTr2EfWyGXAFUymaPuKaL1duEh'
+    );
     try {
       const vaultAta = await getAssociatedTokenAddress(this.mintPubkey, new PublicKey(vaultWallet));
       const account = await getAccount(this.solana.getConnection(), vaultAta);
@@ -146,10 +148,7 @@ export class StakingService {
       orderBy: { createdAt: 'desc' },
     });
 
-    const totalStaked = stakes.reduce(
-      (sum, s) => sum + Number(s.amount) / 10 ** MVGA_DECIMALS,
-      0,
-    );
+    const totalStaked = stakes.reduce((sum, s) => sum + Number(s.amount) / 10 ** MVGA_DECIMALS, 0);
 
     // Calculate earned rewards for each stake
     let totalRewards = 0;
@@ -160,8 +159,7 @@ export class StakingService {
       const effectiveApy = BASE_APY * tier.multiplier * lockMult;
 
       // Days since staked
-      const daysSinceStake =
-        (Date.now() - stake.createdAt.getTime()) / (1000 * 60 * 60 * 24);
+      const daysSinceStake = (Date.now() - stake.createdAt.getTime()) / (1000 * 60 * 60 * 24);
       const rewards = amount * (effectiveApy / 100) * (daysSinceStake / 365);
       totalRewards += rewards;
 
@@ -191,7 +189,7 @@ export class StakingService {
   async createStakeTransaction(dto: StakeDto) {
     const vaultWallet = this.config.get(
       'STAKING_VAULT_WALLET',
-      'GNhLCjqThNJAJAdDYvRTr2EfWyGXAFUymaPuKaL1duEh',
+      'GNhLCjqThNJAJAdDYvRTr2EfWyGXAFUymaPuKaL1duEh'
     );
 
     const tier = this.getTierForAmount(dto.amount);
@@ -208,12 +206,7 @@ export class StakingService {
     };
   }
 
-  async confirmStake(
-    walletAddress: string,
-    signature: string,
-    amount: number,
-    lockPeriod: number,
-  ) {
+  async confirmStake(walletAddress: string, signature: string, amount: number, lockPeriod: number) {
     // Verify the transaction on-chain
     const connection = this.solana.getConnection();
     const tx = await connection.getParsedTransaction(signature, {
@@ -238,9 +231,7 @@ export class StakingService {
 
     const amountRaw = BigInt(Math.round(amount * 10 ** MVGA_DECIMALS));
     const lockedUntil =
-      lockPeriod > 0
-        ? new Date(Date.now() + lockPeriod * 24 * 60 * 60 * 1000)
-        : null;
+      lockPeriod > 0 ? new Date(Date.now() + lockPeriod * 24 * 60 * 60 * 1000) : null;
 
     const stake = await this.prisma.stake.create({
       data: {
@@ -290,15 +281,11 @@ export class StakingService {
 
     // Check lock period
     if (stake.lockedUntil && new Date() < stake.lockedUntil) {
-      throw new BadRequestException(
-        `Stake locked until ${stake.lockedUntil.toISOString()}`,
-      );
+      throw new BadRequestException(`Stake locked until ${stake.lockedUntil.toISOString()}`);
     }
 
     if (!this.vaultKeypair) {
-      throw new BadRequestException(
-        'Staking vault not configured. Contact support.',
-      );
+      throw new BadRequestException('Staking vault not configured. Contact support.');
     }
 
     const amountToUnstake = Number(stake.amount) / 10 ** MVGA_DECIMALS;
@@ -308,14 +295,11 @@ export class StakingService {
     // Build transfer: vault → user
     const connection = this.solana.getConnection();
     const userPubkey = new PublicKey(dto.address);
-    const vaultAta = await getAssociatedTokenAddress(
-      this.mintPubkey,
-      this.vaultKeypair.publicKey,
-    );
+    const vaultAta = await getAssociatedTokenAddress(this.mintPubkey, this.vaultKeypair.publicKey);
     const userAta = await getAssociatedTokenAddress(this.mintPubkey, userPubkey);
 
     const tx = new Transaction().add(
-      createTransferInstruction(vaultAta, userAta, this.vaultKeypair.publicKey, rawAmount),
+      createTransferInstruction(vaultAta, userAta, this.vaultKeypair.publicKey, rawAmount)
     );
 
     const sig = await sendAndConfirmTransaction(connection, tx, [this.vaultKeypair]);
@@ -354,27 +338,25 @@ export class StakingService {
       throw new BadRequestException('No rewards to claim');
     }
 
-    if (!this.vaultKeypair) {
-      throw new BadRequestException(
-        'Staking vault not configured. Contact support.',
-      );
+    // Minimum claim threshold: 10 MVGA
+    if (position.earnedRewards < 10) {
+      throw new BadRequestException('Minimum claim amount is 10 MVGA');
     }
 
-    const rawRewards = BigInt(
-      Math.round(position.earnedRewards * 10 ** MVGA_DECIMALS),
-    );
+    if (!this.vaultKeypair) {
+      throw new BadRequestException('Staking vault not configured. Contact support.');
+    }
+
+    const rawRewards = BigInt(Math.round(position.earnedRewards * 10 ** MVGA_DECIMALS));
 
     // Build transfer: vault → user (rewards)
     const connection = this.solana.getConnection();
     const userPubkey = new PublicKey(walletAddress);
-    const vaultAta = await getAssociatedTokenAddress(
-      this.mintPubkey,
-      this.vaultKeypair.publicKey,
-    );
+    const vaultAta = await getAssociatedTokenAddress(this.mintPubkey, this.vaultKeypair.publicKey);
     const userAta = await getAssociatedTokenAddress(this.mintPubkey, userPubkey);
 
     const tx = new Transaction().add(
-      createTransferInstruction(vaultAta, userAta, this.vaultKeypair.publicKey, rawRewards),
+      createTransferInstruction(vaultAta, userAta, this.vaultKeypair.publicKey, rawRewards)
     );
 
     const sig = await sendAndConfirmTransaction(connection, tx, [this.vaultKeypair]);

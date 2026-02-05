@@ -1,6 +1,7 @@
 import { useEffect, useCallback } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useWalletStore } from '../stores/walletStore';
+import { showToast } from './useToast';
 import bs58 from 'bs58';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
@@ -41,8 +42,8 @@ export function useAuth() {
       const { accessToken } = await verifyRes.json();
 
       setAuthToken(accessToken);
-    } catch (error) {
-      console.error('Auth failed:', error);
+    } catch {
+      showToast('error', 'Authentication failed. Please try reconnecting.');
     }
   }, [connected, publicKey, signMessage, setAuthToken]);
 

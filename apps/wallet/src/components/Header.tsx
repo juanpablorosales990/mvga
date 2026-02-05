@@ -1,8 +1,21 @@
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import { useTranslation } from 'react-i18next';
+import { useWalletStore } from '../stores/walletStore';
 
 export default function Header() {
   const { connected, publicKey } = useWallet();
+  const { i18n } = useTranslation();
+  const preferredCurrency = useWalletStore((s) => s.preferredCurrency);
+  const setPreferredCurrency = useWalletStore((s) => s.setPreferredCurrency);
+
+  const toggleLang = () => {
+    i18n.changeLanguage(i18n.language === 'es' ? 'en' : 'es');
+  };
+
+  const toggleCurrency = () => {
+    setPreferredCurrency(preferredCurrency === 'USD' ? 'VES' : 'USD');
+  };
 
   return (
     <header className="sticky top-0 z-50 bg-[#0a0a0a]/80 backdrop-blur-lg border-b border-white/10">
@@ -18,16 +31,30 @@ export default function Header() {
           )}
         </div>
 
-        <WalletMultiButton
-          style={{
-            background: connected ? 'rgba(255,255,255,0.1)' : '#f59e0b',
-            color: connected ? '#fff' : '#000',
-            borderRadius: '9999px',
-            fontSize: '14px',
-            height: '36px',
-            padding: '0 16px',
-          }}
-        />
+        <div className="flex items-center gap-2">
+          <button
+            onClick={toggleCurrency}
+            className="text-xs font-medium px-2 py-1 rounded-full bg-white/10 text-gray-300 hover:bg-white/20 transition"
+          >
+            {preferredCurrency === 'USD' ? 'VES' : 'USD'}
+          </button>
+          <button
+            onClick={toggleLang}
+            className="text-xs font-medium px-2 py-1 rounded-full bg-white/10 text-gray-300 hover:bg-white/20 transition"
+          >
+            {i18n.language === 'es' ? 'EN' : 'ES'}
+          </button>
+          <WalletMultiButton
+            style={{
+              background: connected ? 'rgba(255,255,255,0.1)' : '#f59e0b',
+              color: connected ? '#fff' : '#000',
+              borderRadius: '9999px',
+              fontSize: '14px',
+              height: '36px',
+              padding: '0 16px',
+            }}
+          />
+        </div>
       </div>
     </header>
   );

@@ -1,9 +1,10 @@
 import { IsString, IsNumber, IsPositive, IsIn, Min, Max } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { IsSolanaAddress } from '../../../common/validators/solana-address.validator';
 
 export class CreateOfferDto {
   @ApiProperty({ description: 'Seller wallet address' })
-  @IsString()
+  @IsSolanaAddress()
   sellerAddress: string;
 
   @ApiProperty({ enum: ['BUY', 'SELL'], description: 'BUY = buying crypto, SELL = selling crypto' })
@@ -46,7 +47,7 @@ export class CreateOfferDto {
 
 export class AcceptOfferDto {
   @ApiProperty({ description: 'Buyer wallet address' })
-  @IsString()
+  @IsSolanaAddress()
   buyerAddress: string;
 
   @ApiProperty({ description: 'Amount in USD' })

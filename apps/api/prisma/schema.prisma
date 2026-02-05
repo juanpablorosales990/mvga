@@ -43,6 +43,8 @@ model UserReputation {
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+
+  @@index([rating])
 }
 
 // ============================================================================
@@ -58,8 +60,8 @@ model Stake {
   lockPeriod  Int       // Lock period in days (0, 30, 90, 180)
   lockedUntil DateTime?
 
-  stakeTx     String?   // Solana transaction signature
-  unstakeTx   String?   // Solana transaction signature when unstaked
+  stakeTx     String?   @unique // Solana transaction signature
+  unstakeTx   String?   @unique // Solana transaction signature when unstaked
 
   status      StakeStatus @default(ACTIVE)
   createdAt   DateTime    @default(now())
@@ -142,8 +144,8 @@ model P2PTrade {
   cryptoAmount BigInt   // Crypto amount in smallest unit
 
   status       P2PTradeStatus @default(PENDING)
-  escrowTx     String?        // Solana tx locking funds
-  releaseTx    String?        // Solana tx releasing funds
+  escrowTx     String?   @unique // Solana tx locking funds
+  releaseTx    String?   @unique // Solana tx releasing funds
 
   disputeReason String?
   disputeEvidence String?
@@ -158,6 +160,7 @@ model P2PTrade {
   @@index([buyerId])
   @@index([sellerId])
   @@index([status])
+  @@index([createdAt])
 }
 
 enum P2PTradeStatus {
@@ -203,6 +206,7 @@ model GrantProposal {
 
   @@index([status])
   @@index([applicantAddress])
+  @@index([votingEndsAt])
 }
 
 enum GrantStatus {
@@ -251,6 +255,40 @@ model GrantUpdate {
 }
 
 // ============================================================================
+// Referral System
+// ============================================================================
+
+model ReferralCode {
+  id            String   @id @default(uuid())
+  walletAddress String   @unique
+  code          String   @unique
+  createdAt     DateTime @default(now())
+
+  referrals     Referral[]
+
+  @@index([walletAddress])
+  @@index([code])
+}
+
+model Referral {
+  id               String   @id @default(uuid())
+  referrerAddress  String
+  refereeAddress   String   @unique
+  codeId           String
+  code             ReferralCode @relation(fields: [codeId], references: [id])
+
+  bonusPaid        Boolean  @default(false)
+  bonusTxReferrer  String?
+  bonusTxReferee   String?
+  amount           Int      @default(100) // MVGA tokens
+
+  createdAt        DateTime @default(now())
+
+  @@index([referrerAddress])
+  @@index([refereeAddress])
+}
+
+// ============================================================================
 // Transaction Logging
 // ============================================================================
 
@@ -273,6 +311,7 @@ model TransactionLog {
   @@index([walletAddress])
   @@index([type])
   @@index([signature])
+  @@index([createdAt])
 }
 
 enum TransactionType {
@@ -284,6 +323,7 @@ enum TransactionType {
   GRANT_FUNDING
   SWAP
   TRANSFER
+  REFERRAL_BONUS
 }
 
 enum TransactionLogStatus {

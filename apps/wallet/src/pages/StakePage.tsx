@@ -7,7 +7,10 @@ import {
   createTransferInstruction,
   getAccount,
 } from '@solana/spl-token';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
+import FiatValue from '../components/FiatValue';
+import TransactionPreviewModal from '../components/TransactionPreviewModal';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
 
@@ -15,10 +18,30 @@ const MVGA_MINT = 'DRX65kM2n5CLTpdjJCemZvkUwE98ou4RpHrd8Z3GH5Qh';
 const MVGA_DECIMALS = 9;
 
 const TIERS = [
-  { name: 'Bronze', minStake: 0, benefits: ['Basic wallet access', 'Community access'], color: 'from-amber-700 to-amber-900' },
-  { name: 'Silver', minStake: 10000, benefits: ['0.5% cashback on swaps', 'Priority support'], color: 'from-gray-400 to-gray-600' },
-  { name: 'Gold', minStake: 50000, benefits: ['1% cashback on swaps', 'Governance voting', 'Early feature access'], color: 'from-yellow-400 to-yellow-600' },
-  { name: 'Platinum', minStake: 200000, benefits: ['2% cashback', 'Zero fees', 'VIP support', 'Exclusive events'], color: 'from-purple-400 to-purple-600' },
+  {
+    name: 'Bronze',
+    minStake: 0,
+    benefits: ['Basic wallet access', 'Community access'],
+    color: 'from-amber-700 to-amber-900',
+  },
+  {
+    name: 'Silver',
+    minStake: 10000,
+    benefits: ['0.5% cashback on swaps', 'Priority support'],
+    color: 'from-gray-400 to-gray-600',
+  },
+  {
+    name: 'Gold',
+    minStake: 50000,
+    benefits: ['1% cashback on swaps', 'Governance voting', 'Early feature access'],
+    color: 'from-yellow-400 to-yellow-600',
+  },
+  {
+    name: 'Platinum',
+    minStake: 200000,
+    benefits: ['2% cashback', 'Zero fees', 'VIP support', 'Exclusive events'],
+    color: 'from-purple-400 to-purple-600',
+  },
 ];
 
 const LOCK_PERIODS = [
@@ -40,6 +63,7 @@ interface StakePosition {
 }
 
 export default function StakePage() {
+  const { t } = useTranslation();
   const { connected, publicKey, sendTransaction } = useWallet();
   const { connection } = useConnection();
   const { authToken } = useAuth();
@@ -49,8 +73,14 @@ export default function StakePage() {
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState('');
   const [mvgaBalance, setMvgaBalance] = useState(0);
+  const [showPreview, setShowPreview] = useState(false);
 
-  const [stakingInfo, setStakingInfo] = useState({ totalStaked: 0, totalStakers: 0, rewardPool: 0, baseApy: 12 });
+  const [stakingInfo, setStakingInfo] = useState({
+    totalStaked: 0,
+    totalStakers: 0,
+    rewardPool: 0,
+    baseApy: 12,
+  });
   const [position, setPosition] = useState<{
     stakes: StakePosition[];
     totalStaked: number;
@@ -67,8 +97,8 @@ export default function StakePage() {
       ]);
       if (infoRes.ok) setStakingInfo(await infoRes.json());
       if (posRes?.ok) setPosition(await posRes.json());
-    } catch (err) {
-      console.error('Failed to fetch staking data:', err);
+    } catch {
+      // Staking data fetch failed — user sees stale state
     }
   }, [publicKey]);
 
@@ -105,7 +135,11 @@ export default function StakePage() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${authToken}`,
         },
-        body: JSON.stringify({ address: publicKey.toBase58(), amount: parseFloat(amount), lockPeriod }),
+        body: JSON.stringify({
+          address: publicKey.toBase58(),
+          amount: parseFloat(amount),
+          lockPeriod,
+        }),
       });
 
       if (!stakeRes.ok) {
@@ -221,31 +255,42 @@ export default function StakePage() {
   if (!connected) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-        <p className="text-gray-400">Connect your wallet to stake MVGA</p>
+        <p className="text-gray-400">{t('stake.connectPrompt')}</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Stake MVGA</h1>
+      <h1 className="text-2xl font-bold">{t('stake.title')}</h1>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 gap-3">
         <div className="card text-center">
-          <p className="text-gray-400 text-sm">Staked</p>
-          <p className="text-xl font-bold">{position.totalStaked.toLocaleString(undefined, { maximumFractionDigits: 0 })} MVGA</p>
+          <p className="text-gray-400 text-sm">{t('stake.staked')}</p>
+          <p className="text-xl font-bold">
+            {position.totalStaked.toLocaleString(undefined, { maximumFractionDigits: 0 })} MVGA
+          </p>
+          {position.totalStaked > 0 && (
+            <FiatValue
+              amount={position.totalStaked}
+              token="MVGA"
+              className="text-sm text-gray-500"
+            />
+          )}
         </div>
         <div className="card text-center">
-          <p className="text-gray-400 text-sm">Rewards</p>
-          <p className="text-xl font-bold text-green-400">+{position.earnedRewards.toFixed(2)} MVGA</p>
+          <p className="text-gray-400 text-sm">{t('stake.rewards')}</p>
+          <p className="text-xl font-bold text-green-400">
+            +{position.earnedRewards.toFixed(2)} MVGA
+          </p>
           {position.earnedRewards > 0 && (
             <button
               onClick={handleClaim}
               disabled={loading}
               className="mt-1 text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded-lg"
             >
-              Claim
+              {t('stake.claim')}
             </button>
           )}
         </div>
@@ -254,21 +299,25 @@ export default function StakePage() {
       {/* Pool Stats */}
       <div className="card">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-gray-400">Current Tier</span>
-          <span className={`px-3 py-1 rounded-full bg-gradient-to-r ${TIERS.find((t) => t.name === position.currentTier)?.color} text-white text-sm font-medium`}>
+          <span className="text-gray-400">{t('stake.currentTier')}</span>
+          <span
+            className={`px-3 py-1 rounded-full bg-gradient-to-r ${TIERS.find((t) => t.name === position.currentTier)?.color} text-white text-sm font-medium`}
+          >
             {position.currentTier}
           </span>
         </div>
         <div className="flex items-center justify-between mb-2">
-          <span className="text-gray-400">Your APY</span>
+          <span className="text-gray-400">{t('stake.yourApy')}</span>
           <span className="text-green-400 font-bold">{position.apy}%</span>
         </div>
         <div className="flex items-center justify-between mb-2">
-          <span className="text-gray-400">Total Staked (Pool)</span>
-          <span className="font-medium">{stakingInfo.totalStaked.toLocaleString(undefined, { maximumFractionDigits: 0 })} MVGA</span>
+          <span className="text-gray-400">{t('stake.totalStakedPool')}</span>
+          <span className="font-medium">
+            {stakingInfo.totalStaked.toLocaleString(undefined, { maximumFractionDigits: 0 })} MVGA
+          </span>
         </div>
         <div className="flex items-center justify-between">
-          <span className="text-gray-400">Total Stakers</span>
+          <span className="text-gray-400">{t('stake.totalStakers')}</span>
           <span className="font-medium">{stakingInfo.totalStakers}</span>
         </div>
       </div>
@@ -281,7 +330,7 @@ export default function StakePage() {
             activeTab === 'stake' ? 'bg-primary-500 text-black' : 'text-gray-400'
           }`}
         >
-          Stake
+          {t('stake.stakeTab')}
         </button>
         <button
           onClick={() => setActiveTab('unstake')}
@@ -289,14 +338,14 @@ export default function StakePage() {
             activeTab === 'unstake' ? 'bg-primary-500 text-black' : 'text-gray-400'
           }`}
         >
-          Unstake
+          {t('stake.unstakeTab')}
         </button>
       </div>
 
       {/* Stake Form */}
       <div className="card space-y-4">
         <div>
-          <label className="block text-sm text-gray-400 mb-2">Amount</label>
+          <label className="block text-sm text-gray-400 mb-2">{t('stake.amount')}</label>
           <div className="relative">
             <input
               type="number"
@@ -306,14 +355,19 @@ export default function StakePage() {
               className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 pr-20 focus:outline-none focus:border-primary-500"
             />
             <button
-              onClick={() => setAmount(activeTab === 'stake' ? mvgaBalance.toString() : position.totalStaked.toString())}
+              onClick={() =>
+                setAmount(
+                  activeTab === 'stake' ? mvgaBalance.toString() : position.totalStaked.toString()
+                )
+              }
               className="absolute right-3 top-1/2 -translate-y-1/2 text-primary-500 text-sm font-medium"
             >
               MAX
             </button>
           </div>
           <p className="text-xs text-gray-500 mt-1">
-            Available: {activeTab === 'stake'
+            Available:{' '}
+            {activeTab === 'stake'
               ? `${mvgaBalance.toLocaleString(undefined, { maximumFractionDigits: 2 })} MVGA`
               : `${position.totalStaked.toLocaleString(undefined, { maximumFractionDigits: 2 })} MVGA staked`}
           </p>
@@ -321,7 +375,7 @@ export default function StakePage() {
 
         {activeTab === 'stake' && (
           <div>
-            <label className="block text-sm text-gray-400 mb-2">Lock Period</label>
+            <label className="block text-sm text-gray-400 mb-2">{t('stake.lockPeriod')}</label>
             <div className="grid grid-cols-2 gap-2">
               {LOCK_PERIODS.map((period) => (
                 <button
@@ -342,15 +396,24 @@ export default function StakePage() {
         )}
 
         <button
-          onClick={activeTab === 'stake' ? handleStake : handleUnstake}
+          onClick={() => {
+            if (!amount || parseFloat(amount) <= 0) return;
+            setShowPreview(true);
+          }}
           disabled={!amount || parseFloat(amount) <= 0 || loading || !authToken}
           className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {loading ? 'Processing...' : activeTab === 'stake' ? 'Stake MVGA' : 'Unstake MVGA'}
+          {loading
+            ? 'Processing...'
+            : activeTab === 'stake'
+              ? t('stake.stakeButton')
+              : t('stake.unstakeButton')}
         </button>
 
         {status && (
-          <p className={`text-sm text-center ${status.startsWith('Error') ? 'text-red-400' : 'text-green-400'}`}>
+          <p
+            className={`text-sm text-center ${status.startsWith('Error') ? 'text-red-400' : 'text-green-400'}`}
+          >
             {status}
           </p>
         )}
@@ -359,12 +422,19 @@ export default function StakePage() {
       {/* Active Stakes */}
       {position.stakes.length > 0 && (
         <div>
-          <h2 className="text-lg font-semibold mb-3">Active Stakes</h2>
+          <h2 className="text-lg font-semibold mb-3">{t('stake.activeStakes')}</h2>
           <div className="space-y-3">
             {position.stakes.map((stake) => (
               <div key={stake.id} className="card">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="font-medium">{stake.amount.toLocaleString()} MVGA</span>
+                  <div>
+                    <span className="font-medium">{stake.amount.toLocaleString()} MVGA</span>
+                    <FiatValue
+                      amount={stake.amount}
+                      token="MVGA"
+                      className="text-xs text-gray-500 ml-2"
+                    />
+                  </div>
                   <span className="text-green-400 text-sm">{stake.apy}% APY</span>
                 </div>
                 <div className="flex items-center justify-between text-sm text-gray-400">
@@ -384,16 +454,20 @@ export default function StakePage() {
 
       {/* Tiers */}
       <div>
-        <h2 className="text-lg font-semibold mb-3">Staking Tiers</h2>
+        <h2 className="text-lg font-semibold mb-3">{t('stake.stakingTiers')}</h2>
         <div className="space-y-3">
           {TIERS.map((tier) => (
             <div key={tier.name} className="card">
               <div className="flex items-center justify-between mb-2">
-                <span className={`px-3 py-1 rounded-full bg-gradient-to-r ${tier.color} text-white text-sm font-medium`}>
+                <span
+                  className={`px-3 py-1 rounded-full bg-gradient-to-r ${tier.color} text-white text-sm font-medium`}
+                >
                   {tier.name}
                 </span>
                 <span className="text-gray-400 text-sm">
-                  {tier.minStake > 0 ? `${tier.minStake.toLocaleString()}+ MVGA` : 'Any amount'}
+                  {tier.minStake > 0
+                    ? `${tier.minStake.toLocaleString()}+ MVGA`
+                    : t('stake.anyAmount')}
                 </span>
               </div>
               <ul className="text-sm text-gray-400 space-y-1">
@@ -408,6 +482,22 @@ export default function StakePage() {
           ))}
         </div>
       </div>
+
+      <TransactionPreviewModal
+        open={showPreview}
+        onClose={() => setShowPreview(false)}
+        onConfirm={() => {
+          setShowPreview(false);
+          if (activeTab === 'stake') handleStake();
+          else handleUnstake();
+        }}
+        loading={loading}
+        tx={{
+          type: activeTab === 'stake' ? 'stake' : 'unstake',
+          amount: parseFloat(amount) || 0,
+          token: 'MVGA',
+        }}
+      />
     </div>
   );
 }

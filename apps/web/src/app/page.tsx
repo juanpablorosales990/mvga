@@ -2,7 +2,10 @@ import Link from 'next/link';
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-900 to-black text-white">
+    <main
+      id="main-content"
+      className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-900 to-black text-white"
+    >
       {/* Navigation */}
       <nav className="fixed top-0 w-full z-50 glass">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
@@ -22,9 +25,13 @@ export default function Home() {
             <Link href="#tokenomics" className="text-gray-300 hover:text-white transition">
               Tokenomics
             </Link>
+            <Link href="/grants" className="text-gray-300 hover:text-white transition">
+              Grants
+            </Link>
           </div>
           <Link
-            href="/wallet"
+            href="https://app.mvga.io"
+            target="_blank"
             className="bg-primary-500 hover:bg-primary-600 text-black font-semibold px-6 py-2 rounded-full transition"
           >
             Launch App
@@ -53,7 +60,8 @@ export default function Home() {
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
-              href="/wallet"
+              href="https://app.mvga.io"
+              target="_blank"
               className="bg-primary-500 hover:bg-primary-600 text-black font-semibold px-8 py-4 rounded-full text-lg transition"
             >
               Open Wallet
@@ -222,26 +230,35 @@ export default function Home() {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
-              { name: 'Treasury', address: 'Coming soon...', balance: '$0' },
-              { name: 'Humanitarian Fund', address: 'Coming soon...', balance: '$0' },
-              { name: 'Staking Vault', address: 'Coming soon...', balance: '$0' },
-              { name: 'Team Vesting', address: 'Coming soon...', balance: '$0' },
-              { name: 'LP Lock', address: 'Coming soon...', balance: '$0' },
-              { name: 'Marketing', address: 'Coming soon...', balance: '$0' },
+              { name: 'Treasury', address: 'H9j1W4u5LEiw8AZdui6c8AmN6t4tKkPQCAULPW8eMiTE' },
+              {
+                name: 'Humanitarian Fund',
+                address: '82XeVLtfjniaE6qvrDiY7UaCHvkimyhVximvRDdQsdqS',
+              },
+              { name: 'Staking Vault', address: 'GNhLCjqThNJAJAdDYvRTr2EfWyGXAFUymaPuKaL1duEh' },
+              { name: 'Team Vesting', address: '8m8L2CGoneYwP3xEYyss5sjbj7GKy7cK3YxDcG2yNbH4' },
+              { name: 'Marketing', address: 'DA5VQFLsx87hNQqL2EsM36oVhGnzM2CnqPSe6E9RFpeo' },
+              { name: 'Advisors', address: 'Huq3ea9KKf6HFb5Qiacdx2pJDSM4c881WdyMCBHXq4hF' },
             ].map((wallet) => (
               <div key={wallet.name} className="glass rounded-xl p-6">
-                <div className="flex items-center justify-between mb-4">
+                <div className="mb-4">
                   <span className="text-gray-400">{wallet.name}</span>
-                  <span className="text-green-400 font-semibold">{wallet.balance}</span>
                 </div>
-                <code className="text-xs text-gray-500 break-all">{wallet.address}</code>
+                <a
+                  href={`https://solscan.io/account/${wallet.address}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-gray-500 hover:text-primary-500 break-all transition"
+                >
+                  {wallet.address}
+                </a>
               </div>
             ))}
           </div>
 
           <div className="text-center mt-12">
             <Link
-              href="https://github.com/your-repo/mvga"
+              href="https://github.com/juanpablorosales990/mvga"
               target="_blank"
               className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition"
             >
@@ -331,9 +348,7 @@ export default function Home() {
       {/* CTA Section */}
       <section className="py-20 px-6 bg-gradient-to-r from-primary-500/20 via-secondary-500/20 to-accent-500/20">
         <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl md:text-5xl font-display font-bold mb-6">
-            Join the Movement
-          </h2>
+          <h2 className="text-3xl md:text-5xl font-display font-bold mb-6">Join the Movement</h2>
           <p className="text-xl text-gray-300 mb-10">
             Be part of Venezuela&apos;s financial revolution. Community-owned. Open source.
             Transparent.
@@ -366,8 +381,15 @@ export default function Home() {
               <span className="text-gray-500">|</span>
               <span className="text-gray-400">Patria y Vida</span>
             </div>
-            <div className="text-gray-500 text-sm">
-              100% Open Source. Built with love for Venezuela.
+            <div className="flex items-center gap-4 text-gray-500 text-sm">
+              <span>100% Open Source. Built with love for Venezuela.</span>
+              <span className="text-gray-700">|</span>
+              <Link href="/privacy" className="hover:text-gray-300 transition">
+                Privacy
+              </Link>
+              <Link href="/terms" className="hover:text-gray-300 transition">
+                Terms
+              </Link>
             </div>
           </div>
         </div>
