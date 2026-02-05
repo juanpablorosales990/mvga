@@ -93,10 +93,13 @@ export class WalletService {
         change24h: 0,
       }));
 
-      // Stablecoins fallback
+      // Stablecoins + MVGA fallback
       for (const p of prices) {
         if ((p.symbol === 'USDC' || p.symbol === 'USDT') && p.price === 0) {
           p.price = 1;
+        }
+        if (p.symbol === 'MVGA' && p.price === 0) {
+          p.price = 0.001;
         }
       }
 
@@ -108,7 +111,7 @@ export class WalletService {
         { symbol: 'SOL', price: 150, change24h: 0 },
         { symbol: 'USDC', price: 1, change24h: 0 },
         { symbol: 'USDT', price: 1, change24h: 0 },
-        { symbol: 'MVGA', price: 0, change24h: 0 },
+        { symbol: 'MVGA', price: 0.001, change24h: 0 },
       ];
     }
   }

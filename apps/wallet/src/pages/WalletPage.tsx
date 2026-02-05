@@ -72,6 +72,11 @@ export default function WalletPage() {
           prices = { 'So11111111111111111111111111111111111111112': 150 };
         }
 
+        // MVGA has no Jupiter liquidity yet — use manual price
+        if (!prices['DRX65kM2n5CLTpdjJCemZvkUwE98ou4RpHrd8Z3GH5Qh'] || prices['DRX65kM2n5CLTpdjJCemZvkUwE98ou4RpHrd8Z3GH5Qh'] === 0) {
+          prices['DRX65kM2n5CLTpdjJCemZvkUwE98ou4RpHrd8Z3GH5Qh'] = 0.001;
+        }
+
         const solPrice = prices['So11111111111111111111111111111111111111112'] || 0;
 
         const newBalances: TokenBalance[] = [
