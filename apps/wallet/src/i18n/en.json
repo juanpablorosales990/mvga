@@ -62,6 +62,8 @@
     "settings": "Settings",
     "customSlippage": "Custom %",
     "highSlippageWarning": "High slippage may result in fewer tokens received",
+    "lowLiquidityWarning": "MVGA has limited liquidity. Large trades may have high price impact. Consider smaller amounts or use P2P for better rates.",
+    "highPriceImpactWarning": "High price impact! You may receive significantly fewer tokens than expected.",
     "route": "Route",
     "swapping": "Swapping...",
     "selectDifferent": "Select different tokens",

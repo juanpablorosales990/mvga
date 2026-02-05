@@ -313,13 +313,59 @@ export default function SwapPage() {
           </div>
         </div>
 
+        {/* MVGA Low Liquidity Warning */}
+        {(fromToken.symbol === 'MVGA' || toToken.symbol === 'MVGA') && (
+          <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl px-4 py-3 text-yellow-400 text-sm flex items-start gap-2">
+            <svg
+              className="w-5 h-5 flex-shrink-0 mt-0.5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+              />
+            </svg>
+            <span>{t('swap.lowLiquidityWarning')}</span>
+          </div>
+        )}
+
+        {/* High Price Impact Warning */}
+        {quote && parseFloat(quote.priceImpactPct) > 5 && (
+          <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 text-red-400 text-sm flex items-start gap-2">
+            <svg
+              className="w-5 h-5 flex-shrink-0 mt-0.5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <span>{t('swap.highPriceImpactWarning')}</span>
+          </div>
+        )}
+
         {/* Quote Details */}
         {quote && (
           <div className="bg-white/5 rounded-xl p-3 space-y-2 text-sm">
             <div className="flex justify-between text-gray-400">
               <span>{t('swap.priceImpact')}</span>
               <span
-                className={parseFloat(quote.priceImpactPct) > 1 ? 'text-red-400' : 'text-green-400'}
+                className={
+                  parseFloat(quote.priceImpactPct) > 5
+                    ? 'text-red-400 font-semibold'
+                    : parseFloat(quote.priceImpactPct) > 1
+                      ? 'text-yellow-400'
+                      : 'text-green-400'
+                }
               >
                 {parseFloat(quote.priceImpactPct).toFixed(2)}%
               </span>
