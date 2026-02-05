@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { SolanaService } from './solana.service';
+import { SwapService } from '../swap/swap.service';
 
 export interface TokenBalance {
   mint: string;
@@ -17,9 +18,22 @@ export interface TokenPrice {
   change24h: number;
 }
 
+const PRICE_MINTS = {
+  SOL: 'So11111111111111111111111111111111111111112',
+  USDC: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+  USDT: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB',
+  MVGA: 'DRX65kM2n5CLTpdjJCemZvkUwE98ou4RpHrd8Z3GH5Qh',
+};
+
 @Injectable()
 export class WalletService {
-  constructor(private readonly solanaService: SolanaService) {}
+  private priceCache: { prices: TokenPrice[]; timestamp: number } | null = null;
+  private readonly CACHE_TTL = 60_000; // 60 seconds
+
+  constructor(
+    private readonly solanaService: SolanaService,
+    private readonly swapService: SwapService,
+  ) {}
 
   async getBalances(address: string): Promise<TokenBalance[]> {
     const solBalance = await this.solanaService.getSolBalance(address);
@@ -64,14 +78,39 @@ export class WalletService {
   }
 
   async getPrices(): Promise<TokenPrice[]> {
-    // In production, fetch from Jupiter, CoinGecko, or similar
-    // For now, return placeholder prices
-    return [
-      { symbol: 'SOL', price: 150, change24h: 2.5 },
-      { symbol: 'USDC', price: 1, change24h: 0 },
-      { symbol: 'USDT', price: 1, change24h: 0 },
-      { symbol: 'MVGA', price: 0.0001, change24h: 10 }, // Placeholder
-    ];
+    // Return cached if still fresh
+    if (this.priceCache && Date.now() - this.priceCache.timestamp < this.CACHE_TTL) {
+      return this.priceCache.prices;
+    }
+
+    try {
+      const mints = Object.values(PRICE_MINTS);
+      const mintPrices = await this.swapService.getMultipleTokenPrices(mints);
+
+      const prices: TokenPrice[] = Object.entries(PRICE_MINTS).map(([symbol, mint]) => ({
+        symbol,
+        price: mintPrices[mint] || 0,
+        change24h: 0,
+      }));
+
+      // Stablecoins fallback
+      for (const p of prices) {
+        if ((p.symbol === 'USDC' || p.symbol === 'USDT') && p.price === 0) {
+          p.price = 1;
+        }
+      }
+
+      this.priceCache = { prices, timestamp: Date.now() };
+      return prices;
+    } catch {
+      // Fallback to hardcoded if Jupiter is down
+      return [
+        { symbol: 'SOL', price: 150, change24h: 0 },
+        { symbol: 'USDC', price: 1, change24h: 0 },
+        { symbol: 'USDT', price: 1, change24h: 0 },
+        { symbol: 'MVGA', price: 0, change24h: 0 },
+      ];
+    }
   }
 
   private getTokenInfo(mint: string) {
@@ -93,7 +132,12 @@ export class WalletService {
         logoUrl:
           'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB/logo.svg',
       },
-      // Add MVGA token address after creation
+      DRX65kM2n5CLTpdjJCemZvkUwE98ou4RpHrd8Z3GH5Qh: {
+        symbol: 'MVGA',
+        name: 'Make Venezuela Great Again',
+        decimals: 9,
+        logoUrl: 'https://gateway.irys.xyz/J47ckDJCqKGrt5QHo4ZjDSa4LcaitMFXkcEJ3qyM2qnD',
+      },
     };
     return tokens[mint];
   }

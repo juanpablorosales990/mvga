@@ -1,78 +1,99 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { PrismaService } from '../../common/prisma.service';
+import { TransactionLoggerService } from '../../common/transaction-logger.service';
+import { SolanaService } from '../wallet/solana.service';
 import { CreateOfferDto, AcceptOfferDto, UpdateTradeStatusDto } from './dto/create-offer.dto';
+import { P2POfferType, PaymentMethod, P2POfferStatus, P2PTradeStatus } from '@prisma/client';
+import {
+  Keypair,
+  PublicKey,
+  Transaction,
+  sendAndConfirmTransaction,
+} from '@solana/web3.js';
+import {
+  getAssociatedTokenAddress,
+  createTransferInstruction,
+} from '@solana/spl-token';
 
-export interface P2POffer {
-  id: string;
-  sellerAddress: string;
-  type: 'BUY' | 'SELL';
-  cryptoAmount: number;
-  cryptoCurrency: 'USDC' | 'MVGA';
-  paymentMethod: 'ZELLE' | 'VENMO' | 'PAYPAL' | 'BANK_TRANSFER';
-  rate: number;
-  minAmount: number;
-  maxAmount: number;
-  paymentInstructions?: string;
-  status: 'ACTIVE' | 'PAUSED' | 'COMPLETED' | 'CANCELLED';
-  createdAt: Date;
-  availableAmount: number;
+// Scale factor for storing decimal amounts as BigInt (6 decimal places)
+const AMOUNT_SCALE = 1_000_000;
+
+function toBigInt(n: number): bigint {
+  return BigInt(Math.round(n * AMOUNT_SCALE));
 }
 
-export interface P2PTrade {
-  id: string;
-  offerId: string;
-  buyerAddress: string;
-  sellerAddress: string;
-  amount: number;
-  cryptoAmount: number;
-  cryptoCurrency: string;
-  paymentMethod: string;
-  status: 'PENDING' | 'ESCROW_LOCKED' | 'PAID' | 'COMPLETED' | 'DISPUTED' | 'CANCELLED';
-  escrowTx?: string;
-  createdAt: Date;
-  paidAt?: Date;
-  completedAt?: Date;
+function toNumber(n: bigint): number {
+  return Number(n) / AMOUNT_SCALE;
 }
 
-export interface UserReputation {
-  walletAddress: string;
-  totalTrades: number;
-  completedTrades: number;
-  disputesLost: number;
-  rating: number;
-  avgResponseTime: number;
-}
+// Token decimals for escrow
+const TOKEN_DECIMALS: Record<string, number> = {
+  USDC: 6,
+  MVGA: 9,
+};
+
+const TOKEN_MINTS: Record<string, string> = {
+  USDC: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+  MVGA: 'DRX65kM2n5CLTpdjJCemZvkUwE98ou4RpHrd8Z3GH5Qh',
+};
 
 @Injectable()
 export class P2PService {
-  // In-memory storage for now - replace with database
-  private offers: Map<string, P2POffer> = new Map();
-  private trades: Map<string, P2PTrade> = new Map();
-  private reputations: Map<string, UserReputation> = new Map();
+  private escrowKeypair: Keypair | null = null;
 
-  // Offer methods
-  async createOffer(dto: CreateOfferDto): Promise<P2POffer> {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly txLogger: TransactionLoggerService,
+    private readonly solana: SolanaService,
+    private readonly config: ConfigService,
+  ) {
+    // Load escrow wallet keypair from env
+    const keypairStr = this.config.get<string>('ESCROW_WALLET_KEYPAIR');
+    if (keypairStr) {
+      try {
+        const decoded = Buffer.from(keypairStr, 'base64');
+        this.escrowKeypair = Keypair.fromSecretKey(new Uint8Array(JSON.parse(decoded.toString())));
+      } catch (e) {
+        console.warn('Failed to load ESCROW_WALLET_KEYPAIR:', e);
+      }
+    }
+  }
+
+  private async findOrCreateUser(walletAddress: string) {
+    return this.prisma.user.upsert({
+      where: { walletAddress },
+      update: {},
+      create: { walletAddress },
+    });
+  }
+
+  // ============ OFFERS ============
+
+  async createOffer(dto: CreateOfferDto) {
     if (dto.minAmount > dto.maxAmount) {
       throw new BadRequestException('Min amount cannot be greater than max amount');
     }
 
-    const offer: P2POffer = {
-      id: this.generateId(),
-      sellerAddress: dto.sellerAddress,
-      type: dto.type,
-      cryptoAmount: dto.cryptoAmount,
-      cryptoCurrency: dto.cryptoCurrency,
-      paymentMethod: dto.paymentMethod,
-      rate: dto.rate,
-      minAmount: dto.minAmount,
-      maxAmount: dto.maxAmount,
-      paymentInstructions: dto.paymentInstructions,
-      status: 'ACTIVE',
-      createdAt: new Date(),
-      availableAmount: dto.cryptoAmount,
-    };
+    const user = await this.findOrCreateUser(dto.sellerAddress);
 
-    this.offers.set(offer.id, offer);
-    return offer;
+    const offer = await this.prisma.p2POffer.create({
+      data: {
+        sellerId: user.id,
+        type: dto.type as P2POfferType,
+        cryptoAmount: toBigInt(dto.cryptoAmount),
+        availableAmount: toBigInt(dto.cryptoAmount),
+        cryptoCurrency: dto.cryptoCurrency,
+        paymentMethod: dto.paymentMethod as PaymentMethod,
+        paymentInstructions: dto.paymentInstructions,
+        rate: dto.rate,
+        minAmount: toBigInt(dto.minAmount),
+        maxAmount: toBigInt(dto.maxAmount),
+      },
+      include: { seller: true },
+    });
+
+    return this.formatOffer(offer);
   }
 
   async getOffers(filters?: {
@@ -80,145 +101,200 @@ export class P2PService {
     cryptoCurrency?: string;
     paymentMethod?: string;
     status?: string;
-  }): Promise<P2POffer[]> {
-    let offers = Array.from(this.offers.values());
+  }) {
+    const where: Record<string, unknown> = {};
 
-    if (filters) {
-      if (filters.type) {
-        offers = offers.filter((o) => o.type === filters.type);
-      }
-      if (filters.cryptoCurrency) {
-        offers = offers.filter((o) => o.cryptoCurrency === filters.cryptoCurrency);
-      }
-      if (filters.paymentMethod) {
-        offers = offers.filter((o) => o.paymentMethod === filters.paymentMethod);
-      }
-      if (filters.status) {
-        offers = offers.filter((o) => o.status === filters.status);
-      } else {
-        // Default to active offers
-        offers = offers.filter((o) => o.status === 'ACTIVE');
-      }
-    }
+    if (filters?.type) where.type = filters.type;
+    if (filters?.cryptoCurrency) where.cryptoCurrency = filters.cryptoCurrency;
+    if (filters?.paymentMethod) where.paymentMethod = filters.paymentMethod;
+    where.status = (filters?.status as P2POfferStatus) || 'ACTIVE';
 
-    // Sort by rate (best rates first)
-    return offers.sort((a, b) => b.rate - a.rate);
+    const offers = await this.prisma.p2POffer.findMany({
+      where,
+      include: { seller: true },
+      orderBy: { rate: 'desc' },
+    });
+
+    return offers.map((o) => this.formatOffer(o));
   }
 
-  async getOffer(id: string): Promise<P2POffer> {
-    const offer = this.offers.get(id);
-    if (!offer) {
-      throw new NotFoundException('Offer not found');
-    }
-    return offer;
+  async getOffer(id: string) {
+    const offer = await this.prisma.p2POffer.findUnique({
+      where: { id },
+      include: { seller: true },
+    });
+    if (!offer) throw new NotFoundException('Offer not found');
+    return this.formatOffer(offer);
   }
 
-  async cancelOffer(id: string, walletAddress: string): Promise<void> {
-    const offer = await this.getOffer(id);
-    if (offer.sellerAddress !== walletAddress) {
+  async cancelOffer(id: string, walletAddress: string) {
+    const offer = await this.prisma.p2POffer.findUnique({
+      where: { id },
+      include: { seller: true },
+    });
+    if (!offer) throw new NotFoundException('Offer not found');
+    if (offer.seller.walletAddress !== walletAddress) {
       throw new BadRequestException('Only the seller can cancel this offer');
     }
-    offer.status = 'CANCELLED';
-    this.offers.set(id, offer);
+
+    await this.prisma.p2POffer.update({
+      where: { id },
+      data: { status: 'CANCELLED' },
+    });
   }
 
-  // Trade methods
-  async acceptOffer(offerId: string, dto: AcceptOfferDto): Promise<P2PTrade> {
-    const offer = await this.getOffer(offerId);
+  // ============ TRADES ============
 
+  async acceptOffer(offerId: string, dto: AcceptOfferDto) {
+    const offer = await this.prisma.p2POffer.findUnique({
+      where: { id: offerId },
+      include: { seller: true },
+    });
+    if (!offer) throw new NotFoundException('Offer not found');
     if (offer.status !== 'ACTIVE') {
       throw new BadRequestException('Offer is not active');
     }
 
-    if (dto.amount < offer.minAmount || dto.amount > offer.maxAmount) {
+    const minAmount = toNumber(offer.minAmount);
+    const maxAmount = toNumber(offer.maxAmount);
+
+    if (dto.amount < minAmount || dto.amount > maxAmount) {
       throw new BadRequestException(
-        `Amount must be between ${offer.minAmount} and ${offer.maxAmount}`
+        `Amount must be between ${minAmount} and ${maxAmount}`,
       );
     }
 
-    // Calculate crypto amount based on rate
     const cryptoAmount = dto.amount * offer.rate;
-    if (cryptoAmount > offer.availableAmount) {
+    const availableAmount = toNumber(offer.availableAmount);
+    if (cryptoAmount > availableAmount) {
       throw new BadRequestException('Not enough available in offer');
     }
 
-    const trade: P2PTrade = {
-      id: this.generateId(),
-      offerId,
-      buyerAddress: dto.buyerAddress,
-      sellerAddress: offer.sellerAddress,
-      amount: dto.amount,
-      cryptoAmount,
-      cryptoCurrency: offer.cryptoCurrency,
-      paymentMethod: offer.paymentMethod,
-      status: 'PENDING',
-      createdAt: new Date(),
-    };
+    const buyer = await this.findOrCreateUser(dto.buyerAddress);
 
-    // Update offer available amount
-    offer.availableAmount -= cryptoAmount;
-    if (offer.availableAmount <= 0) {
-      offer.status = 'COMPLETED';
-    }
-    this.offers.set(offerId, offer);
+    // Atomic transaction: create trade + update offer availability
+    const trade = await this.prisma.$transaction(async (tx) => {
+      const newAvailable = availableAmount - cryptoAmount;
+      const newStatus: P2POfferStatus = newAvailable <= 0 ? 'COMPLETED' : 'ACTIVE';
 
-    this.trades.set(trade.id, trade);
-    return trade;
+      await tx.p2POffer.update({
+        where: { id: offerId },
+        data: {
+          availableAmount: toBigInt(Math.max(0, newAvailable)),
+          status: newStatus,
+        },
+      });
+
+      return tx.p2PTrade.create({
+        data: {
+          offerId,
+          buyerId: buyer.id,
+          sellerId: offer.sellerId,
+          amount: toBigInt(dto.amount),
+          cryptoAmount: toBigInt(cryptoAmount),
+          status: 'PENDING',
+        },
+        include: { buyer: true, seller: true, offer: true },
+      });
+    });
+
+    return this.formatTrade(trade);
   }
 
-  async getTrade(id: string): Promise<P2PTrade> {
-    const trade = this.trades.get(id);
-    if (!trade) {
-      throw new NotFoundException('Trade not found');
-    }
-    return trade;
+  async getTrade(id: string) {
+    const trade = await this.prisma.p2PTrade.findUnique({
+      where: { id },
+      include: { buyer: true, seller: true, offer: true },
+    });
+    if (!trade) throw new NotFoundException('Trade not found');
+    return this.formatTrade(trade);
   }
 
-  async getUserTrades(walletAddress: string): Promise<P2PTrade[]> {
-    return Array.from(this.trades.values()).filter(
-      (t) => t.buyerAddress === walletAddress || t.sellerAddress === walletAddress
-    );
+  async getUserTrades(walletAddress: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { walletAddress },
+    });
+    if (!user) return [];
+
+    const trades = await this.prisma.p2PTrade.findMany({
+      where: {
+        OR: [{ buyerId: user.id }, { sellerId: user.id }],
+      },
+      include: { buyer: true, seller: true, offer: true },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return trades.map((t) => this.formatTrade(t));
   }
 
   async updateTradeStatus(
     tradeId: string,
     walletAddress: string,
-    dto: UpdateTradeStatusDto
-  ): Promise<P2PTrade> {
-    const trade = await this.getTrade(tradeId);
+    dto: UpdateTradeStatusDto,
+  ) {
+    const trade = await this.prisma.p2PTrade.findUnique({
+      where: { id: tradeId },
+      include: { buyer: true, seller: true, offer: true },
+    });
+    if (!trade) throw new NotFoundException('Trade not found');
 
-    // Validate permissions based on status update
-    if (dto.status === 'PAID' && trade.buyerAddress !== walletAddress) {
+    if (dto.status === 'PAID' && trade.buyer.walletAddress !== walletAddress) {
       throw new BadRequestException('Only buyer can mark as paid');
     }
-
-    if (dto.status === 'CONFIRMED' && trade.sellerAddress !== walletAddress) {
+    if (dto.status === 'CONFIRMED' && trade.seller.walletAddress !== walletAddress) {
       throw new BadRequestException('Only seller can confirm receipt');
     }
 
-    // Update status
-    trade.status = dto.status === 'CONFIRMED' ? 'COMPLETED' : dto.status;
+    const newStatus: P2PTradeStatus =
+      dto.status === 'CONFIRMED' ? 'COMPLETED' : (dto.status as P2PTradeStatus);
 
-    if (dto.status === 'PAID') {
-      trade.paidAt = new Date();
+    const updateData: Record<string, unknown> = { status: newStatus };
+    if (dto.status === 'PAID') updateData.paidAt = new Date();
+    if (dto.status === 'CONFIRMED') updateData.completedAt = new Date();
+    if (dto.status === 'DISPUTED') updateData.disputeReason = dto.notes;
+
+    const updated = await this.prisma.p2PTrade.update({
+      where: { id: tradeId },
+      data: updateData,
+      include: { buyer: true, seller: true, offer: true },
+    });
+
+    // On trade completion, release escrow if it was locked
+    if (dto.status === 'CONFIRMED' && trade.escrowTx) {
+      try {
+        await this.releaseEscrow(tradeId);
+      } catch (e) {
+        console.error('Failed to release escrow:', e);
+        // Escrow release failed, but trade status already updated
+      }
+    } else if (dto.status === 'CONFIRMED') {
+      // No escrow, just update reputations
+      await this.updateReputation(trade.buyer.walletAddress, true);
+      await this.updateReputation(trade.seller.walletAddress, true);
     }
 
-    if (dto.status === 'CONFIRMED') {
-      trade.completedAt = new Date();
-      // Update reputations
-      await this.updateReputation(trade.buyerAddress, true);
-      await this.updateReputation(trade.sellerAddress, true);
+    // On cancellation after escrow lock, refund
+    if (dto.status === 'CANCELLED' && trade.escrowTx && trade.status === 'ESCROW_LOCKED') {
+      try {
+        await this.refundEscrow(tradeId);
+      } catch (e) {
+        console.error('Failed to refund escrow:', e);
+      }
     }
 
-    this.trades.set(tradeId, trade);
-    return trade;
+    return this.formatTrade(updated);
   }
 
-  // Reputation methods
-  async getReputation(walletAddress: string): Promise<UserReputation> {
-    let reputation = this.reputations.get(walletAddress);
-    if (!reputation) {
-      reputation = {
+  // ============ REPUTATION ============
+
+  async getReputation(walletAddress: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { walletAddress },
+      include: { reputation: true },
+    });
+
+    if (!user?.reputation) {
+      return {
         walletAddress,
         totalTrades: 0,
         completedTrades: 0,
@@ -226,47 +302,265 @@ export class P2PService {
         rating: 5.0,
         avgResponseTime: 0,
       };
-      this.reputations.set(walletAddress, reputation);
     }
-    return reputation;
+
+    return {
+      walletAddress,
+      totalTrades: user.reputation.totalTrades,
+      completedTrades: user.reputation.completedTrades,
+      disputesLost: user.reputation.disputesLost,
+      rating: user.reputation.rating,
+      avgResponseTime: user.reputation.avgResponseTime,
+    };
   }
 
-  async updateReputation(walletAddress: string, successful: boolean): Promise<void> {
-    const reputation = await this.getReputation(walletAddress);
-    reputation.totalTrades++;
+  private async updateReputation(walletAddress: string, successful: boolean) {
+    const user = await this.findOrCreateUser(walletAddress);
 
-    if (successful) {
-      reputation.completedTrades++;
-    } else {
-      reputation.disputesLost++;
-    }
+    const reputation = await this.prisma.userReputation.upsert({
+      where: { userId: user.id },
+      create: {
+        userId: user.id,
+        totalTrades: 1,
+        completedTrades: successful ? 1 : 0,
+        disputesLost: successful ? 0 : 1,
+        rating: 5.0,
+      },
+      update: {
+        totalTrades: { increment: 1 },
+        ...(successful
+          ? { completedTrades: { increment: 1 } }
+          : { disputesLost: { increment: 1 } }),
+      },
+    });
 
-    // Calculate rating
-    reputation.rating = Math.max(
+    // Recalculate rating
+    const newRating = Math.max(
       1,
-      5 - reputation.disputesLost * 0.5 + (reputation.completedTrades > 10 ? 0.5 : 0)
+      5 - reputation.disputesLost * 0.5 + (reputation.completedTrades > 10 ? 0.5 : 0),
     );
 
-    this.reputations.set(walletAddress, reputation);
+    await this.prisma.userReputation.update({
+      where: { userId: user.id },
+      data: { rating: newRating },
+    });
   }
 
-  // Escrow methods (placeholder - will integrate with Solana)
-  async lockEscrow(tradeId: string): Promise<string> {
-    const trade = await this.getTrade(tradeId);
-    // TODO: Create Solana transaction to lock funds in escrow
-    trade.status = 'ESCROW_LOCKED';
-    trade.escrowTx = `escrow_${tradeId}_${Date.now()}`;
-    this.trades.set(tradeId, trade);
-    return trade.escrowTx;
+  // ============ ESCROW ============
+
+  /**
+   * Returns the escrow (treasury) wallet address for the seller to build a transfer tx.
+   * Frontend builds the SPL transfer, user signs it, then calls confirmEscrowLock.
+   */
+  async lockEscrow(tradeId: string) {
+    const trade = await this.prisma.p2PTrade.findUnique({
+      where: { id: tradeId },
+      include: { offer: true, seller: true },
+    });
+    if (!trade) throw new NotFoundException('Trade not found');
+    if (trade.status !== 'PENDING') {
+      throw new BadRequestException('Trade is not in PENDING status');
+    }
+
+    const escrowWallet = this.config.get(
+      'TREASURY_WALLET',
+      'H9j1W4u5LEiw8AZdui6c8AmN6t4tKkPQCAULPW8eMiTE',
+    );
+
+    const currency = trade.offer.cryptoCurrency;
+    const mintAddress = TOKEN_MINTS[currency];
+    const decimals = TOKEN_DECIMALS[currency] || 9;
+    const amount = toNumber(trade.cryptoAmount);
+
+    return {
+      escrowWallet,
+      mintAddress,
+      amount,
+      decimals,
+      tradeId,
+    };
   }
 
+  /**
+   * Seller confirms escrow lock by providing the tx signature.
+   * Server verifies on-chain, updates trade status.
+   */
+  async confirmEscrowLock(tradeId: string, signature: string) {
+    const trade = await this.prisma.p2PTrade.findUnique({
+      where: { id: tradeId },
+      include: { offer: true, seller: true },
+    });
+    if (!trade) throw new NotFoundException('Trade not found');
+
+    // Verify on-chain
+    const connection = this.solana.getConnection();
+    const tx = await connection.getParsedTransaction(signature, {
+      commitment: 'confirmed',
+      maxSupportedTransactionVersion: 0,
+    });
+
+    if (!tx || tx.meta?.err) {
+      throw new BadRequestException('Transaction not found or failed');
+    }
+
+    await this.prisma.p2PTrade.update({
+      where: { id: tradeId },
+      data: { status: 'ESCROW_LOCKED', escrowTx: signature },
+    });
+
+    // Log the escrow lock
+    await this.txLogger.log({
+      walletAddress: trade.seller.walletAddress,
+      type: 'P2P_ESCROW_LOCK',
+      signature,
+      amount: toNumber(trade.cryptoAmount),
+      token: trade.offer.cryptoCurrency,
+    });
+    await this.txLogger.confirm(signature);
+
+    return { success: true, tradeId, signature };
+  }
+
+  /**
+   * Release escrow: server signs transfer from treasury → buyer.
+   * Called when seller confirms payment received.
+   */
   async releaseEscrow(tradeId: string): Promise<string> {
-    const trade = await this.getTrade(tradeId);
-    // TODO: Create Solana transaction to release escrow to buyer
-    return `release_${tradeId}_${Date.now()}`;
+    const trade = await this.prisma.p2PTrade.findUnique({
+      where: { id: tradeId },
+      include: { offer: true, buyer: true, seller: true },
+    });
+    if (!trade) throw new NotFoundException('Trade not found');
+
+    if (!this.escrowKeypair) {
+      throw new BadRequestException('Escrow wallet not configured. Contact support.');
+    }
+
+    const currency = trade.offer.cryptoCurrency;
+    const mintPubkey = new PublicKey(TOKEN_MINTS[currency]);
+    const decimals = TOKEN_DECIMALS[currency] || 9;
+    const rawAmount = BigInt(Math.round(toNumber(trade.cryptoAmount) * 10 ** decimals));
+
+    const buyerPubkey = new PublicKey(trade.buyer.walletAddress);
+    const connection = this.solana.getConnection();
+
+    const escrowAta = await getAssociatedTokenAddress(mintPubkey, this.escrowKeypair.publicKey);
+    const buyerAta = await getAssociatedTokenAddress(mintPubkey, buyerPubkey);
+
+    const tx = new Transaction().add(
+      createTransferInstruction(escrowAta, buyerAta, this.escrowKeypair.publicKey, rawAmount),
+    );
+
+    const sig = await sendAndConfirmTransaction(connection, tx, [this.escrowKeypair]);
+
+    await this.prisma.p2PTrade.update({
+      where: { id: tradeId },
+      data: { releaseTx: sig, status: 'COMPLETED', completedAt: new Date() },
+    });
+
+    // Log the release
+    await this.txLogger.log({
+      walletAddress: trade.buyer.walletAddress,
+      type: 'P2P_ESCROW_RELEASE',
+      signature: sig,
+      amount: toNumber(trade.cryptoAmount),
+      token: currency,
+    });
+    await this.txLogger.confirm(sig);
+
+    // Update reputations
+    await this.updateReputation(trade.buyer.walletAddress, true);
+    await this.updateReputation(trade.seller.walletAddress, true);
+
+    return sig;
   }
 
-  private generateId(): string {
-    return `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  /**
+   * Refund escrow: server signs transfer from treasury → seller.
+   * Called when trade is cancelled after escrow lock.
+   */
+  async refundEscrow(tradeId: string): Promise<string> {
+    const trade = await this.prisma.p2PTrade.findUnique({
+      where: { id: tradeId },
+      include: { offer: true, seller: true },
+    });
+    if (!trade) throw new NotFoundException('Trade not found');
+
+    if (!this.escrowKeypair) {
+      throw new BadRequestException('Escrow wallet not configured. Contact support.');
+    }
+
+    const currency = trade.offer.cryptoCurrency;
+    const mintPubkey = new PublicKey(TOKEN_MINTS[currency]);
+    const decimals = TOKEN_DECIMALS[currency] || 9;
+    const rawAmount = BigInt(Math.round(toNumber(trade.cryptoAmount) * 10 ** decimals));
+
+    const sellerPubkey = new PublicKey(trade.seller.walletAddress);
+    const connection = this.solana.getConnection();
+
+    const escrowAta = await getAssociatedTokenAddress(mintPubkey, this.escrowKeypair.publicKey);
+    const sellerAta = await getAssociatedTokenAddress(mintPubkey, sellerPubkey);
+
+    const tx = new Transaction().add(
+      createTransferInstruction(escrowAta, sellerAta, this.escrowKeypair.publicKey, rawAmount),
+    );
+
+    const sig = await sendAndConfirmTransaction(connection, tx, [this.escrowKeypair]);
+
+    await this.prisma.p2PTrade.update({
+      where: { id: tradeId },
+      data: { releaseTx: sig, status: 'REFUNDED' },
+    });
+
+    // Log the refund
+    await this.txLogger.log({
+      walletAddress: trade.seller.walletAddress,
+      type: 'P2P_ESCROW_REFUND',
+      signature: sig,
+      amount: toNumber(trade.cryptoAmount),
+      token: currency,
+    });
+    await this.txLogger.confirm(sig);
+
+    return sig;
+  }
+
+  // ============ FORMAT HELPERS ============
+  // Convert Prisma BigInt fields → plain numbers for JSON serialization
+
+  private formatOffer(offer: any) {
+    return {
+      id: offer.id,
+      sellerAddress: offer.seller?.walletAddress ?? offer.sellerId,
+      type: offer.type,
+      cryptoAmount: toNumber(offer.cryptoAmount),
+      cryptoCurrency: offer.cryptoCurrency,
+      paymentMethod: offer.paymentMethod,
+      rate: offer.rate,
+      minAmount: toNumber(offer.minAmount),
+      maxAmount: toNumber(offer.maxAmount),
+      paymentInstructions: offer.paymentInstructions,
+      status: offer.status,
+      createdAt: offer.createdAt,
+      availableAmount: toNumber(offer.availableAmount),
+    };
+  }
+
+  private formatTrade(trade: any) {
+    return {
+      id: trade.id,
+      offerId: trade.offerId,
+      buyerAddress: trade.buyer?.walletAddress ?? trade.buyerId,
+      sellerAddress: trade.seller?.walletAddress ?? trade.sellerId,
+      amount: toNumber(trade.amount),
+      cryptoAmount: toNumber(trade.cryptoAmount),
+      cryptoCurrency: trade.offer?.cryptoCurrency ?? '',
+      paymentMethod: trade.offer?.paymentMethod ?? '',
+      status: trade.status,
+      escrowTx: trade.escrowTx,
+      createdAt: trade.createdAt,
+      paidAt: trade.paidAt,
+      completedAt: trade.completedAt,
+    };
   }
 }

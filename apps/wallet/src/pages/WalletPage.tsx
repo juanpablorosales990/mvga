@@ -1,7 +1,23 @@
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { useEffect, useState } from 'react';
-import { LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
+import { TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import TokenCard from '../components/TokenCard';
+
+const KNOWN_TOKENS: Record<string, { symbol: string; name: string; decimals: number; logoUrl: string }> = {
+  EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v: {
+    symbol: 'USDC', name: 'USD Coin', decimals: 6,
+    logoUrl: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v/logo.png',
+  },
+  Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB: {
+    symbol: 'USDT', name: 'Tether USD', decimals: 6,
+    logoUrl: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB/logo.svg',
+  },
+  DRX65kM2n5CLTpdjJCemZvkUwE98ou4RpHrd8Z3GH5Qh: {
+    symbol: 'MVGA', name: 'Make Venezuela Great Again', decimals: 9,
+    logoUrl: 'https://gateway.irys.xyz/J47ckDJCqKGrt5QHo4ZjDSa4LcaitMFXkcEJ3qyM2qnD',
+  },
+};
 
 interface TokenBalance {
   symbol: string;
@@ -32,9 +48,31 @@ export default function WalletPage() {
         const solBalance = await connection.getBalance(publicKey);
         const solAmount = solBalance / LAMPORTS_PER_SOL;
 
-        // For now, use placeholder USD values
-        // In production, fetch from Jupiter or CoinGecko
-        const solPrice = 150; // Placeholder
+        // Fetch SPL token accounts
+        const tokenAccounts = await connection.getParsedTokenAccountsByOwner(publicKey, {
+          programId: TOKEN_PROGRAM_ID,
+        });
+
+        // Fetch live prices from Jupiter
+        const allMints = [
+          'So11111111111111111111111111111111111111112',
+          ...Object.keys(KNOWN_TOKENS),
+        ];
+        let prices: Record<string, number> = {};
+        try {
+          const priceRes = await fetch(`https://price.jup.ag/v6/price?ids=${allMints.join(',')}`);
+          if (priceRes.ok) {
+            const priceData = await priceRes.json();
+            for (const mint of allMints) {
+              prices[mint] = priceData.data?.[mint]?.price || 0;
+            }
+          }
+        } catch {
+          // Fallback prices
+          prices = { 'So11111111111111111111111111111111111111112': 150 };
+        }
+
+        const solPrice = prices['So11111111111111111111111111111111111111112'] || 0;
 
         const newBalances: TokenBalance[] = [
           {
@@ -42,26 +80,38 @@ export default function WalletPage() {
             name: 'Solana',
             balance: solAmount,
             usdValue: solAmount * solPrice,
-            logoUrl:
-              'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png',
-          },
-          // TODO: Fetch actual SPL token balances (USDC, USDT, MVGA)
-          {
-            symbol: 'USDC',
-            name: 'USD Coin',
-            balance: 0,
-            usdValue: 0,
-            logoUrl:
-              'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v/logo.png',
-          },
-          {
-            symbol: 'MVGA',
-            name: 'Make Venezuela Great Again',
-            balance: 0,
-            usdValue: 0,
-            logoUrl: '/mvga-logo.png',
+            logoUrl: 'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png',
           },
         ];
+
+        // Process SPL token accounts
+        for (const { account } of tokenAccounts.value) {
+          const parsed = account.data.parsed?.info;
+          if (!parsed) continue;
+          const mint = parsed.mint as string;
+          const tokenInfo = KNOWN_TOKENS[mint];
+          if (!tokenInfo) continue;
+
+          const amount = Number(parsed.tokenAmount?.uiAmount || 0);
+          const price = prices[mint] || 0;
+
+          newBalances.push({
+            symbol: tokenInfo.symbol,
+            name: tokenInfo.name,
+            balance: amount,
+            usdValue: amount * price,
+            logoUrl: tokenInfo.logoUrl,
+          });
+        }
+
+        // Add MVGA with 0 balance if not found (so it always shows)
+        if (!newBalances.find(b => b.symbol === 'MVGA')) {
+          newBalances.push({
+            symbol: 'MVGA', name: 'Make Venezuela Great Again',
+            balance: 0, usdValue: 0,
+            logoUrl: 'https://gateway.irys.xyz/J47ckDJCqKGrt5QHo4ZjDSa4LcaitMFXkcEJ3qyM2qnD',
+          });
+        }
 
         setBalances(newBalances);
         setTotalValue(newBalances.reduce((sum, b) => sum + b.usdValue, 0));
@@ -73,7 +123,6 @@ export default function WalletPage() {
     }
 
     fetchBalances();
-    // Refresh every 30 seconds
     const interval = setInterval(fetchBalances, 30000);
     return () => clearInterval(interval);
   }, [connected, publicKey, connection]);

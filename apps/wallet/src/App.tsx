@@ -23,6 +23,14 @@ import P2PPage from './pages/P2PPage';
 import BottomNav from './components/BottomNav';
 import Header from './components/Header';
 
+// Auth
+import { useAuth } from './hooks/useAuth';
+
+function AuthProvider({ children }: { children: React.ReactNode }) {
+  useAuth(); // auto-authenticates on wallet connect
+  return <>{children}</>;
+}
+
 function App() {
   // Solana network - use devnet for testing, mainnet-beta for production
   const network = 'mainnet-beta';
@@ -41,6 +49,7 @@ function App() {
     <ConnectionProvider endpoint={endpoint}>
       <WalletProvider wallets={wallets} autoConnect>
         <WalletModalProvider>
+          <AuthProvider>
           <div className="min-h-screen bg-[#0a0a0a] text-white flex flex-col">
             <Header />
 
@@ -58,6 +67,7 @@ function App() {
 
             <BottomNav />
           </div>
+          </AuthProvider>
         </WalletModalProvider>
       </WalletProvider>
     </ConnectionProvider>

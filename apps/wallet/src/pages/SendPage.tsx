@@ -1,6 +1,19 @@
 import { useState } from 'react';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
+import {
+  createTransferInstruction,
+  getAssociatedTokenAddress,
+  createAssociatedTokenAccountInstruction,
+  TOKEN_PROGRAM_ID,
+  ASSOCIATED_TOKEN_PROGRAM_ID,
+} from '@solana/spl-token';
+
+const TOKEN_MINTS: Record<string, { mint: string; decimals: number }> = {
+  USDC: { mint: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', decimals: 6 },
+  USDT: { mint: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB', decimals: 6 },
+  MVGA: { mint: 'DRX65kM2n5CLTpdjJCemZvkUwE98ou4RpHrd8Z3GH5Qh', decimals: 9 },
+};
 
 export default function SendPage() {
   const { connected, publicKey, sendTransaction } = useWallet();
@@ -24,7 +37,6 @@ export default function SendPage() {
       return;
     }
 
-    // Validate recipient address
     let recipientPubkey: PublicKey;
     try {
       recipientPubkey = new PublicKey(recipient);
@@ -45,24 +57,67 @@ export default function SendPage() {
 
     try {
       if (token === 'SOL') {
-        // Send SOL
         const transaction = new Transaction().add(
           SystemProgram.transfer({
             fromPubkey: publicKey,
             toPubkey: recipientPubkey,
-            lamports: amountNum * LAMPORTS_PER_SOL,
+            lamports: Math.floor(amountNum * LAMPORTS_PER_SOL),
           })
+        );
+        const signature = await sendTransaction(transaction, connection);
+        await connection.confirmTransaction(signature, 'confirmed');
+        setTxSignature(signature);
+      } else {
+        // SPL token transfer
+        const tokenConfig = TOKEN_MINTS[token];
+        if (!tokenConfig) {
+          setError('Unsupported token');
+          return;
+        }
+
+        const mintPubkey = new PublicKey(tokenConfig.mint);
+        const senderATA = await getAssociatedTokenAddress(mintPubkey, publicKey);
+        const recipientATA = await getAssociatedTokenAddress(mintPubkey, recipientPubkey);
+
+        const transaction = new Transaction();
+
+        // Check if recipient's ATA exists, create if not
+        try {
+          await connection.getAccountInfo(recipientATA);
+        } catch {
+          // ATA doesn't exist, we need to create it
+        }
+
+        const recipientATAInfo = await connection.getAccountInfo(recipientATA);
+        if (!recipientATAInfo) {
+          transaction.add(
+            createAssociatedTokenAccountInstruction(
+              publicKey,        // payer
+              recipientATA,     // ATA address
+              recipientPubkey,  // owner
+              mintPubkey,       // mint
+            )
+          );
+        }
+
+        const amountInSmallestUnit = BigInt(Math.floor(amountNum * Math.pow(10, tokenConfig.decimals)));
+
+        transaction.add(
+          createTransferInstruction(
+            senderATA,
+            recipientATA,
+            publicKey,
+            amountInSmallestUnit,
+          )
         );
 
         const signature = await sendTransaction(transaction, connection);
         await connection.confirmTransaction(signature, 'confirmed');
         setTxSignature(signature);
-        setRecipient('');
-        setAmount('');
-      } else {
-        // TODO: Implement SPL token transfers
-        setError('SPL token transfers coming soon');
       }
+
+      setRecipient('');
+      setAmount('');
     } catch (err) {
       console.error('Send error:', err);
       setError(err instanceof Error ? err.message : 'Transaction failed');

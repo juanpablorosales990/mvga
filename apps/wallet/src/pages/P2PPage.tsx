@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
+import { useAuth } from '../hooks/useAuth';
 
 interface P2POffer {
   id: string;
@@ -22,6 +23,7 @@ const CRYPTO_OPTIONS = ['USDC', 'MVGA'] as const;
 
 export default function P2PPage() {
   const { connected, publicKey } = useWallet();
+  const { authToken } = useAuth();
   const [activeTab, setActiveTab] = useState<'buy' | 'sell' | 'my'>('buy');
   const [offers, setOffers] = useState<P2POffer[]>([]);
   const [loading, setLoading] = useState(false);
@@ -75,7 +77,10 @@ export default function P2PPage() {
     try {
       const response = await fetch(`${API_URL}/p2p/offers`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
         body: JSON.stringify({
           sellerAddress: publicKey.toString(),
           type: newOffer.type,
@@ -112,7 +117,10 @@ export default function P2PPage() {
     try {
       const response = await fetch(`${API_URL}/p2p/offers/${selectedOffer.id}/accept`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
         body: JSON.stringify({
           buyerAddress: publicKey.toString(),
           amount: parseFloat(tradeAmount),

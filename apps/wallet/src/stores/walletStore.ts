@@ -16,6 +16,9 @@ interface WalletState {
   publicKey: string | null;
   isConnected: boolean;
 
+  // Auth
+  authToken: string | null;
+
   // Balances
   balances: TokenBalance[];
   totalUsdValue: number;
@@ -27,6 +30,7 @@ interface WalletState {
   // Actions
   setPublicKey: (key: string | null) => void;
   setConnected: (connected: boolean) => void;
+  setAuthToken: (token: string | null) => void;
   setBalances: (balances: TokenBalance[]) => void;
   setLoadingBalances: (loading: boolean) => void;
   setActiveTab: (tab: WalletState['activeTab']) => void;
@@ -39,6 +43,7 @@ export const useWalletStore = create<WalletState>()(
       // Initial state
       publicKey: null,
       isConnected: false,
+      authToken: null,
       balances: [],
       totalUsdValue: 0,
       isLoadingBalances: false,
@@ -47,6 +52,7 @@ export const useWalletStore = create<WalletState>()(
       // Actions
       setPublicKey: (key) => set({ publicKey: key, isConnected: !!key }),
       setConnected: (connected) => set({ isConnected: connected }),
+      setAuthToken: (token) => set({ authToken: token }),
       setBalances: (balances) =>
         set({
           balances,
@@ -58,6 +64,7 @@ export const useWalletStore = create<WalletState>()(
         set({
           publicKey: null,
           isConnected: false,
+          authToken: null,
           balances: [],
           totalUsdValue: 0,
         }),
@@ -66,6 +73,7 @@ export const useWalletStore = create<WalletState>()(
       name: 'mvga-wallet-storage',
       partialize: (state) => ({
         publicKey: state.publicKey,
+        authToken: state.authToken,
       }),
     }
   )
