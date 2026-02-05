@@ -8,7 +8,7 @@ const DECIMALS = 9;
 const DRY_RUN = process.argv.includes('--dry-run');
 
 const ALLOCATIONS = [
-  { name: 'Humanitarian Fund (15%)', address: '82XeVLtfjniaE6qvrDiY7UaCHvkimyhVximvRDdQsdqS', tokens: 150_000_000 },
+  { name: 'Humanitarian Fund (15%)', address: 'HvtvFhuVMu9XGmhW5zWNvtPK7ttiMBg7Ag7C9oRpyKwP', tokens: 150_000_000 },
   { name: 'Team Vesting (20%)', address: '8m8L2CGoneYwP3xEYyss5sjbj7GKy7cK3YxDcG2yNbH4', tokens: 200_000_000 },
   { name: 'Marketing (10%)', address: 'DA5VQFLsx87hNQqL2EsM36oVhGnzM2CnqPSe6E9RFpeo', tokens: 100_000_000 },
   { name: 'Advisors (5%)', address: 'Huq3ea9KKf6HFb5Qiacdx2pJDSM4c881WdyMCBHXq4hF', tokens: 50_000_000 },

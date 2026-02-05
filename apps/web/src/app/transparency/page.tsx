@@ -21,7 +21,7 @@ const TREASURY_WALLETS: WalletInfo[] = [
   },
   {
     name: 'Humanitarian Fund',
-    address: '82XeVLtfjniaE6qvrDiY7UaCHvkimyhVximvRDdQsdqS',
+    address: 'HvtvFhuVMu9XGmhW5zWNvtPK7ttiMBg7Ag7C9oRpyKwP',
     description: 'Emergency aid and humanitarian support for Venezuelans (15%)',
     balance: 0,
     loading: true,
@@ -76,19 +76,16 @@ export default function TransparencyPage() {
               return { ...wallet, loading: false };
             }
 
-            const response = await fetch(
-              `https://api.mainnet-beta.solana.com`,
-              {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  jsonrpc: '2.0',
-                  id: 1,
-                  method: 'getBalance',
-                  params: [wallet.address],
-                }),
-              }
-            );
+            const response = await fetch(`https://api.mainnet-beta.solana.com`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                jsonrpc: '2.0',
+                id: 1,
+                method: 'getBalance',
+                params: [wallet.address],
+              }),
+            });
 
             const data = await response.json();
             const balance = (data.result?.value || 0) / 1e9; // Convert lamports to SOL
@@ -123,13 +120,13 @@ export default function TransparencyPage() {
       {/* Navigation */}
       <nav className="sticky top-0 z-50 bg-gray-900/80 backdrop-blur-lg border-b border-white/10">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link href="/" className="text-2xl font-bold bg-gradient-to-r from-primary-400 to-primary-600 bg-clip-text text-transparent">
-            MVGA
-          </Link>
           <Link
             href="/"
-            className="text-gray-400 hover:text-white transition"
+            className="text-2xl font-bold bg-gradient-to-r from-primary-400 to-primary-600 bg-clip-text text-transparent"
           >
+            MVGA
+          </Link>
+          <Link href="/" className="text-gray-400 hover:text-white transition">
             ← Back to Home
           </Link>
         </div>
@@ -138,9 +135,7 @@ export default function TransparencyPage() {
       {/* Hero */}
       <section className="pt-20 pb-12 px-6">
         <div className="max-w-7xl mx-auto text-center">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">
-            Full Transparency
-          </h1>
+          <h1 className="text-4xl md:text-5xl font-bold mb-4">Full Transparency</h1>
           <p className="text-xl text-gray-400 max-w-2xl mx-auto">
             Every wallet is public. Every transaction is on-chain. Verify, don&apos;t trust.
           </p>
@@ -306,12 +301,42 @@ export default function TransparencyPage() {
           <div className="bg-white/5 rounded-2xl p-6">
             <div className="space-y-4">
               {[
-                { label: 'Community & Liquidity', pct: 40, color: 'bg-primary-500', address: 'H9j1W4u5LEiw8AZdui6c8AmN6t4tKkPQCAULPW8eMiTE' },
-                { label: 'Team (2yr vest)', pct: 20, color: 'bg-secondary-500', address: '8m8L2CGoneYwP3xEYyss5sjbj7GKy7cK3YxDcG2yNbH4' },
-                { label: 'Humanitarian Fund', pct: 15, color: 'bg-green-500', address: '82XeVLtfjniaE6qvrDiY7UaCHvkimyhVximvRDdQsdqS' },
-                { label: 'Startup Ecosystem', pct: 10, color: 'bg-purple-500', address: 'H9j1W4u5LEiw8AZdui6c8AmN6t4tKkPQCAULPW8eMiTE' },
-                { label: 'Marketing', pct: 10, color: 'bg-pink-500', address: 'DA5VQFLsx87hNQqL2EsM36oVhGnzM2CnqPSe6E9RFpeo' },
-                { label: 'Advisors (1yr vest)', pct: 5, color: 'bg-gray-500', address: 'Huq3ea9KKf6HFb5Qiacdx2pJDSM4c881WdyMCBHXq4hF' },
+                {
+                  label: 'Community & Liquidity',
+                  pct: 40,
+                  color: 'bg-primary-500',
+                  address: 'H9j1W4u5LEiw8AZdui6c8AmN6t4tKkPQCAULPW8eMiTE',
+                },
+                {
+                  label: 'Team (2yr vest)',
+                  pct: 20,
+                  color: 'bg-secondary-500',
+                  address: '8m8L2CGoneYwP3xEYyss5sjbj7GKy7cK3YxDcG2yNbH4',
+                },
+                {
+                  label: 'Humanitarian Fund',
+                  pct: 15,
+                  color: 'bg-green-500',
+                  address: 'HvtvFhuVMu9XGmhW5zWNvtPK7ttiMBg7Ag7C9oRpyKwP',
+                },
+                {
+                  label: 'Startup Ecosystem',
+                  pct: 10,
+                  color: 'bg-purple-500',
+                  address: 'H9j1W4u5LEiw8AZdui6c8AmN6t4tKkPQCAULPW8eMiTE',
+                },
+                {
+                  label: 'Marketing',
+                  pct: 10,
+                  color: 'bg-pink-500',
+                  address: 'DA5VQFLsx87hNQqL2EsM36oVhGnzM2CnqPSe6E9RFpeo',
+                },
+                {
+                  label: 'Advisors (1yr vest)',
+                  pct: 5,
+                  color: 'bg-gray-500',
+                  address: 'Huq3ea9KKf6HFb5Qiacdx2pJDSM4c881WdyMCBHXq4hF',
+                },
               ].map((item) => (
                 <div key={item.label}>
                   <div className="flex justify-between mb-1 text-sm">

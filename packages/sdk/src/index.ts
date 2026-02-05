@@ -36,7 +36,7 @@ export const SUPPORTED_TOKENS = {
 
 export const TREASURY_WALLETS = {
   main: 'H9j1W4u5LEiw8AZdui6c8AmN6t4tKkPQCAULPW8eMiTE',
-  humanitarian: '82XeVLtfjniaE6qvrDiY7UaCHvkimyhVximvRDdQsdqS',
+  humanitarian: 'HvtvFhuVMu9XGmhW5zWNvtPK7ttiMBg7Ag7C9oRpyKwP',
   staking: 'GNhLCjqThNJAJAdDYvRTr2EfWyGXAFUymaPuKaL1duEh',
   team: '8m8L2CGoneYwP3xEYyss5sjbj7GKy7cK3YxDcG2yNbH4',
   marketing: 'DA5VQFLsx87hNQqL2EsM36oVhGnzM2CnqPSe6E9RFpeo',
