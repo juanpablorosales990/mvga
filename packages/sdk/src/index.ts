@@ -63,7 +63,7 @@ export const STAKING_TIERS = [
     benefits: ['1% cashback on swaps', 'Governance voting', 'Early feature access'],
   },
   {
-    name: 'Platinum',
+    name: 'Diamond',
     minStake: 200_000,
     multiplier: 2.0,
     benefits: ['2% cashback', 'Zero fees', 'VIP support', 'Exclusive events'],
@@ -188,7 +188,11 @@ export function getStakingTier(stakedAmount: number) {
 /**
  * Calculate APY based on base rate, tier, and lock period
  */
-export function calculateAPY(baseApy: number, stakedAmount: number, lockPeriodDays: number): number {
+export function calculateAPY(
+  baseApy: number,
+  stakedAmount: number,
+  lockPeriodDays: number
+): number {
   const tier = getStakingTier(stakedAmount);
   const lockPeriod = LOCK_PERIODS.find((p) => p.days === lockPeriodDays) || LOCK_PERIODS[0];
   return baseApy * tier.multiplier * lockPeriod.multiplier;

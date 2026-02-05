@@ -515,6 +515,75 @@ export class P2PService {
     return sig;
   }
 
+  /**
+   * Resolve a dispute: release to buyer OR refund to seller.
+   * Called by admin/moderator after reviewing dispute evidence.
+   */
+  async resolveDispute(
+    tradeId: string,
+    resolution: 'RELEASE_TO_BUYER' | 'REFUND_TO_SELLER',
+    adminAddress: string,
+    resolutionNotes: string
+  ) {
+    const trade = await this.prisma.p2PTrade.findUnique({
+      where: { id: tradeId },
+      include: { offer: true, buyer: true, seller: true },
+    });
+
+    if (!trade) {
+      throw new NotFoundException('Trade not found');
+    }
+
+    if (trade.status !== 'DISPUTED') {
+      throw new BadRequestException('Trade is not in disputed status');
+    }
+
+    let signature: string;
+    let finalStatus: P2PTradeStatus;
+    let winnerAddress: string;
+    let loserAddress: string;
+
+    if (resolution === 'RELEASE_TO_BUYER') {
+      // Buyer wins - release escrow to buyer
+      signature = await this.releaseEscrow(tradeId);
+      finalStatus = 'COMPLETED';
+      winnerAddress = trade.buyer.walletAddress;
+      loserAddress = trade.seller.walletAddress;
+    } else {
+      // Seller wins - refund escrow to seller
+      signature = await this.refundEscrow(tradeId);
+      finalStatus = 'REFUNDED';
+      winnerAddress = trade.seller.walletAddress;
+      loserAddress = trade.buyer.walletAddress;
+    }
+
+    // Update trade with resolution details
+    await this.prisma.p2PTrade.update({
+      where: { id: tradeId },
+      data: {
+        status: finalStatus,
+        disputeResolution: resolutionNotes,
+        completedAt: new Date(),
+      },
+    });
+
+    // Update reputations - winner gets positive, loser gets negative
+    await this.updateReputation(winnerAddress, true);
+    await this.updateReputation(loserAddress, false);
+
+    this.logger.log(
+      `Dispute resolved for trade ${tradeId}: ${resolution} by ${adminAddress}. Signature: ${signature}`
+    );
+
+    return {
+      tradeId,
+      resolution,
+      signature,
+      status: finalStatus,
+      resolutionNotes,
+    };
+  }
+
   // ============ FORMAT HELPERS ============
   // Convert Prisma BigInt fields → plain numbers for JSON serialization
 

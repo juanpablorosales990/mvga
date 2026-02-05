@@ -48,7 +48,7 @@ describe('StakingService', () => {
       expect(tiers[0].name).toBe('Bronze');
       expect(tiers[1].name).toBe('Silver');
       expect(tiers[2].name).toBe('Gold');
-      expect(tiers[3].name).toBe('Platinum');
+      expect(tiers[3].name).toBe('Diamond');
     });
 
     it('has increasing minStake thresholds', () => {
@@ -95,12 +95,12 @@ describe('StakingService', () => {
       expect(getTier(50000).name).toBe('Gold');
     });
 
-    it('returns Platinum for 200000 MVGA', () => {
-      expect(getTier(200000).name).toBe('Platinum');
+    it('returns Diamond for 200000 MVGA', () => {
+      expect(getTier(200000).name).toBe('Diamond');
     });
 
-    it('returns Platinum for very large amounts', () => {
-      expect(getTier(1_000_000).name).toBe('Platinum');
+    it('returns Diamond for very large amounts', () => {
+      expect(getTier(1_000_000).name).toBe('Diamond');
     });
 
     it('returns Bronze for negative amounts', () => {
@@ -133,7 +133,7 @@ describe('StakingService', () => {
       expect(reward).toBe(13500);
     });
 
-    it('calculates correct reward for Platinum tier, 180-day lock, 365 days', () => {
+    it('calculates correct reward for Diamond tier, 180-day lock, 365 days', () => {
       const amount = 200000;
       const baseApy = 12;
       const tierMultiplier = 2.0;
@@ -218,7 +218,7 @@ describe('StakingService', () => {
       ]);
 
       const result = await service.getStakingPosition('wallet');
-      expect(result.currentTier).toBe('Platinum');
+      expect(result.currentTier).toBe('Diamond');
       expect(result.apy).toBe(24); // 12 * 2.0 multiplier
     });
   });

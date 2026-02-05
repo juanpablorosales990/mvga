@@ -47,7 +47,7 @@ export class StakingService {
       benefits: ['1% cashback on swaps', 'Governance voting', 'Early feature access'],
     },
     {
-      name: 'Platinum',
+      name: 'Diamond',
       minStake: 200000,
       multiplier: 2.0,
       benefits: ['2% cashback', 'Zero fees', 'VIP support', 'Exclusive events'],

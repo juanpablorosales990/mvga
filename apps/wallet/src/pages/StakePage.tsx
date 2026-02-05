@@ -37,10 +37,10 @@ const TIERS = [
     color: 'from-yellow-400 to-yellow-600',
   },
   {
-    name: 'Platinum',
+    name: 'Diamond',
     minStake: 200000,
     benefits: ['2% cashback', 'Zero fees', 'VIP support', 'Exclusive events'],
-    color: 'from-purple-400 to-purple-600',
+    color: 'from-cyan-400 to-cyan-600',
   },
 ];
 

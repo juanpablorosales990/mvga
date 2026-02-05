@@ -63,4 +63,13 @@ export class GrantsController {
   ) {
     return this.grantsService.postUpdate(id, dto.applicantAddress, dto);
   }
+
+  @Post('proposals/:id/disburse')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @Throttle({ default: { ttl: 60000, limit: 3 } })
+  @ApiOperation({ summary: 'Manually trigger grant disbursement (approved proposals only)' })
+  async disburseGrant(@Param('id') id: string, @Body() dto: { adminAddress: string }) {
+    return this.grantsService.manualDisburse(id, dto.adminAddress);
+  }
 }

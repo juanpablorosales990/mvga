@@ -7,6 +7,9 @@ const MVGA_DECIMALS = 9;
 describe('GrantsService', () => {
   let service: GrantsService;
   let mockPrisma: any;
+  let mockConfig: any;
+  let mockTxLogger: any;
+  let mockSolana: any;
 
   beforeEach(() => {
     mockPrisma = {
@@ -34,7 +37,23 @@ describe('GrantsService', () => {
       },
     };
 
-    service = new GrantsService(mockPrisma);
+    mockConfig = {
+      get: jest.fn((key: string) => {
+        if (key === 'HUMANITARIAN_FUND_KEYPAIR') return undefined;
+        return undefined;
+      }),
+    };
+
+    mockTxLogger = {
+      log: jest.fn(),
+      confirm: jest.fn(),
+    };
+
+    mockSolana = {
+      getConnection: jest.fn(),
+    };
+
+    service = new GrantsService(mockPrisma, mockConfig, mockTxLogger, mockSolana);
   });
 
   describe('getProposals', () => {

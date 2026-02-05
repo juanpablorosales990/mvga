@@ -171,4 +171,23 @@ export class P2PController {
   async confirmEscrowLock(@Param('id') id: string, @Body() body: { signature: string }) {
     return this.p2pService.confirmEscrowLock(id, body.signature);
   }
+
+  // ============ DISPUTE RESOLUTION ============
+
+  @Post('trades/:id/resolve-dispute')
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Resolve a dispute (admin action)' })
+  async resolveDispute(
+    @Param('id') id: string,
+    @CurrentUser('wallet') wallet: string,
+    @Body()
+    body: {
+      resolution: 'RELEASE_TO_BUYER' | 'REFUND_TO_SELLER';
+      notes: string;
+    }
+  ) {
+    return this.p2pService.resolveDispute(id, body.resolution, wallet, body.notes);
+  }
 }

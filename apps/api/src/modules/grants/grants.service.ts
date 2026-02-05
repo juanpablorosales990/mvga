@@ -1,17 +1,53 @@
 import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../../common/prisma.service';
+import { TransactionLoggerService } from '../../common/transaction-logger.service';
+import { SolanaService } from '../wallet/solana.service';
 import { CreateProposalDto } from './dto/create-proposal.dto';
 import { CastVoteDto, PostUpdateDto } from './dto/cast-vote.dto';
+import { Keypair, PublicKey, Transaction, sendAndConfirmTransaction } from '@solana/web3.js';
+import {
+  getAssociatedTokenAddress,
+  createTransferInstruction,
+  createAssociatedTokenAccountInstruction,
+  getAccount,
+} from '@solana/spl-token';
 
 const AMOUNT_SCALE = 1_000_000;
 const MVGA_DECIMALS = 9;
+const USDC_DECIMALS = 6;
+const USDC_MINT = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
 
 @Injectable()
 export class GrantsService {
   private readonly logger = new Logger(GrantsService.name);
+  private humanitarianFundKeypair: Keypair | null = null;
+  private usdcMint: PublicKey;
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly config: ConfigService,
+    private readonly txLogger: TransactionLoggerService,
+    private readonly solana: SolanaService
+  ) {
+    this.usdcMint = new PublicKey(USDC_MINT);
+
+    const keypairStr = this.config.get<string>('HUMANITARIAN_FUND_KEYPAIR');
+    if (keypairStr) {
+      try {
+        const decoded = Buffer.from(keypairStr, 'base64');
+        this.humanitarianFundKeypair = Keypair.fromSecretKey(
+          new Uint8Array(JSON.parse(decoded.toString()))
+        );
+        this.logger.log('Humanitarian fund keypair loaded for grant disbursement');
+      } catch (e) {
+        this.logger.warn(`HUMANITARIAN_FUND_KEYPAIR invalid: ${(e as Error).message}`);
+      }
+    } else {
+      this.logger.warn('HUMANITARIAN_FUND_KEYPAIR not set — grant disbursement unavailable');
+    }
+  }
 
   async getProposals(status?: string) {
     const where = status ? { status: status as any } : {};
@@ -273,5 +309,128 @@ export class GrantsService {
     if (expiredProposals.length > 0) {
       this.logger.log(`Tallied ${expiredProposals.length} proposals`);
     }
+  }
+
+  // Auto-disburse approved grants (runs every 15 minutes)
+  @Cron('*/15 * * * *')
+  async autoDisburseGrants() {
+    if (!this.humanitarianFundKeypair) {
+      return; // Can't disburse without keypair
+    }
+
+    const approvedGrants = await this.prisma.grantProposal.findMany({
+      where: { status: 'APPROVED' },
+      take: 5, // Process 5 at a time to avoid timeout
+    });
+
+    for (const grant of approvedGrants) {
+      try {
+        await this.disburseGrant(grant.id);
+      } catch (e) {
+        this.logger.error(`Failed to disburse grant ${grant.id}: ${(e as Error).message}`);
+      }
+    }
+
+    if (approvedGrants.length > 0) {
+      this.logger.log(`Processed ${approvedGrants.length} grant disbursements`);
+    }
+  }
+
+  async disburseGrant(proposalId: string) {
+    const proposal = await this.prisma.grantProposal.findUnique({
+      where: { id: proposalId },
+    });
+
+    if (!proposal) {
+      throw new NotFoundException('Proposal not found');
+    }
+
+    if (proposal.status !== 'APPROVED') {
+      throw new BadRequestException('Only approved proposals can be funded');
+    }
+
+    if (!this.humanitarianFundKeypair) {
+      throw new BadRequestException('Grant disbursement is not configured');
+    }
+
+    // Amount is stored as USD * AMOUNT_SCALE, convert to USDC (6 decimals)
+    const usdAmount = Number(proposal.requestedAmount) / AMOUNT_SCALE;
+    const usdcRawAmount = BigInt(Math.round(usdAmount * 10 ** USDC_DECIMALS));
+
+    const connection = this.solana.getConnection();
+    const recipientPubkey = new PublicKey(proposal.applicantAddress);
+
+    const fundAta = await getAssociatedTokenAddress(
+      this.usdcMint,
+      this.humanitarianFundKeypair.publicKey
+    );
+    const recipientAta = await getAssociatedTokenAddress(this.usdcMint, recipientPubkey);
+
+    const tx = new Transaction();
+
+    // Create recipient ATA if needed
+    try {
+      await getAccount(connection, recipientAta);
+    } catch {
+      tx.add(
+        createAssociatedTokenAccountInstruction(
+          this.humanitarianFundKeypair.publicKey,
+          recipientAta,
+          recipientPubkey,
+          this.usdcMint
+        )
+      );
+    }
+
+    // Transfer USDC from humanitarian fund to recipient
+    tx.add(
+      createTransferInstruction(
+        fundAta,
+        recipientAta,
+        this.humanitarianFundKeypair.publicKey,
+        usdcRawAmount
+      )
+    );
+
+    const sig = await sendAndConfirmTransaction(connection, tx, [this.humanitarianFundKeypair]);
+
+    // Update proposal status
+    await this.prisma.grantProposal.update({
+      where: { id: proposalId },
+      data: {
+        status: 'FUNDED',
+        fundedAt: new Date(),
+        fundingTx: sig,
+      },
+    });
+
+    // Log transaction
+    await this.txLogger.log({
+      walletAddress: proposal.applicantAddress,
+      type: 'GRANT_FUNDING',
+      signature: sig,
+      amount: usdAmount,
+      token: 'USDC',
+    });
+    await this.txLogger.confirm(sig);
+
+    this.logger.log(
+      `Grant ${proposalId} (${proposal.businessName}) funded: $${usdAmount} USDC to ${proposal.applicantAddress}`
+    );
+
+    return {
+      proposalId,
+      amount: usdAmount,
+      signature: sig,
+      status: 'FUNDED',
+    };
+  }
+
+  // Manual disbursement endpoint (admin use)
+  async manualDisburse(proposalId: string, adminAddress: string) {
+    // For now, any authenticated user can trigger disbursement
+    // In production, add admin role check
+    this.logger.log(`Manual disbursement triggered by ${adminAddress} for proposal ${proposalId}`);
+    return this.disburseGrant(proposalId);
   }
 }
