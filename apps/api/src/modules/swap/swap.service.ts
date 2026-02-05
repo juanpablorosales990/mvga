@@ -111,39 +111,41 @@ export class SwapService {
     }
   }
 
+  // Map Solana mint addresses to CoinGecko IDs
+  private readonly COINGECKO_IDS: Record<string, string> = {
+    'So11111111111111111111111111111111111111112': 'solana',
+    'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v': 'usd-coin',
+    'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB': 'tether',
+  };
+
   async getTokenPrice(mint: string): Promise<number> {
-    try {
-      // Use Jupiter Price API
-      const response = await fetch(
-        `https://price.jup.ag/v6/price?ids=${mint}`
-      );
-
-      if (!response.ok) {
-        return 0;
-      }
-
-      const data = await response.json();
-      return data.data?.[mint]?.price || 0;
-    } catch {
-      return 0;
-    }
+    const prices = await this.getMultipleTokenPrices([mint]);
+    return prices[mint] || 0;
   }
 
   async getMultipleTokenPrices(mints: string[]): Promise<Record<string, number>> {
     try {
+      // Map mints to CoinGecko IDs
+      const geckoIds = mints
+        .map((m) => this.COINGECKO_IDS[m])
+        .filter(Boolean);
+
+      if (geckoIds.length === 0) return {};
+
       const response = await fetch(
-        `https://price.jup.ag/v6/price?ids=${mints.join(',')}`
+        `https://api.coingecko.com/api/v3/simple/price?ids=${geckoIds.join(',')}&vs_currencies=usd`,
       );
 
-      if (!response.ok) {
-        return {};
-      }
+      if (!response.ok) return {};
 
       const data = await response.json();
       const prices: Record<string, number> = {};
 
       for (const mint of mints) {
-        prices[mint] = data.data?.[mint]?.price || 0;
+        const geckoId = this.COINGECKO_IDS[mint];
+        if (geckoId && data[geckoId]?.usd) {
+          prices[mint] = data[geckoId].usd;
+        }
       }
 
       return prices;

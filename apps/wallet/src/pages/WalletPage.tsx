@@ -53,29 +53,21 @@ export default function WalletPage() {
           programId: TOKEN_PROGRAM_ID,
         });
 
-        // Fetch live prices from Jupiter
-        const allMints = [
-          'So11111111111111111111111111111111111111112',
-          ...Object.keys(KNOWN_TOKENS),
-        ];
+        // Fetch live prices from CoinGecko
         let prices: Record<string, number> = {};
         try {
-          const priceRes = await fetch(`https://price.jup.ag/v6/price?ids=${allMints.join(',')}`);
+          const priceRes = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana,usd-coin,tether&vs_currencies=usd');
           if (priceRes.ok) {
-            const priceData = await priceRes.json();
-            for (const mint of allMints) {
-              prices[mint] = priceData.data?.[mint]?.price || 0;
-            }
+            const data = await priceRes.json();
+            prices['So11111111111111111111111111111111111111112'] = data.solana?.usd || 0;
+            prices['EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'] = data['usd-coin']?.usd || 1;
+            prices['Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB'] = data.tether?.usd || 1;
           }
         } catch {
-          // Fallback prices
           prices = { 'So11111111111111111111111111111111111111112': 150 };
         }
-
-        // MVGA has no Jupiter liquidity yet — use manual price
-        if (!prices['DRX65kM2n5CLTpdjJCemZvkUwE98ou4RpHrd8Z3GH5Qh'] || prices['DRX65kM2n5CLTpdjJCemZvkUwE98ou4RpHrd8Z3GH5Qh'] === 0) {
-          prices['DRX65kM2n5CLTpdjJCemZvkUwE98ou4RpHrd8Z3GH5Qh'] = 0.001;
-        }
+        // MVGA has no market price yet
+        prices['DRX65kM2n5CLTpdjJCemZvkUwE98ou4RpHrd8Z3GH5Qh'] = 0.001;
 
         const solPrice = prices['So11111111111111111111111111111111111111112'] || 0;
 
