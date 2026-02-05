@@ -1,7 +1,13 @@
 # ── Build stage ──────────────────────────────────────────
-FROM node:18-alpine AS build
+FROM node:20-slim AS build
 
 WORKDIR /app
+
+# Install OpenSSL for Prisma
+RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+
+# Ensure devDependencies are installed during build
+ENV NODE_ENV=development
 
 # Install dependencies
 COPY package.json ./
@@ -11,15 +17,18 @@ RUN npm install
 COPY prisma ./prisma
 RUN npx prisma generate
 
-# Copy source and build
+# Copy source and build using tsc (simpler than nest build)
 COPY tsconfig.json nest-cli.json ./
 COPY src ./src
-RUN npm run build -- --webpack false
+RUN npx tsc
 
 # ── Runtime stage ────────────────────────────────────────
-FROM node:18-alpine
+FROM node:20-slim
 
 WORKDIR /app
+
+# Install OpenSSL for Prisma
+RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
 # Copy built output and production deps
 COPY --from=build /app/dist ./dist

@@ -46,7 +46,9 @@
     "jest": "^30.2.0",
     "prisma": "^5.22.0",
     "ts-jest": "^29.4.6",
+    "ts-loader": "^9.5.1",
     "ts-node": "^10.9.2",
-    "typescript": "^5.4.0"
+    "typescript": "^5.4.0",
+    "webpack": "^5.97.1"
   }
 }
