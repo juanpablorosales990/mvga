@@ -3,6 +3,7 @@ import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { VersionedTransaction } from '@solana/web3.js';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
+import { useWalletStore } from '../stores/walletStore';
 
 const TOKENS = [
   {
@@ -54,6 +55,7 @@ export default function SwapPage() {
   const { connected, publicKey, signTransaction } = useWallet();
   const { connection } = useConnection();
   const { authToken } = useAuth();
+  const invalidateBalances = useWalletStore((s) => s.invalidateBalances);
 
   const [fromToken, setFromToken] = useState(TOKENS[0]);
   const [toToken, setToToken] = useState(TOKENS[1]);
@@ -179,6 +181,7 @@ export default function SwapPage() {
 
       setFromAmount('');
       setQuote(null);
+      invalidateBalances();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Swap failed');
     } finally {

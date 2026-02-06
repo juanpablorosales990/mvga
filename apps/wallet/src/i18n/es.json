@@ -41,7 +41,20 @@
     "sending": "Enviando...",
     "sendButton": "Enviar",
     "success": "¡Transacción enviada exitosamente!",
-    "connectPrompt": "Conecta tu billetera para enviar tokens"
+    "connectPrompt": "Conecta tu billetera para enviar tokens",
+    "fillAllFields": "Por favor completa todos los campos",
+    "invalidAddress": "Dirección de destinatario inválida",
+    "invalidAmount": "Monto inválido",
+    "walletNotConnected": "Billetera no conectada",
+    "insufficientSol": "Balance de SOL insuficiente. Tienes {{balance}} SOL",
+    "insufficientToken": "Balance de {{token}} insuficiente. Tienes {{available}} {{token}}",
+    "noTokenBalance": "No se encontró balance de {{token}} en tu billetera",
+    "connectFirst": "Por favor conecta tu billetera primero",
+    "unsupportedToken": "Token no soportado",
+    "txFailed": "Transacción fallida",
+    "solLabel": "SOL - Solana",
+    "usdcLabel": "USDC - USD Coin",
+    "mvgaLabel": "MVGA - Make Venezuela Great Again"
   },
   "receive": {
     "title": "Recibir",
@@ -109,7 +122,31 @@
     "effectiveApy": "APY Efectivo",
     "weeklyFeePool": "Pool Semanal de Comisiones",
     "stakingRate": "Tasa de Staking",
-    "autoCompound": "Auto-Compound"
+    "autoCompound": "Auto-Compound",
+    "max": "MÁX",
+    "tierBronze": "Bronce",
+    "tierSilver": "Plata",
+    "tierGold": "Oro",
+    "tierDiamond": "Diamante",
+    "benefitBasicWallet": "Acceso básico a billetera",
+    "benefitCommunity": "Acceso a la comunidad",
+    "benefitCashback05": "0.5% cashback en cambios",
+    "benefitPrioritySupport": "Soporte prioritario",
+    "benefitCashback1": "1% cashback en cambios",
+    "benefitGovernance": "Voto en gobernanza",
+    "benefitEarlyAccess": "Acceso anticipado a funciones",
+    "benefitCashback2": "2% cashback",
+    "benefitZeroFees": "Sin comisiones",
+    "benefitVipSupport": "Soporte VIP",
+    "benefitExclusiveEvents": "Eventos exclusivos",
+    "lockFlexible": "Flexible",
+    "lock30": "30 Días",
+    "lock90": "90 Días",
+    "lock180": "180 Días",
+    "dLock": "{{days}}d bloqueo",
+    "unstakedSuccess": "¡Retirado! TX: {{sig}}",
+    "claimedSuccess": "¡Reclamado {{rewards}} MVGA! TX: {{sig}}",
+    "errorPrefix": "Error: {{message}}"
   },
   "p2p": {
     "title": "Intercambio P2P",
@@ -187,7 +224,9 @@
     "paymentMarked": "¡Pago marcado como enviado!",
     "tradeCompletedMsg": "¡Operación completada! Custodia liberada.",
     "disputeFiled": "Disputa registrada",
-    "describeIssue": "Describe el problema:"
+    "describeIssue": "Describe el problema:",
+    "loadFailed": "Error al cargar operación",
+    "failed": "Falló"
   },
   "history": {
     "title": "Historial de Transacciones",
@@ -238,7 +277,13 @@
     "viewFundingTx": "Ver transacción de financiamiento en Solscan",
     "updates": "Actualizaciones",
     "voters": "Votantes",
-    "proposalNotFound": "Propuesta no encontrada"
+    "proposalNotFound": "Propuesta no encontrada",
+    "statusVoting": "Votando",
+    "statusApproved": "Aprobado",
+    "statusRejected": "Rechazado",
+    "statusFunded": "Financiado",
+    "statusCompleted": "Completado",
+    "votingEndsDate": "Votación termina {{date}}"
   },
   "fiat": {
     "usd": "USD",

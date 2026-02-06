@@ -9,6 +9,7 @@ import {
 } from '@solana/spl-token';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
+import { useWalletStore } from '../stores/walletStore';
 import FiatValue from '../components/FiatValue';
 import TransactionPreviewModal from '../components/TransactionPreviewModal';
 import { showToast } from '../hooks/useToast';
@@ -18,39 +19,12 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
 const MVGA_MINT = 'DRX65kM2n5CLTpdjJCemZvkUwE98ou4RpHrd8Z3GH5Qh';
 const MVGA_DECIMALS = 9;
 
-const TIERS = [
-  {
-    name: 'Bronze',
-    minStake: 0,
-    benefits: ['Basic wallet access', 'Community access'],
-    color: 'from-amber-700 to-amber-900',
-  },
-  {
-    name: 'Silver',
-    minStake: 10000,
-    benefits: ['0.5% cashback on swaps', 'Priority support'],
-    color: 'from-gray-400 to-gray-600',
-  },
-  {
-    name: 'Gold',
-    minStake: 50000,
-    benefits: ['1% cashback on swaps', 'Governance voting', 'Early feature access'],
-    color: 'from-yellow-400 to-yellow-600',
-  },
-  {
-    name: 'Diamond',
-    minStake: 200000,
-    benefits: ['2% cashback', 'Zero fees', 'VIP support', 'Exclusive events'],
-    color: 'from-cyan-400 to-cyan-600',
-  },
-];
-
-const LOCK_PERIODS = [
-  { days: 0, label: 'Flexible', multiplier: 1.0 },
-  { days: 30, label: '30 Days', multiplier: 1.25 },
-  { days: 90, label: '90 Days', multiplier: 1.5 },
-  { days: 180, label: '180 Days', multiplier: 2.0 },
-];
+const TIER_COLORS: Record<string, string> = {
+  Bronze: 'from-amber-700 to-amber-900',
+  Silver: 'from-gray-400 to-gray-600',
+  Gold: 'from-yellow-400 to-yellow-600',
+  Diamond: 'from-cyan-400 to-cyan-600',
+};
 
 interface StakePosition {
   id: string;
@@ -66,6 +40,62 @@ interface StakePosition {
 
 export default function StakePage() {
   const { t } = useTranslation();
+  const invalidateBalances = useWalletStore((s) => s.invalidateBalances);
+
+  const TIERS = [
+    {
+      name: t('stake.tierBronze'),
+      key: 'Bronze',
+      minStake: 0,
+      benefits: [t('stake.benefitBasicWallet'), t('stake.benefitCommunity')],
+      color: TIER_COLORS.Bronze,
+    },
+    {
+      name: t('stake.tierSilver'),
+      key: 'Silver',
+      minStake: 10000,
+      benefits: [t('stake.benefitCashback05'), t('stake.benefitPrioritySupport')],
+      color: TIER_COLORS.Silver,
+    },
+    {
+      name: t('stake.tierGold'),
+      key: 'Gold',
+      minStake: 50000,
+      benefits: [
+        t('stake.benefitCashback1'),
+        t('stake.benefitGovernance'),
+        t('stake.benefitEarlyAccess'),
+      ],
+      color: TIER_COLORS.Gold,
+    },
+    {
+      name: t('stake.tierDiamond'),
+      key: 'Diamond',
+      minStake: 200000,
+      benefits: [
+        t('stake.benefitCashback2'),
+        t('stake.benefitZeroFees'),
+        t('stake.benefitVipSupport'),
+        t('stake.benefitExclusiveEvents'),
+      ],
+      color: TIER_COLORS.Diamond,
+    },
+  ];
+
+  const LOCK_PERIODS = [
+    { days: 0, label: t('stake.lockFlexible'), multiplier: 1.0 },
+    { days: 30, label: t('stake.lock30'), multiplier: 1.25 },
+    { days: 90, label: t('stake.lock90'), multiplier: 1.5 },
+    { days: 180, label: t('stake.lock180'), multiplier: 2.0 },
+  ];
+
+  const TIER_NAME_MAP: Record<string, string> = {
+    Bronze: t('stake.tierBronze'),
+    Silver: t('stake.tierSilver'),
+    Gold: t('stake.tierGold'),
+    Diamond: t('stake.tierDiamond'),
+  };
+
   const { connected, publicKey, sendTransaction } = useWallet();
   const { connection } = useConnection();
   const { authToken } = useAuth();
@@ -181,12 +211,12 @@ export default function StakePage() {
       const rawAmount = BigInt(Math.round(parseFloat(amount) * 10 ** MVGA_DECIMALS));
       tx.add(createTransferInstruction(userAta, vaultAta, publicKey, rawAmount));
 
-      setStatus('Waiting for wallet signature...');
+      setStatus(t('stake.waitingSignature'));
       const signature = await sendTransaction(tx, connection);
-      setStatus('Confirming transaction...');
+      setStatus(t('stake.confirming'));
       await connection.confirmTransaction(signature, 'confirmed');
 
-      setStatus('Recording stake...');
+      setStatus(t('stake.recording'));
       const confirmRes = await fetch(`${API_URL}/staking/confirm-stake`, {
         method: 'POST',
         headers: {
@@ -201,11 +231,12 @@ export default function StakePage() {
         throw new Error(err.message || 'Failed to confirm stake');
       }
 
-      setStatus('Staked successfully!');
+      setStatus(t('stake.stakedSuccess'));
       setAmount('');
       fetchData();
+      invalidateBalances();
     } catch (err: any) {
-      setStatus(`Error: ${err.message}`);
+      setStatus(t('stake.errorPrefix', { message: err.message }));
     } finally {
       setLoading(false);
     }
@@ -232,11 +263,12 @@ export default function StakePage() {
       }
 
       const data = await res.json();
-      setStatus(`Unstaked! TX: ${data.signature.slice(0, 16)}...`);
+      setStatus(t('stake.unstakedSuccess', { sig: `${data.signature.slice(0, 16)}...` }));
       setAmount('');
       fetchData();
+      invalidateBalances();
     } catch (err: any) {
-      setStatus(`Error: ${err.message}`);
+      setStatus(t('stake.errorPrefix', { message: err.message }));
     } finally {
       setLoading(false);
     }
@@ -259,10 +291,16 @@ export default function StakePage() {
       }
 
       const data = await res.json();
-      setStatus(`Claimed ${data.rewards.toFixed(2)} MVGA! TX: ${data.signature.slice(0, 16)}...`);
+      setStatus(
+        t('stake.claimedSuccess', {
+          rewards: data.rewards.toFixed(2),
+          sig: `${data.signature.slice(0, 16)}...`,
+        })
+      );
       fetchData();
+      invalidateBalances();
     } catch (err: any) {
-      setStatus(`Error: ${err.message}`);
+      setStatus(t('stake.errorPrefix', { message: err.message }));
     } finally {
       setLoading(false);
     }
@@ -339,9 +377,9 @@ export default function StakePage() {
         <div className="flex items-center justify-between mb-2">
           <span className="text-gray-400">{t('stake.currentTier')}</span>
           <span
-            className={`px-3 py-1 rounded-full bg-gradient-to-r ${TIERS.find((t) => t.name === position.currentTier)?.color} text-white text-sm font-medium`}
+            className={`px-3 py-1 rounded-full bg-gradient-to-r ${TIER_COLORS[position.currentTier] || TIER_COLORS.Bronze} text-white text-sm font-medium`}
           >
-            {position.currentTier}
+            {TIER_NAME_MAP[position.currentTier] || position.currentTier}
           </span>
         </div>
         <div className="flex items-center justify-between mb-2">
@@ -417,14 +455,14 @@ export default function StakePage() {
               }
               className="absolute right-3 top-1/2 -translate-y-1/2 text-primary-500 text-sm font-medium"
             >
-              MAX
+              {t('stake.max')}
             </button>
           </div>
           <p className="text-xs text-gray-500 mt-1">
-            Available:{' '}
+            {t('stake.available')}:{' '}
             {activeTab === 'stake'
               ? `${mvgaBalance.toLocaleString(undefined, { maximumFractionDigits: 2 })} MVGA`
-              : `${position.totalStaked.toLocaleString(undefined, { maximumFractionDigits: 2 })} MVGA staked`}
+              : `${position.totalStaked.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${t('stake.mvgaStaked')}`}
           </p>
         </div>
 
@@ -443,7 +481,9 @@ export default function StakePage() {
                   }`}
                 >
                   <p className="font-medium">{period.label}</p>
-                  <p className="text-xs text-gray-400">{period.multiplier}x rewards</p>
+                  <p className="text-xs text-gray-400">
+                    {t('stake.xRewards', { multiplier: period.multiplier })}
+                  </p>
                 </button>
               ))}
             </div>
@@ -459,7 +499,7 @@ export default function StakePage() {
           className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading
-            ? 'Processing...'
+            ? t('common.processing')
             : activeTab === 'stake'
               ? t('stake.stakeButton')
               : t('stake.unstakeButton')}
@@ -493,12 +533,18 @@ export default function StakePage() {
                   <span className="text-green-400 text-sm">{stake.apy}% APY</span>
                 </div>
                 <div className="flex items-center justify-between text-sm text-gray-400">
-                  <span>{stake.lockPeriod > 0 ? `${stake.lockPeriod}d lock` : 'Flexible'}</span>
-                  <span>+{stake.rewards.toFixed(4)} rewards</span>
+                  <span>
+                    {stake.lockPeriod > 0
+                      ? t('stake.dLock', { days: stake.lockPeriod })
+                      : t('stake.flexible')}
+                  </span>
+                  <span>
+                    +{stake.rewards.toFixed(4)} {t('stake.rewards')}
+                  </span>
                 </div>
                 {stake.lockedUntil && (
                   <p className="text-xs text-gray-500 mt-1">
-                    Unlocks: {new Date(stake.lockedUntil).toLocaleDateString()}
+                    {t('stake.unlocks')}: {new Date(stake.lockedUntil).toLocaleDateString()}
                   </p>
                 )}
                 <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/5">

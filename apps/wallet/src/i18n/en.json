@@ -41,7 +41,20 @@
     "sending": "Sending...",
     "sendButton": "Send",
     "success": "Transaction sent successfully!",
-    "connectPrompt": "Connect your wallet to send tokens"
+    "connectPrompt": "Connect your wallet to send tokens",
+    "fillAllFields": "Please fill in all fields",
+    "invalidAddress": "Invalid recipient address",
+    "invalidAmount": "Invalid amount",
+    "walletNotConnected": "Wallet not connected",
+    "insufficientSol": "Insufficient SOL balance. You have {{balance}} SOL",
+    "insufficientToken": "Insufficient {{token}} balance. You have {{available}} {{token}}",
+    "noTokenBalance": "No {{token}} balance found in your wallet",
+    "connectFirst": "Please connect your wallet first",
+    "unsupportedToken": "Unsupported token",
+    "txFailed": "Transaction failed",
+    "solLabel": "SOL - Solana",
+    "usdcLabel": "USDC - USD Coin",
+    "mvgaLabel": "MVGA - Make Venezuela Great Again"
   },
   "receive": {
     "title": "Receive",
@@ -109,7 +122,31 @@
     "effectiveApy": "Effective APY",
     "weeklyFeePool": "Weekly Fee Pool",
     "stakingRate": "Staking Rate",
-    "autoCompound": "Auto-Compound"
+    "autoCompound": "Auto-Compound",
+    "max": "MAX",
+    "tierBronze": "Bronze",
+    "tierSilver": "Silver",
+    "tierGold": "Gold",
+    "tierDiamond": "Diamond",
+    "benefitBasicWallet": "Basic wallet access",
+    "benefitCommunity": "Community access",
+    "benefitCashback05": "0.5% cashback on swaps",
+    "benefitPrioritySupport": "Priority support",
+    "benefitCashback1": "1% cashback on swaps",
+    "benefitGovernance": "Governance voting",
+    "benefitEarlyAccess": "Early feature access",
+    "benefitCashback2": "2% cashback",
+    "benefitZeroFees": "Zero fees",
+    "benefitVipSupport": "VIP support",
+    "benefitExclusiveEvents": "Exclusive events",
+    "lockFlexible": "Flexible",
+    "lock30": "30 Days",
+    "lock90": "90 Days",
+    "lock180": "180 Days",
+    "dLock": "{{days}}d lock",
+    "unstakedSuccess": "Unstaked! TX: {{sig}}",
+    "claimedSuccess": "Claimed {{rewards}} MVGA! TX: {{sig}}",
+    "errorPrefix": "Error: {{message}}"
   },
   "p2p": {
     "title": "P2P Exchange",
@@ -187,7 +224,9 @@
     "paymentMarked": "Payment marked as sent!",
     "tradeCompletedMsg": "Trade completed! Escrow released.",
     "disputeFiled": "Dispute filed",
-    "describeIssue": "Describe the issue:"
+    "describeIssue": "Describe the issue:",
+    "loadFailed": "Failed to load trade",
+    "failed": "Failed"
   },
   "history": {
     "title": "Transaction History",
@@ -238,7 +277,13 @@
     "viewFundingTx": "View funding transaction on Solscan",
     "updates": "Updates",
     "voters": "Voters",
-    "proposalNotFound": "Proposal not found"
+    "proposalNotFound": "Proposal not found",
+    "statusVoting": "Voting",
+    "statusApproved": "Approved",
+    "statusRejected": "Rejected",
+    "statusFunded": "Funded",
+    "statusCompleted": "Completed",
+    "votingEndsDate": "Voting ends {{date}}"
   },
   "fiat": {
     "usd": "USD",

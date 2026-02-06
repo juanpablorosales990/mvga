@@ -189,10 +189,10 @@ export default function P2PPage() {
 
   const getPaymentMethodLabel = (method: string) => {
     const labels: Record<string, string> = {
-      ZELLE: 'Zelle',
-      VENMO: 'Venmo',
-      PAYPAL: 'PayPal',
-      BANK_TRANSFER: 'Bank Transfer',
+      ZELLE: t('p2p.zelle'),
+      VENMO: t('p2p.venmo'),
+      PAYPAL: t('p2p.paypal'),
+      BANK_TRANSFER: t('p2p.bankTransfer'),
     };
     return labels[method] || method;
   };
@@ -303,8 +303,8 @@ export default function P2PPage() {
                     <p className="font-medium text-sm">{shortenAddress(offer.sellerAddress)}</p>
                     <p className="text-xs text-gray-500">
                       {reputations[offer.sellerAddress]
-                        ? `${reputations[offer.sellerAddress].rating.toFixed(1)} (${reputations[offer.sellerAddress].totalTrades} trades)`
-                        : 'New'}
+                        ? `${reputations[offer.sellerAddress].rating.toFixed(1)} (${reputations[offer.sellerAddress].totalTrades} ${t('p2p.trades')})`
+                        : t('p2p.newTrader')}
                     </p>
                   </div>
                 </div>
@@ -386,7 +386,7 @@ export default function P2PPage() {
                   newOffer.type === 'SELL' ? 'bg-green-500 text-black' : 'bg-white/10'
                 }`}
               >
-                Sell Crypto
+                {t('p2p.sellCrypto')}
               </button>
               <button
                 onClick={() => setNewOffer({ ...newOffer, type: 'BUY' })}
@@ -394,7 +394,7 @@ export default function P2PPage() {
                   newOffer.type === 'BUY' ? 'bg-blue-500 text-white' : 'bg-white/10'
                 }`}
               >
-                Buy Crypto
+                {t('p2p.buyCrypto')}
               </button>
             </div>
 
@@ -416,7 +416,7 @@ export default function P2PPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm text-gray-400 mb-1">Payment</label>
+                <label className="block text-sm text-gray-400 mb-1">{t('p2p.payment')}</label>
                 <select
                   value={newOffer.paymentMethod}
                   onChange={(e) =>
@@ -446,7 +446,7 @@ export default function P2PPage() {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm text-gray-400 mb-1">Min ($)</label>
+                <label className="block text-sm text-gray-400 mb-1">{t('p2p.minDollar')}</label>
                 <input
                   type="number"
                   value={newOffer.minAmount}
@@ -455,7 +455,7 @@ export default function P2PPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm text-gray-400 mb-1">Max ($)</label>
+                <label className="block text-sm text-gray-400 mb-1">{t('p2p.maxDollar')}</label>
                 <input
                   type="number"
                   value={newOffer.maxAmount}
@@ -470,7 +470,7 @@ export default function P2PPage() {
               disabled={!newOffer.cryptoAmount}
               className="w-full btn-primary disabled:opacity-50"
             >
-              Create Offer
+              {t('p2p.createOfferTitle')}
             </button>
           </div>
         </div>
@@ -482,7 +482,7 @@ export default function P2PPage() {
           <div className="bg-[#1a1a1a] rounded-t-3xl w-full max-w-lg p-6 space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold">
-                {selectedOffer.type === 'SELL' ? 'Buy' : 'Sell'} {selectedOffer.cryptoCurrency}
+                {selectedOffer.type === 'SELL' ? t('p2p.buyCrypto') : t('p2p.sellCrypto')}
               </h2>
               <button onClick={() => setSelectedOffer(null)} className="text-gray-400 text-2xl">
                 ×
@@ -491,21 +491,21 @@ export default function P2PPage() {
 
             <div className="bg-white/5 rounded-xl p-4 space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-400">Trader</span>
+                <span className="text-gray-400">{t('trade.seller')}</span>
                 <span>{shortenAddress(selectedOffer.sellerAddress)}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-400">Payment</span>
+                <span className="text-gray-400">{t('p2p.payment')}</span>
                 <span>{getPaymentMethodLabel(selectedOffer.paymentMethod)}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-400">Available</span>
+                <span className="text-gray-400">{t('p2p.available')}</span>
                 <span>
                   {selectedOffer.availableAmount} {selectedOffer.cryptoCurrency}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-400">Limits</span>
+                <span className="text-gray-400">{t('p2p.limit')}</span>
                 <span>
                   ${selectedOffer.minAmount} - ${selectedOffer.maxAmount}
                 </span>
@@ -513,7 +513,7 @@ export default function P2PPage() {
             </div>
 
             <div>
-              <label className="block text-sm text-gray-400 mb-1">Amount (USD)</label>
+              <label className="block text-sm text-gray-400 mb-1">{t('p2p.amountUsd')}</label>
               <input
                 type="number"
                 value={tradeAmount}
@@ -523,7 +523,7 @@ export default function P2PPage() {
               />
               {tradeAmount && (
                 <p className="text-sm text-gray-400 mt-2">
-                  You will {selectedOffer.type === 'SELL' ? 'receive' : 'send'}:{' '}
+                  {selectedOffer.type === 'SELL' ? t('p2p.youWillReceive') : t('p2p.youWillSend')}:{' '}
                   <span className="text-white font-medium">
                     {(parseFloat(tradeAmount) * selectedOffer.rate).toFixed(2)}{' '}
                     {selectedOffer.cryptoCurrency}
@@ -541,7 +541,7 @@ export default function P2PPage() {
               }
               className="w-full btn-primary disabled:opacity-50"
             >
-              {selectedOffer.type === 'SELL' ? 'Buy' : 'Sell'} {selectedOffer.cryptoCurrency}
+              {selectedOffer.type === 'SELL' ? t('p2p.buyNow') : t('p2p.sellNow')}
             </button>
 
             <p className="text-xs text-gray-500 text-center">{t('p2p.escrowNote')}</p>

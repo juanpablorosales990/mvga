@@ -47,6 +47,9 @@ interface WalletState {
   savingsGoal: { targetAmount: number; label: string } | null;
   cardWaitlisted: boolean;
 
+  // Balance refresh trigger
+  balanceVersion: number;
+
   // Actions
   setPublicKey: (key: string | null) => void;
   setConnected: (connected: boolean) => void;
@@ -60,6 +63,7 @@ interface WalletState {
   markAllNotificationsRead: (ids: string[]) => void;
   setSavingsGoal: (goal: { targetAmount: number; label: string } | null) => void;
   setCardWaitlisted: (waitlisted: boolean) => void;
+  invalidateBalances: () => void;
   addAddress: (entry: Omit<AddressBookEntry, 'createdAt'>) => void;
   removeAddress: (address: string) => void;
   disconnect: () => void;
@@ -82,6 +86,7 @@ export const useWalletStore = create<WalletState>()(
       readNotifications: [],
       savingsGoal: null,
       cardWaitlisted: false,
+      balanceVersion: 0,
 
       // Actions
       setPublicKey: (key) => set({ publicKey: key, isConnected: !!key }),
@@ -108,6 +113,7 @@ export const useWalletStore = create<WalletState>()(
         })),
       setSavingsGoal: (goal) => set({ savingsGoal: goal }),
       setCardWaitlisted: (waitlisted) => set({ cardWaitlisted: waitlisted }),
+      invalidateBalances: () => set((state) => ({ balanceVersion: state.balanceVersion + 1 })),
       addAddress: (entry) =>
         set((state) => ({
           addressBook: [

@@ -15,6 +15,7 @@ import { TreasuryModule } from './modules/treasury/treasury.module';
 import { BurnModule } from './modules/burn/burn.module';
 import { MetricsModule } from './modules/metrics/metrics.module';
 import { BankingModule } from './modules/banking/banking.module';
+import { TiersModule } from './modules/tiers/tiers.module';
 import { HealthController } from './health.controller';
 
 @Module({
@@ -41,6 +42,7 @@ import { HealthController } from './health.controller';
     BurnModule,
     MetricsModule,
     BankingModule,
+    TiersModule,
   ],
   controllers: [HealthController],
   providers: [

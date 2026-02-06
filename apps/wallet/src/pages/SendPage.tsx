@@ -12,6 +12,7 @@ import { useTranslation } from 'react-i18next';
 import FiatValue from '../components/FiatValue';
 import TransactionPreviewModal from '../components/TransactionPreviewModal';
 import AddressBookModal from '../components/AddressBookModal';
+import { useWalletStore } from '../stores/walletStore';
 
 const TOKEN_MINTS: Record<string, { mint: string; decimals: number }> = {
   USDC: { mint: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', decimals: 6 },
@@ -23,6 +24,7 @@ export default function SendPage() {
   const { t } = useTranslation();
   const { connected, publicKey, sendTransaction } = useWallet();
   const { connection } = useConnection();
+  const invalidateBalances = useWalletStore((s) => s.invalidateBalances);
 
   const [recipient, setRecipient] = useState('');
   const [amount, setAmount] = useState('');
@@ -37,23 +39,23 @@ export default function SendPage() {
 
   const openPreview = async () => {
     if (!recipient || !amount) {
-      setError('Please fill in all fields');
+      setError(t('send.fillAllFields'));
       return;
     }
     try {
       new PublicKey(recipient);
     } catch {
-      setError('Invalid recipient address');
+      setError(t('send.invalidAddress'));
       return;
     }
     const amountNum = parseFloat(amount);
     if (isNaN(amountNum) || amountNum <= 0) {
-      setError('Invalid amount');
+      setError(t('send.invalidAmount'));
       return;
     }
 
     if (!publicKey) {
-      setError('Wallet not connected');
+      setError(t('send.walletNotConnected'));
       return;
     }
 
@@ -65,9 +67,7 @@ export default function SendPage() {
         const balance = await connection.getBalance(publicKey);
         const required = Math.floor(amountNum * LAMPORTS_PER_SOL) + 5000; // include tx fee
         if (balance < required) {
-          setError(
-            `Insufficient SOL balance. You have ${(balance / LAMPORTS_PER_SOL).toFixed(4)} SOL`
-          );
+          setError(t('send.insufficientSol', { balance: (balance / LAMPORTS_PER_SOL).toFixed(4) }));
           return;
         }
       } else {
@@ -79,11 +79,11 @@ export default function SendPage() {
             const tokenBalance = await connection.getTokenAccountBalance(ata);
             const available = parseFloat(tokenBalance.value.uiAmountString || '0');
             if (available < amountNum) {
-              setError(`Insufficient ${token} balance. You have ${available} ${token}`);
+              setError(t('send.insufficientToken', { token, available }));
               return;
             }
           } catch {
-            setError(`No ${token} balance found in your wallet`);
+            setError(t('send.noTokenBalance', { token }));
             return;
           }
         }
@@ -101,12 +101,12 @@ export default function SendPage() {
   const handleSend = async () => {
     setShowPreview(false);
     if (!connected || !publicKey) {
-      setError('Please connect your wallet first');
+      setError(t('send.connectFirst'));
       return;
     }
 
     if (!recipient || !amount) {
-      setError('Please fill in all fields');
+      setError(t('send.fillAllFields'));
       return;
     }
 
@@ -114,13 +114,13 @@ export default function SendPage() {
     try {
       recipientPubkey = new PublicKey(recipient);
     } catch {
-      setError('Invalid recipient address');
+      setError(t('send.invalidAddress'));
       return;
     }
 
     const amountNum = parseFloat(amount);
     if (isNaN(amountNum) || amountNum <= 0) {
-      setError('Invalid amount');
+      setError(t('send.invalidAmount'));
       return;
     }
 
@@ -144,7 +144,7 @@ export default function SendPage() {
         // SPL token transfer
         const tokenConfig = TOKEN_MINTS[token];
         if (!tokenConfig) {
-          setError('Unsupported token');
+          setError(t('send.unsupportedToken'));
           return;
         }
 
@@ -155,12 +155,6 @@ export default function SendPage() {
         const transaction = new Transaction();
 
         // Check if recipient's ATA exists, create if not
-        try {
-          await connection.getAccountInfo(recipientATA);
-        } catch {
-          // ATA doesn't exist, we need to create it
-        }
-
         const recipientATAInfo = await connection.getAccountInfo(recipientATA);
         if (!recipientATAInfo) {
           transaction.add(
@@ -188,8 +182,9 @@ export default function SendPage() {
 
       setRecipient('');
       setAmount('');
+      invalidateBalances();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Transaction failed');
+      setError(err instanceof Error ? err.message : t('send.txFailed'));
     } finally {
       setSending(false);
     }
@@ -216,9 +211,9 @@ export default function SendPage() {
             onChange={(e) => setToken(e.target.value)}
             className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-primary-500"
           >
-            <option value="SOL">SOL - Solana</option>
-            <option value="USDC">USDC - USD Coin</option>
-            <option value="MVGA">MVGA - Make Venezuela Great Again</option>
+            <option value="SOL">{t('send.solLabel')}</option>
+            <option value="USDC">{t('send.usdcLabel')}</option>
+            <option value="MVGA">{t('send.mvgaLabel')}</option>
           </select>
         </div>
 
@@ -286,7 +281,7 @@ export default function SendPage() {
               rel="noopener noreferrer"
               className="underline"
             >
-              View on Solscan
+              {t('common.viewOnSolscan')}
             </a>
           </div>
         )}

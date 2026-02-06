@@ -6,7 +6,7 @@ import { TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { useTranslation } from 'react-i18next';
 import TokenCard from '../components/TokenCard';
 import { usePrices } from '../hooks/usePrices';
-import { useWalletStore } from '../stores/walletStore';
+import { useWalletStore, TokenBalance } from '../stores/walletStore';
 import { showToast } from '../hooks/useToast';
 
 const KNOWN_TOKENS: Record<
@@ -35,14 +35,6 @@ const KNOWN_TOKENS: Record<
   },
 };
 
-interface TokenBalance {
-  symbol: string;
-  name: string;
-  balance: number;
-  usdValue: number;
-  logoUrl?: string;
-}
-
 export default function WalletPage() {
   const { t } = useTranslation();
   const { connected, publicKey } = useWallet();
@@ -50,8 +42,10 @@ export default function WalletPage() {
   const [balances, setBalances] = useState<TokenBalance[]>([]);
   const [totalValue, setTotalValue] = useState(0);
   const [loading, setLoading] = useState(false);
-  const { prices } = usePrices();
+  const { prices, formatUsdValue } = usePrices();
   const preferredCurrency = useWalletStore((s) => s.preferredCurrency);
+  const storeSetBalances = useWalletStore((s) => s.setBalances);
+  const balanceVersion = useWalletStore((s) => s.balanceVersion);
 
   useEffect(() => {
     async function fetchBalances() {
@@ -98,9 +92,11 @@ export default function WalletPage() {
 
         const newBalances: TokenBalance[] = [
           {
+            mint: 'So11111111111111111111111111111111111111112',
             symbol: 'SOL',
             name: 'Solana',
             balance: solAmount,
+            decimals: 9,
             usdValue: solAmount * solPrice,
             logoUrl:
               'https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png',
@@ -119,9 +115,11 @@ export default function WalletPage() {
           const price = tokenPrices[mint] || 0;
 
           newBalances.push({
+            mint,
             symbol: tokenInfo.symbol,
             name: tokenInfo.name,
             balance: amount,
+            decimals: tokenInfo.decimals,
             usdValue: amount * price,
             logoUrl: tokenInfo.logoUrl,
           });
@@ -130,9 +128,11 @@ export default function WalletPage() {
         // Add MVGA with 0 balance if not found (so it always shows)
         if (!newBalances.find((b) => b.symbol === 'MVGA')) {
           newBalances.push({
+            mint: 'DRX65kM2n5CLTpdjJCemZvkUwE98ou4RpHrd8Z3GH5Qh',
             symbol: 'MVGA',
             name: 'Make Venezuela Great Again',
             balance: 0,
+            decimals: 9,
             usdValue: 0,
             logoUrl: 'https://gateway.irys.xyz/J47ckDJCqKGrt5QHo4ZjDSa4LcaitMFXkcEJ3qyM2qnD',
           });
@@ -140,6 +140,7 @@ export default function WalletPage() {
 
         setBalances(newBalances);
         setTotalValue(newBalances.reduce((sum, b) => sum + b.usdValue, 0));
+        storeSetBalances(newBalances);
       } catch {
         showToast('error', t('common.somethingWrong'));
       } finally {
@@ -150,7 +151,7 @@ export default function WalletPage() {
     fetchBalances();
     const interval = setInterval(fetchBalances, 30000);
     return () => clearInterval(interval);
-  }, [connected, publicKey, connection]);
+  }, [connected, publicKey, connection, balanceVersion]);
 
   if (!connected) {
     return (
@@ -182,11 +183,7 @@ export default function WalletPage() {
       {/* Total Balance Card */}
       <div className="card text-center py-8">
         <p className="text-gray-400 text-sm mb-1">{t('wallet.totalBalance')}</p>
-        <h1 className="text-4xl font-bold mb-1">
-          {preferredCurrency === 'VES'
-            ? `Bs ${(totalValue * prices.vesRate).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-            : `$${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-        </h1>
+        <h1 className="text-4xl font-bold mb-1">{formatUsdValue(totalValue, preferredCurrency)}</h1>
         <p className="text-gray-500 text-sm">
           {publicKey?.toBase58().slice(0, 8)}...{publicKey?.toBase58().slice(-8)}
         </p>

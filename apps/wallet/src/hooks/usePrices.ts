@@ -107,5 +107,14 @@ export function usePrices() {
     return `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
-  return { prices, loading, toFiat, formatFiat };
+  const formatUsdValue = (usd: number, currency: 'USD' | 'VES' = 'USD'): string => {
+    if (currency === 'VES') {
+      if (prices.vesRate === 0) return 'Bs \u2014';
+      const ves = usd * prices.vesRate;
+      return `Bs ${ves.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+    return `$${usd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  };
+
+  return { prices, loading, toFiat, formatFiat, formatUsdValue };
 }

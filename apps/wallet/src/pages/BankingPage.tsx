@@ -28,7 +28,7 @@ export default function BankingPage() {
   const { connected, publicKey } = useWallet();
   const balances = useWalletStore((s) => s.balances);
   const preferredCurrency = useWalletStore((s) => s.preferredCurrency);
-  const { prices } = usePrices();
+  const { prices, formatUsdValue } = usePrices();
   const [recentTxs, setRecentTxs] = useState<RecentTx[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -56,13 +56,7 @@ export default function BankingPage() {
       .finally(() => setLoading(false));
   }, [connected, publicKey, t]);
 
-  const formatUsd = (usd: number) => {
-    if (preferredCurrency === 'VES' && prices.vesRate > 0) {
-      const ves = usd * prices.vesRate;
-      return `Bs ${ves.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    }
-    return `$${usd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  };
+  const formatUsd = (usd: number) => formatUsdValue(usd, preferredCurrency);
 
   if (!connected) {
     return (

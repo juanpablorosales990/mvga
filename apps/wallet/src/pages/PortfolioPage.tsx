@@ -39,7 +39,7 @@ export default function PortfolioPage() {
   const preferredCurrency = useWalletStore((s) => s.preferredCurrency);
   const balances = useWalletStore((s) => s.balances);
   const totalUsdValue = useWalletStore((s) => s.totalUsdValue);
-  const { prices, formatFiat } = usePrices();
+  const { prices, formatFiat, formatUsdValue } = usePrices();
 
   const [staking, setStaking] = useState<StakingData | null>(null);
   const [referrals, setReferrals] = useState<ReferralStats | null>(null);
@@ -90,13 +90,7 @@ export default function PortfolioPage() {
     { name: t('portfolio.referralEarnings'), value: referralValueUsd },
   ].filter((d) => d.value > 0);
 
-  const formatTotal = (usd: number) => {
-    if (preferredCurrency === 'VES' && prices.vesRate > 0) {
-      const ves = usd * prices.vesRate;
-      return `Bs ${ves.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    }
-    return `$${usd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  };
+  const formatTotal = (usd: number) => formatUsdValue(usd, preferredCurrency);
 
   if (!connected) {
     return (

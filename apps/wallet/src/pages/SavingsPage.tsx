@@ -21,7 +21,7 @@ export default function SavingsPage() {
   const preferredCurrency = useWalletStore((s) => s.preferredCurrency);
   const savingsGoal = useWalletStore((s) => s.savingsGoal);
   const setSavingsGoal = useWalletStore((s) => s.setSavingsGoal);
-  const { prices } = usePrices();
+  const { prices, formatUsdValue } = usePrices();
 
   const [showGoalForm, setShowGoalForm] = useState(false);
   const [goalLabel, setGoalLabel] = useState(savingsGoal?.label ?? '');
@@ -35,13 +35,7 @@ export default function SavingsPage() {
   const monthlyInterest = (stablecoinUsd * (MOCK_APY / 100)) / 12;
   const yearlyInterest = stablecoinUsd * (MOCK_APY / 100);
 
-  const formatUsd = (usd: number) => {
-    if (preferredCurrency === 'VES' && prices.vesRate > 0) {
-      const ves = usd * prices.vesRate;
-      return `Bs ${ves.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    }
-    return `$${usd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  };
+  const formatUsd = (usd: number) => formatUsdValue(usd, preferredCurrency);
 
   const handleSaveGoal = () => {
     const amount = parseFloat(goalAmount);

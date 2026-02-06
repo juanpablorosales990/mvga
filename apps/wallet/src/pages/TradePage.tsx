@@ -34,25 +34,26 @@ interface Trade {
 }
 
 const STATUS_STEPS = ['PENDING', 'ESCROW_LOCKED', 'PAID', 'COMPLETED'];
-const STATUS_LABELS: Record<string, string> = {
-  PENDING: 'Pending',
-  ESCROW_LOCKED: 'Escrow Locked',
-  PAID: 'Payment Sent',
-  COMPLETED: 'Completed',
-  CANCELLED: 'Cancelled',
-  DISPUTED: 'Disputed',
-  REFUNDED: 'Refunded',
-};
-
-const PAYMENT_LABELS: Record<string, string> = {
-  ZELLE: 'Zelle',
-  VENMO: 'Venmo',
-  PAYPAL: 'PayPal',
-  BANK_TRANSFER: 'Bank Transfer',
-};
 
 export default function TradePage() {
   const { t } = useTranslation();
+
+  const STATUS_LABELS: Record<string, string> = {
+    PENDING: t('trade.pending'),
+    ESCROW_LOCKED: t('trade.escrowLocked'),
+    PAID: t('trade.paymentSent'),
+    COMPLETED: t('trade.completed'),
+    CANCELLED: t('trade.cancelled'),
+    DISPUTED: t('trade.disputed'),
+    REFUNDED: t('trade.refunded'),
+  };
+
+  const PAYMENT_LABELS: Record<string, string> = {
+    ZELLE: t('p2p.zelle'),
+    VENMO: t('p2p.venmo'),
+    PAYPAL: t('p2p.paypal'),
+    BANK_TRANSFER: t('p2p.bankTransfer'),
+  };
   const { tradeId } = useParams<{ tradeId: string }>();
   const navigate = useNavigate();
   const { connected, publicKey, sendTransaction } = useWallet();
@@ -78,7 +79,7 @@ export default function TradePage() {
         setTrade(await res.json());
       }
     } catch {
-      setError('Failed to load trade');
+      setError(t('trade.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -146,10 +147,10 @@ export default function TradePage() {
       });
       if (!confirmRes.ok) throw new Error('Failed to confirm escrow');
 
-      setSuccess('Escrow locked successfully!');
+      setSuccess(t('trade.escrowSuccess'));
       fetchTrade();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to lock escrow');
+      setError(err instanceof Error ? err.message : t('trade.failed'));
     } finally {
       setActionLoading(false);
     }
@@ -170,10 +171,10 @@ export default function TradePage() {
         body: JSON.stringify({ status: 'PAID', notes: '' }),
       });
       if (!res.ok) throw new Error((await res.json()).message || 'Failed to mark as paid');
-      setSuccess('Payment marked as sent!');
+      setSuccess(t('trade.paymentMarked'));
       fetchTrade();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed');
+      setError(err instanceof Error ? err.message : t('trade.failed'));
     } finally {
       setActionLoading(false);
     }
@@ -193,11 +194,11 @@ export default function TradePage() {
         },
         body: JSON.stringify({ status: 'CONFIRMED', notes: '' }),
       });
-      if (!res.ok) throw new Error((await res.json()).message || 'Failed to confirm');
-      setSuccess('Trade completed! Escrow released.');
+      if (!res.ok) throw new Error((await res.json()).message || t('trade.failed'));
+      setSuccess(t('trade.tradeCompletedMsg'));
       fetchTrade();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed');
+      setError(err instanceof Error ? err.message : t('trade.failed'));
     } finally {
       setActionLoading(false);
     }
@@ -323,43 +324,47 @@ export default function TradePage() {
           {STATUS_LABELS[trade.status] || trade.status}
         </span>
         <span className="text-xs text-gray-500">
-          {isSeller ? 'You are selling' : isBuyer ? 'You are buying' : 'Observer'}
+          {isSeller
+            ? t('trade.youAreSelling')
+            : isBuyer
+              ? t('trade.youAreBuying')
+              : t('trade.observer')}
         </span>
       </div>
 
       {/* Trade Details */}
       <div className="card space-y-3">
         <div className="flex justify-between text-sm">
-          <span className="text-gray-400">Crypto</span>
+          <span className="text-gray-400">{t('trade.crypto')}</span>
           <span className="font-medium">
             {trade.cryptoAmount.toLocaleString()} {trade.cryptoCurrency}
           </span>
         </div>
         <div className="flex justify-between text-sm">
-          <span className="text-gray-400">Fiat Amount</span>
+          <span className="text-gray-400">{t('trade.fiatAmount')}</span>
           <span className="font-medium">${trade.amount.toLocaleString()}</span>
         </div>
         <div className="flex justify-between text-sm">
-          <span className="text-gray-400">Payment</span>
+          <span className="text-gray-400">{t('p2p.payment')}</span>
           <span className="font-medium">
             {PAYMENT_LABELS[trade.paymentMethod] || trade.paymentMethod}
           </span>
         </div>
         <div className="flex justify-between text-sm">
-          <span className="text-gray-400">Seller</span>
+          <span className="text-gray-400">{t('trade.seller')}</span>
           <span className="font-mono text-xs">
             {trade.sellerAddress.slice(0, 6)}...{trade.sellerAddress.slice(-4)}
           </span>
         </div>
         <div className="flex justify-between text-sm">
-          <span className="text-gray-400">Buyer</span>
+          <span className="text-gray-400">{t('trade.buyer')}</span>
           <span className="font-mono text-xs">
             {trade.buyerAddress.slice(0, 6)}...{trade.buyerAddress.slice(-4)}
           </span>
         </div>
         {trade.escrowTx && (
           <div className="flex justify-between text-sm">
-            <span className="text-gray-400">Escrow TX</span>
+            <span className="text-gray-400">{t('trade.escrowTx')}</span>
             <a
               href={`https://solscan.io/tx/${trade.escrowTx}`}
               target="_blank"
@@ -379,7 +384,10 @@ export default function TradePage() {
           {trade.status === 'PENDING' && isSeller && (
             <>
               <p className="text-sm text-gray-400">
-                Lock {trade.cryptoAmount} {trade.cryptoCurrency} into escrow to proceed.
+                {t('trade.lockEscrowPrompt', {
+                  amount: trade.cryptoAmount,
+                  currency: trade.cryptoCurrency,
+                })}
               </p>
               <button
                 onClick={() => setShowEscrowPreview(true)}
@@ -402,15 +410,17 @@ export default function TradePage() {
           {trade.status === 'ESCROW_LOCKED' && isBuyer && (
             <>
               <p className="text-sm text-gray-400">
-                Send ${trade.amount} via{' '}
-                {PAYMENT_LABELS[trade.paymentMethod] || trade.paymentMethod}, then mark as paid.
+                {t('trade.sendPaymentPrompt', {
+                  amount: trade.amount,
+                  method: PAYMENT_LABELS[trade.paymentMethod] || trade.paymentMethod,
+                })}
               </p>
               <button
                 onClick={handleMarkPaid}
                 disabled={actionLoading}
                 className="w-full btn-primary disabled:opacity-50"
               >
-                {actionLoading ? 'Marking...' : t('trade.markPaid')}
+                {actionLoading ? t('trade.marking') : t('trade.markPaid')}
               </button>
             </>
           )}
@@ -418,22 +428,20 @@ export default function TradePage() {
           {/* Seller @ ESCROW_LOCKED: Waiting for buyer */}
           {trade.status === 'ESCROW_LOCKED' && isSeller && (
             <p className="text-sm text-gray-400 text-center py-2">
-              Escrow locked. Waiting for buyer to send payment...
+              {t('trade.waitingBuyerEscrow')}
             </p>
           )}
 
           {/* Seller @ PAID: Confirm payment received */}
           {trade.status === 'PAID' && isSeller && (
             <>
-              <p className="text-sm text-gray-400">
-                Buyer says payment was sent. Confirm receipt to release escrow.
-              </p>
+              <p className="text-sm text-gray-400">{t('trade.confirmPaymentPrompt')}</p>
               <button
                 onClick={handleConfirmPayment}
                 disabled={actionLoading}
                 className="w-full bg-green-500 text-black py-3 rounded-xl font-semibold disabled:opacity-50"
               >
-                {actionLoading ? 'Confirming...' : t('trade.confirmPayment')}
+                {actionLoading ? t('trade.confirming') : t('trade.confirmPayment')}
               </button>
             </>
           )}
@@ -441,7 +449,7 @@ export default function TradePage() {
           {/* Buyer @ PAID: Waiting for confirmation */}
           {trade.status === 'PAID' && isBuyer && (
             <p className="text-sm text-gray-400 text-center py-2">
-              Payment marked as sent. Waiting for seller to confirm...
+              {t('trade.waitingSellerConfirm')}
             </p>
           )}
 
@@ -474,7 +482,10 @@ export default function TradePage() {
         <div className="card bg-green-500/10 border border-green-500/20 text-center py-6">
           <p className="text-green-400 font-semibold text-lg mb-1">{t('trade.tradeCompleted')}</p>
           <p className="text-sm text-gray-400">
-            {trade.cryptoAmount} {trade.cryptoCurrency} released to buyer
+            {t('trade.releasedToBuyer', {
+              amount: trade.cryptoAmount,
+              currency: trade.cryptoCurrency,
+            })}
           </p>
         </div>
       )}

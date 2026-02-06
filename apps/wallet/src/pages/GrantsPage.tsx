@@ -32,6 +32,14 @@ const STATUS_COLORS: Record<string, string> = {
 export default function GrantsPage() {
   const { t } = useTranslation();
   const { publicKey } = useWallet();
+
+  const STATUS_LABELS: Record<string, string> = {
+    VOTING: t('grants.statusVoting'),
+    APPROVED: t('grants.statusApproved'),
+    REJECTED: t('grants.statusRejected'),
+    FUNDED: t('grants.statusFunded'),
+    COMPLETED: t('grants.statusCompleted'),
+  };
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<'active' | 'funded' | 'mine'>('active');
@@ -114,16 +122,16 @@ export default function GrantsPage() {
                   <p className="text-xs text-gray-500">{p.businessLocation}</p>
                 </div>
                 <span className={`text-xs px-2 py-1 rounded-full ${STATUS_COLORS[p.status] || ''}`}>
-                  {p.status}
+                  {STATUS_LABELS[p.status] || p.status}
                 </span>
               </div>
               <p className="text-sm text-gray-400 line-clamp-2 mb-3">{p.description}</p>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-400">
-                  ${p.requestedAmount.toLocaleString()} requested
+                  ${p.requestedAmount.toLocaleString()} {t('grants.requested')}
                 </span>
                 <span className="text-gray-500">
-                  {p.votesFor} for / {p.votesAgainst} against
+                  {p.votesFor} {t('grants.for')} / {p.votesAgainst} {t('grants.against')}
                 </span>
               </div>
               {p.status === 'VOTING' && (
@@ -141,7 +149,9 @@ export default function GrantsPage() {
                     />
                   </div>
                   <p className="text-xs text-gray-500 mt-1">
-                    Voting ends {new Date(p.votingEndsAt).toLocaleDateString()}
+                    {t('grants.votingEndsDate', {
+                      date: new Date(p.votingEndsAt).toLocaleDateString(),
+                    })}
                   </p>
                 </div>
               )}
