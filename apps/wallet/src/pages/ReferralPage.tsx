@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+import { API_URL } from '../config';
 
 interface ReferralStats {
   code: string | null;
@@ -22,30 +21,34 @@ export default function ReferralPage() {
 
   useEffect(() => {
     if (!authToken) return;
+    const controller = new AbortController();
 
     async function fetchData() {
       try {
         // Get or create referral code
         const codeRes = await fetch(`${API_URL}/referrals/code`, {
           headers: { Authorization: `Bearer ${authToken}` },
+          signal: controller.signal,
         });
         if (!codeRes.ok) return;
 
         // Get stats
         const statsRes = await fetch(`${API_URL}/referrals/stats`, {
           headers: { Authorization: `Bearer ${authToken}` },
+          signal: controller.signal,
         });
         if (statsRes.ok) {
           setStats(await statsRes.json());
         }
-      } catch {
-        // Fetch failed
+      } catch (err: any) {
+        if (err?.name === 'AbortError') return;
       } finally {
         setLoading(false);
       }
     }
 
     fetchData();
+    return () => controller.abort();
   }, [authToken]);
 
   const referralLink = stats?.code ? `${window.location.origin}?ref=${stats.code}` : '';

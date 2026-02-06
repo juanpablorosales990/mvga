@@ -27,7 +27,7 @@ interface HistoryPoint {
   snapshotAt: string;
 }
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+import { API_URL } from '../config';
 
 const PERIODS = ['24h', '7d', '30d'] as const;
 

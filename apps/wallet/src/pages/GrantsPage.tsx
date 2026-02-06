@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useTranslation } from 'react-i18next';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+import { API_URL } from '../config';
 
 interface Proposal {
   id: string;
@@ -45,13 +44,14 @@ export default function GrantsPage() {
   const [tab, setTab] = useState<'active' | 'funded' | 'mine'>('active');
 
   useEffect(() => {
+    const controller = new AbortController();
     setLoading(true);
     const statusFilter = tab === 'active' ? 'VOTING' : tab === 'funded' ? 'FUNDED' : '';
     const url = statusFilter
       ? `${API_URL}/grants/proposals?status=${statusFilter}`
       : `${API_URL}/grants/proposals`;
 
-    fetch(url)
+    fetch(url, { signal: controller.signal })
       .then((r) => (r.ok ? r.json() : []))
       .then((data) => {
         if (tab === 'mine' && publicKey) {
@@ -60,7 +60,9 @@ export default function GrantsPage() {
           setProposals(data);
         }
       })
-      .catch(() => setProposals([]))
+      .catch((err) => {
+        if (err.name !== 'AbortError') setProposals([]);
+      })
       .finally(() => setLoading(false));
   }, [tab, publicKey]);
 

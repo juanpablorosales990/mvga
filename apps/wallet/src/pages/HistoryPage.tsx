@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useTranslation } from 'react-i18next';
 import { showToast } from '../hooks/useToast';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+import { API_URL } from '../config';
 
 interface OnChainTx {
   signature: string;
@@ -77,6 +76,7 @@ export default function HistoryPage() {
 
   useEffect(() => {
     if (!connected || !publicKey) return;
+    const controller = new AbortController();
 
     async function fetchHistory() {
       setLoading(true);
@@ -84,8 +84,8 @@ export default function HistoryPage() {
 
       try {
         const [chainRes, logRes] = await Promise.all([
-          fetch(`${API_URL}/wallet/${addr}/transactions`),
-          fetch(`${API_URL}/wallet/${addr}/transaction-log`),
+          fetch(`${API_URL}/wallet/${addr}/transactions`, { signal: controller.signal }),
+          fetch(`${API_URL}/wallet/${addr}/transaction-log`, { signal: controller.signal }),
         ]);
 
         const chainTxs: OnChainTx[] = chainRes.ok ? await chainRes.json() : [];
@@ -126,14 +126,15 @@ export default function HistoryPage() {
         // Sort by timestamp descending
         merged.sort((a, b) => b.timestamp - a.timestamp);
         setItems(merged);
-      } catch {
-        showToast('error', t('common.somethingWrong'));
+      } catch (err: any) {
+        if (err?.name !== 'AbortError') showToast('error', t('common.somethingWrong'));
       } finally {
         setLoading(false);
       }
     }
 
     fetchHistory();
+    return () => controller.abort();
   }, [connected, publicKey]);
 
   if (!connected) {

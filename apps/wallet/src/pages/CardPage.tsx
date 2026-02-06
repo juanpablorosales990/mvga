@@ -4,8 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useWalletStore } from '../stores/walletStore';
 import { showToast } from '../hooks/useToast';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+import { API_URL } from '../config';
 
 const FEATURES = [
   'featureVisa',

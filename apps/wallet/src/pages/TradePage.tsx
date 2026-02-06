@@ -12,8 +12,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
 import TransactionPreviewModal from '../components/TransactionPreviewModal';
 import ConfirmModal from '../components/ConfirmModal';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+import { API_URL } from '../config';
 
 const TOKEN_DECIMALS: Record<string, number> = { USDC: 6, MVGA: 9 };
 
@@ -71,24 +70,31 @@ export default function TradePage() {
 
   const walletAddress = publicKey?.toBase58() || '';
 
-  const fetchTrade = useCallback(async () => {
-    if (!tradeId) return;
-    try {
-      const res = await fetch(`${API_URL}/p2p/trades/${tradeId}`);
-      if (res.ok) {
-        setTrade(await res.json());
+  const fetchTrade = useCallback(
+    async (signal?: AbortSignal) => {
+      if (!tradeId) return;
+      try {
+        const res = await fetch(`${API_URL}/p2p/trades/${tradeId}`, { signal });
+        if (res.ok) {
+          setTrade(await res.json());
+        }
+      } catch (err: any) {
+        if (err?.name !== 'AbortError') setError(t('trade.loadFailed'));
+      } finally {
+        setLoading(false);
       }
-    } catch {
-      setError(t('trade.loadFailed'));
-    } finally {
-      setLoading(false);
-    }
-  }, [tradeId]);
+    },
+    [tradeId]
+  );
 
   useEffect(() => {
-    fetchTrade();
-    const interval = setInterval(fetchTrade, 10000);
-    return () => clearInterval(interval);
+    const controller = new AbortController();
+    fetchTrade(controller.signal);
+    const interval = setInterval(() => fetchTrade(controller.signal), 10000);
+    return () => {
+      controller.abort();
+      clearInterval(interval);
+    };
   }, [fetchTrade]);
 
   const isSeller = trade?.sellerAddress === walletAddress;

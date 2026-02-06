@@ -3,8 +3,7 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { useWalletStore } from '../stores/walletStore';
 import { showToast } from './useToast';
 import bs58 from 'bs58';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+import { API_URL } from '../config';
 
 export function useAuth() {
   const { connected, publicKey, signMessage } = useWallet();

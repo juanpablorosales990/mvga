@@ -8,6 +8,7 @@ import TokenCard from '../components/TokenCard';
 import { usePrices } from '../hooks/usePrices';
 import { useWalletStore, TokenBalance } from '../stores/walletStore';
 import { showToast } from '../hooks/useToast';
+import { API_URL } from '../config';
 
 const KNOWN_TOKENS: Record<
   string,
@@ -48,6 +49,8 @@ export default function WalletPage() {
   const balanceVersion = useWalletStore((s) => s.balanceVersion);
 
   useEffect(() => {
+    const controller = new AbortController();
+
     async function fetchBalances() {
       if (!connected || !publicKey) {
         setBalances([]);
@@ -67,10 +70,9 @@ export default function WalletPage() {
         });
 
         // Fetch prices from our API (centralizes CoinGecko + DexScreener)
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
         const tokenPrices: Record<string, number> = {};
         try {
-          const priceRes = await fetch(`${API_URL}/wallet/prices`);
+          const priceRes = await fetch(`${API_URL}/wallet/prices`, { signal: controller.signal });
           if (priceRes.ok) {
             const data: { symbol: string; price: number }[] = await priceRes.json();
             const mintMap: Record<string, string> = {
@@ -84,7 +86,8 @@ export default function WalletPage() {
               if (mint) tokenPrices[mint] = entry.price;
             }
           }
-        } catch {
+        } catch (err: any) {
+          if (err?.name === 'AbortError') return;
           tokenPrices['So11111111111111111111111111111111111111112'] = 150;
         }
 
@@ -141,8 +144,8 @@ export default function WalletPage() {
         setBalances(newBalances);
         setTotalValue(newBalances.reduce((sum, b) => sum + b.usdValue, 0));
         storeSetBalances(newBalances);
-      } catch {
-        showToast('error', t('common.somethingWrong'));
+      } catch (err: any) {
+        if (err?.name !== 'AbortError') showToast('error', t('common.somethingWrong'));
       } finally {
         setLoading(false);
       }
@@ -150,7 +153,10 @@ export default function WalletPage() {
 
     fetchBalances();
     const interval = setInterval(fetchBalances, 30000);
-    return () => clearInterval(interval);
+    return () => {
+      controller.abort();
+      clearInterval(interval);
+    };
   }, [connected, publicKey, connection, balanceVersion]);
 
   if (!connected) {

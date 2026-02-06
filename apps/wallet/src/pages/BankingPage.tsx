@@ -6,8 +6,7 @@ import { usePrices } from '../hooks/usePrices';
 import { useWalletStore } from '../stores/walletStore';
 import { showToast } from '../hooks/useToast';
 import { SkeletonStatCard } from '../components/Skeleton';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+import { API_URL } from '../config';
 
 interface RecentTx {
   id: string;
@@ -44,16 +43,20 @@ export default function BankingPage() {
       setLoading(false);
       return;
     }
+    const controller = new AbortController();
     const addr = publicKey.toBase58();
     setLoading(true);
-    fetch(`${API_URL}/wallet/${addr}/transaction-log?limit=5`)
+    fetch(`${API_URL}/wallet/${addr}/transaction-log?limit=5`, { signal: controller.signal })
       .then((r) => r.json())
       .then((data) => {
         const txs = Array.isArray(data) ? data : [];
         setRecentTxs(txs.filter((tx: RecentTx) => tx.token === 'USDC' || tx.token === 'USDT'));
       })
-      .catch(() => showToast('error', t('common.somethingWrong')))
+      .catch((err) => {
+        if (err?.name !== 'AbortError') showToast('error', t('common.somethingWrong'));
+      })
       .finally(() => setLoading(false));
+    return () => controller.abort();
   }, [connected, publicKey, t]);
 
   const formatUsd = (usd: number) => formatUsdValue(usd, preferredCurrency);

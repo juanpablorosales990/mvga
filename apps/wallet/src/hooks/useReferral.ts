@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useAuth } from './useAuth';
+import { API_URL } from '../config';
 
 const REF_STORAGE_KEY = 'mvga_ref_code';
 
@@ -27,8 +28,6 @@ export function useReferral() {
 
     const code = localStorage.getItem(REF_STORAGE_KEY);
     if (!code) return;
-
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
 
     fetch(`${API_URL}/referrals/claim`, {
       method: 'POST',

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { API_URL } from '../config';
 
 interface Prices {
   sol: number;
@@ -17,8 +18,6 @@ async function fetchPricesFromAPI(): Promise<Prices> {
   if (cachedPrices && now - cacheTimestamp < CACHE_TTL) {
     return cachedPrices;
   }
-
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
 
   // Fetch crypto prices from our API
   const prices: Prices = { sol: 0, usdc: 1, usdt: 1, mvga: 0, vesRate: 0 };

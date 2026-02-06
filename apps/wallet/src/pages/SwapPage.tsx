@@ -4,6 +4,7 @@ import { VersionedTransaction } from '@solana/web3.js';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
 import { useWalletStore } from '../stores/walletStore';
+import { API_URL } from '../config';
 
 const TOKENS = [
   {
@@ -159,8 +160,7 @@ export default function SwapPage() {
 
       // Record swap for fee tracking (async, non-blocking)
       try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
-        await fetch(`${apiUrl}/swap/record`, {
+        await fetch(`${API_URL}/swap/record`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

@@ -55,7 +55,7 @@ interface BurnRecord {
   createdAt: string;
 }
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+import { API_URL } from '../config';
 
 export default function TransparencyPage() {
   const { t } = useTranslation();
@@ -66,27 +66,30 @@ export default function TransparencyPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const controller = new AbortController();
+
     const fetchData = async () => {
       try {
         const [statsRes, distRes, burnStatsRes, burnHistRes] = await Promise.all([
-          fetch(`${API_URL}/treasury/stats`),
-          fetch(`${API_URL}/treasury/distributions?limit=5`),
-          fetch(`${API_URL}/burn/stats`),
-          fetch(`${API_URL}/burn/history?limit=5`),
+          fetch(`${API_URL}/treasury/stats`, { signal: controller.signal }),
+          fetch(`${API_URL}/treasury/distributions?limit=5`, { signal: controller.signal }),
+          fetch(`${API_URL}/burn/stats`, { signal: controller.signal }),
+          fetch(`${API_URL}/burn/history?limit=5`, { signal: controller.signal }),
         ]);
 
         if (statsRes.ok) setStats(await statsRes.json());
         if (distRes.ok) setDistributions(await distRes.json());
         if (burnStatsRes.ok) setBurnStats(await burnStatsRes.json());
         if (burnHistRes.ok) setBurnHistory(await burnHistRes.json());
-      } catch (error) {
-        console.error('Failed to fetch treasury data:', error);
+      } catch (err: any) {
+        if (err?.name === 'AbortError') return;
       } finally {
         setLoading(false);
       }
     };
 
     fetchData();
+    return () => controller.abort();
   }, []);
 
   const formatNumber = (num: number) => {

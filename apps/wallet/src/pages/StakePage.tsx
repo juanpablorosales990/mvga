@@ -13,8 +13,7 @@ import { useWalletStore } from '../stores/walletStore';
 import FiatValue from '../components/FiatValue';
 import TransactionPreviewModal from '../components/TransactionPreviewModal';
 import { showToast } from '../hooks/useToast';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+import { API_URL } from '../config';
 
 const MVGA_MINT = 'DRX65kM2n5CLTpdjJCemZvkUwE98ou4RpHrd8Z3GH5Qh';
 const MVGA_DECIMALS = 9;
@@ -135,18 +134,21 @@ export default function StakePage() {
     effectiveApy: 12,
   });
 
-  const fetchData = useCallback(async () => {
-    try {
-      const [infoRes, posRes] = await Promise.all([
-        fetch(`${API_URL}/staking/info`),
-        publicKey ? fetch(`${API_URL}/staking/${publicKey.toBase58()}`) : null,
-      ]);
-      if (infoRes.ok) setStakingInfo(await infoRes.json());
-      if (posRes?.ok) setPosition(await posRes.json());
-    } catch {
-      showToast('error', t('common.somethingWrong'));
-    }
-  }, [publicKey]);
+  const fetchData = useCallback(
+    async (signal?: AbortSignal) => {
+      try {
+        const [infoRes, posRes] = await Promise.all([
+          fetch(`${API_URL}/staking/info`, { signal }),
+          publicKey ? fetch(`${API_URL}/staking/${publicKey.toBase58()}`, { signal }) : null,
+        ]);
+        if (infoRes.ok) setStakingInfo(await infoRes.json());
+        if (posRes?.ok) setPosition(await posRes.json());
+      } catch (err: any) {
+        if (err?.name !== 'AbortError') showToast('error', t('common.somethingWrong'));
+      }
+    },
+    [publicKey]
+  );
 
   useEffect(() => {
     async function fetchBalance() {
@@ -164,9 +166,13 @@ export default function StakePage() {
   }, [publicKey, connection]);
 
   useEffect(() => {
-    fetchData();
-    const interval = setInterval(fetchData, 30000);
-    return () => clearInterval(interval);
+    const controller = new AbortController();
+    fetchData(controller.signal);
+    const interval = setInterval(() => fetchData(controller.signal), 30000);
+    return () => {
+      controller.abort();
+      clearInterval(interval);
+    };
   }, [fetchData]);
 
   const handleStake = async () => {

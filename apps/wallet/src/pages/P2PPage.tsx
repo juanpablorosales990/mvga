@@ -24,7 +24,7 @@ interface Reputation {
   totalTrades: number;
 }
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+import { API_URL } from '../config';
 
 const PAYMENT_METHODS = ['ZELLE', 'VENMO', 'PAYPAL', 'BANK_TRANSFER'] as const;
 const CRYPTO_OPTIONS = ['USDC', 'MVGA'] as const;
@@ -72,41 +72,52 @@ export default function P2PPage() {
   const [tradeAmount, setTradeAmount] = useState('');
   const [reputations, setReputations] = useState<Record<string, Reputation>>({});
 
-  const fetchOffers = async () => {
+  const fetchOffers = async (signal?: AbortSignal) => {
     setLoading(true);
     try {
       const type = activeTab === 'buy' ? 'SELL' : activeTab === 'sell' ? 'BUY' : undefined;
       const url = type ? `${API_URL}/p2p/offers?type=${type}` : `${API_URL}/p2p/offers`;
-      const response = await fetch(url);
+      const response = await fetch(url, { signal });
       const data = await response.json();
       setOffers(data);
-    } catch {
-      // Fetch failed — user sees empty state
+    } catch (err: any) {
+      if (err?.name === 'AbortError') return;
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchOffers();
+    const controller = new AbortController();
+    fetchOffers(controller.signal);
+    return () => controller.abort();
   }, [activeTab]);
 
   // Fetch my trades
   useEffect(() => {
     if (!publicKey) return;
-    fetch(`${API_URL}/p2p/users/${publicKey.toBase58()}/trades`)
+    const controller = new AbortController();
+    fetch(`${API_URL}/p2p/users/${publicKey.toBase58()}/trades`, { signal: controller.signal })
       .then((r) => (r.ok ? r.json() : []))
       .then(setMyTrades)
-      .catch(() => {});
+      .catch((err) => {
+        if (err.name !== 'AbortError') {
+          /* ignore */
+        }
+      });
+    return () => controller.abort();
   }, [publicKey]);
 
   // Fetch reputations for all unique seller addresses
   useEffect(() => {
+    const controller = new AbortController();
     const addresses = [...new Set(offers.map((o) => o.sellerAddress))];
     addresses.forEach(async (addr) => {
       if (reputations[addr]) return;
       try {
-        const res = await fetch(`${API_URL}/p2p/users/${addr}/reputation`);
+        const res = await fetch(`${API_URL}/p2p/users/${addr}/reputation`, {
+          signal: controller.signal,
+        });
         if (res.ok) {
           const data = await res.json();
           setReputations((prev) => ({
@@ -118,6 +129,7 @@ export default function P2PPage() {
         /* ignore */
       }
     });
+    return () => controller.abort();
   }, [offers]);
 
   const handleCreateOffer = async () => {

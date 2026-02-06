@@ -51,7 +51,9 @@ export class CreateOfferDto {
   maxAmount: number;
 
   @ApiProperty({ description: 'Payment instructions', required: false })
+  @IsOptional()
   @IsString()
+  @MaxLength(1000)
   paymentInstructions?: string;
 }
 
@@ -72,7 +74,9 @@ export class UpdateTradeStatusDto {
   status: 'PAID' | 'CONFIRMED' | 'DISPUTED' | 'CANCELLED';
 
   @ApiProperty({ description: 'Evidence/notes', required: false })
+  @IsOptional()
   @IsString()
+  @MaxLength(1000)
   notes?: string;
 }
 

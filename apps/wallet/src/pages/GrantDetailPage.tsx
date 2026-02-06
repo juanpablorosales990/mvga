@@ -3,8 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+import { API_URL } from '../config';
 
 interface ProposalDetail {
   id: string;
@@ -40,11 +39,17 @@ export default function GrantDetailPage() {
 
   useEffect(() => {
     if (!id) return;
-    fetch(`${API_URL}/grants/proposals/${id}`)
+    const controller = new AbortController();
+    fetch(`${API_URL}/grants/proposals/${id}`, { signal: controller.signal })
       .then((r) => (r.ok ? r.json() : null))
       .then(setProposal)
-      .catch(() => {})
+      .catch((err) => {
+        if (err.name !== 'AbortError') {
+          /* ignore */
+        }
+      })
       .finally(() => setLoading(false));
+    return () => controller.abort();
   }, [id]);
 
   const handleVote = async (direction: 'FOR' | 'AGAINST') => {
