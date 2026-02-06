@@ -1,9 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.mvga.io/api';
+import { useEffect, useState, useRef } from 'react';
+import { motion, useInView } from 'framer-motion';
+import Nav from '@/components/Nav';
+import Footer from '@/components/Footer';
+import GridBackground from '@/components/GridBackground';
+import Marquee from '@/components/Marquee';
+import { API_BASE, formatNumber } from '@/lib/utils';
 
 interface LiveMetrics {
   tvl: number;
@@ -15,492 +19,503 @@ interface LiveMetrics {
   totalBurned: number;
 }
 
-function formatNumber(num: number) {
-  if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(1)}M`;
-  if (num >= 1_000) return `${(num / 1_000).toFixed(0)}K`;
-  return new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(num);
-}
+const fadeUp = {
+  hidden: { opacity: 0, y: 24 },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: { delay: i * 0.1, duration: 0.5, ease: [0.25, 0.1, 0.25, 1] as const },
+  }),
+};
+
+const stagger = {
+  visible: { transition: { staggerChildren: 0.08 } },
+};
+
+const WALLETS = [
+  { name: 'Treasury', address: 'H9j1W4u5LEiw8AZdui6c8AmN6t4tKkPQCAULPW8eMiTE' },
+  { name: 'Humanitarian Fund', address: 'HvtvFhuVMu9XGmhW5zWNvtPK7ttiMBg7Ag7C9oRpyKwP' },
+  { name: 'Staking Vault', address: 'GNhLCjqThNJAJAdDYvRTr2EfWyGXAFUymaPuKaL1duEh' },
+  { name: 'Team Vesting', address: '8m8L2CGoneYwP3xEYyss5sjbj7GKy7cK3YxDcG2yNbH4' },
+  { name: 'Marketing', address: 'DA5VQFLsx87hNQqL2EsM36oVhGnzM2CnqPSe6E9RFpeo' },
+  { name: 'Advisors', address: 'Huq3ea9KKf6HFb5Qiacdx2pJDSM4c881WdyMCBHXq4hF' },
+];
 
 export default function Home() {
   const [metrics, setMetrics] = useState<LiveMetrics | null>(null);
+  const missionRef = useRef(null);
+  const missionInView = useInView(missionRef, { once: true });
 
   useEffect(() => {
-    fetch(`${API_URL}/metrics`)
+    fetch(`${API_BASE}/metrics`)
       .then((r) => (r.ok ? r.json() : null))
       .then(setMetrics)
       .catch(() => {});
   }, []);
+
+  const marqueeItems = [
+    { label: 'TVL', value: metrics ? `${formatNumber(metrics.tvl)} MVGA` : '---' },
+    { label: 'USERS', value: metrics ? formatNumber(metrics.totalUsers) : '---' },
+    { label: 'BURNED', value: metrics ? `${formatNumber(metrics.totalBurned)} MVGA` : '---' },
+    { label: 'STATUS', value: '100% OPEN SOURCE' },
+    { label: 'FOUNDER FEES', value: '0%' },
+    { label: 'NETWORK', value: 'SOLANA' },
+    { label: 'MOTTO', value: 'PATRIA Y VIDA' },
+  ];
+
   return (
-    <main
-      id="main-content"
-      className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-900 to-black text-white"
-    >
-      {/* Navigation */}
-      <nav className="fixed top-0 w-full z-50 glass">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl font-display font-bold gradient-text">MVGA</span>
-          </div>
-          <div className="hidden md:flex items-center gap-8">
-            <Link href="#mission" className="text-gray-300 hover:text-white transition">
-              Mission
-            </Link>
-            <Link href="#features" className="text-gray-300 hover:text-white transition">
-              Features
-            </Link>
-            <Link href="#transparency" className="text-gray-300 hover:text-white transition">
-              Transparency
-            </Link>
-            <Link href="#tokenomics" className="text-gray-300 hover:text-white transition">
-              Tokenomics
-            </Link>
-            <Link href="/grants" className="text-gray-300 hover:text-white transition">
-              Grants
-            </Link>
-          </div>
-          <Link
-            href="https://app.mvga.io"
-            target="_blank"
-            className="bg-primary-500 hover:bg-primary-600 text-black font-semibold px-6 py-2 rounded-full transition"
-          >
-            Launch App
-          </Link>
-        </div>
-      </nav>
+    <GridBackground>
+      <main id="main-content" className="min-h-screen bg-black text-white">
+        <Nav />
 
-      {/* Hero Section */}
-      <section className="pt-32 pb-20 px-6">
-        <div className="max-w-7xl mx-auto text-center">
-          <div className="flex flex-wrap gap-3 justify-center mb-8">
-            <div className="inline-flex items-center gap-2 bg-white/10 rounded-full px-4 py-2">
-              <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
-              <span className="text-sm text-gray-300">Open Source &bull; Community Owned</span>
-            </div>
-            <div className="inline-flex items-center gap-2 bg-green-500/20 border border-green-500/30 rounded-full px-4 py-2">
-              <span className="text-sm text-green-400 font-medium">Zero Founder Fees</span>
-            </div>
-          </div>
-
-          <h1 className="text-5xl md:text-7xl font-display font-bold mb-6">
-            <span className="gradient-text">Make Venezuela</span>
-            <br />
-            <span className="text-white">Great Again</span>
-          </h1>
-
-          <p className="text-xl md:text-2xl text-gray-400 max-w-3xl mx-auto mb-10">
-            Venezuela&apos;s open-source financial infrastructure. Send money to family, hold stable
-            value, support small businesses. No middlemen. No corruption.
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              href="https://app.mvga.io"
-              target="_blank"
-              className="bg-primary-500 hover:bg-primary-600 text-black font-semibold px-8 py-4 rounded-full text-lg transition"
+        {/* ── HERO ─────────────────────────────────────────────── */}
+        <section className="pt-32 md:pt-40 pb-20 px-6">
+          <div className="max-w-7xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.3 }}
+              className="flex flex-wrap gap-3 mb-10"
             >
-              Open Wallet
-            </Link>
-            <Link
-              href="#transparency"
-              className="border border-white/30 hover:bg-white/10 text-white font-semibold px-8 py-4 rounded-full text-lg transition"
-            >
-              View All Wallets
-            </Link>
-          </div>
+              <span className="text-xs tracking-[0.25em] uppercase border border-white/20 px-3 py-1 text-white/50">
+                Open Source
+              </span>
+              <span className="text-xs tracking-[0.25em] uppercase border border-gold-500/30 px-3 py-1 text-gold-500">
+                Zero Founder Fees
+              </span>
+            </motion.div>
 
-          {/* Live Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mt-20 max-w-4xl mx-auto">
-            <div>
-              <div className="text-3xl md:text-4xl font-bold text-primary-500">
-                {metrics ? formatNumber(metrics.tvl) : '---'}
-              </div>
-              <div className="text-gray-500">TVL (MVGA)</div>
-            </div>
-            <div>
-              <div className="text-3xl md:text-4xl font-bold text-secondary-500">
-                {metrics ? formatNumber(metrics.totalUsers) : '---'}
-              </div>
-              <div className="text-gray-500">Users</div>
-            </div>
-            <div>
-              <div className="text-3xl md:text-4xl font-bold text-red-500">
-                {metrics ? formatNumber(metrics.totalBurned) : '---'}
-              </div>
-              <div className="text-gray-500">Tokens Burned</div>
-            </div>
-            <div>
-              <div className="text-3xl md:text-4xl font-bold text-green-500">100%</div>
-              <div className="text-gray-500">Open Source</div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Mission Section */}
-      <section id="mission" className="py-20 px-6 bg-black/50">
-        <div className="max-w-7xl mx-auto">
-          <h2 className="text-3xl md:text-5xl font-display font-bold text-center mb-4">
-            Our Mission
-          </h2>
-          <p className="text-gray-400 text-center max-w-2xl mx-auto mb-16">
-            We believe every Venezuelan deserves access to stable money, regardless of where they
-            live.
-          </p>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="glass rounded-2xl p-8">
-              <div className="w-12 h-12 bg-primary-500/20 rounded-xl flex items-center justify-center mb-4">
-                <span className="text-2xl">💸</span>
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Zero Fee Remittances</h3>
-              <p className="text-gray-400">
-                Send money to Venezuela without losing 15% to middlemen. P2P exchange directly with
-                other users.
-              </p>
-            </div>
-
-            <div className="glass rounded-2xl p-8">
-              <div className="w-12 h-12 bg-secondary-500/20 rounded-xl flex items-center justify-center mb-4">
-                <span className="text-2xl">🏪</span>
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Support Local Business</h3>
-              <p className="text-gray-400">
-                Vote on micro-grants for Venezuelan entrepreneurs. Help rebuild the economy from the
-                ground up.
-              </p>
-            </div>
-
-            <div className="glass rounded-2xl p-8">
-              <div className="w-12 h-12 bg-accent-500/20 rounded-xl flex items-center justify-center mb-4">
-                <span className="text-2xl">🔓</span>
-              </div>
-              <h3 className="text-xl font-semibold mb-2">100% Open Source</h3>
-              <p className="text-gray-400">
-                Every line of code is public. Every wallet is visible. No hidden agendas. No regime
-                ties.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section id="features" className="py-20 px-6">
-        <div className="max-w-7xl mx-auto">
-          <h2 className="text-3xl md:text-5xl font-display font-bold text-center mb-4">
-            What We&apos;re Building
-          </h2>
-          <p className="text-gray-400 text-center max-w-2xl mx-auto mb-16">
-            A complete financial ecosystem for Venezuelans, wherever they are.
-          </p>
-
-          <div className="grid md:grid-cols-2 gap-8">
-            <div className="glass rounded-2xl p-8 hover:bg-white/5 transition">
-              <div className="flex items-start gap-4">
-                <div className="w-10 h-10 bg-primary-500 rounded-lg flex items-center justify-center text-black font-bold">
-                  1
-                </div>
-                <div>
-                  <h3 className="text-xl font-semibold mb-2">MVGA Wallet</h3>
-                  <p className="text-gray-400">
-                    Hold USDC, MVGA, and SOL. Send to anyone instantly. View your balance in USD.
-                    Works on any phone.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="glass rounded-2xl p-8 hover:bg-white/5 transition">
-              <div className="flex items-start gap-4">
-                <div className="w-10 h-10 bg-secondary-500 rounded-lg flex items-center justify-center text-white font-bold">
-                  2
-                </div>
-                <div>
-                  <h3 className="text-xl font-semibold mb-2">P2P Exchange</h3>
-                  <p className="text-gray-400">
-                    Trade crypto for Zelle, PayPal, or bank transfer. Smart contract escrow protects
-                    both parties.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="glass rounded-2xl p-8 hover:bg-white/5 transition">
-              <div className="flex items-start gap-4">
-                <div className="w-10 h-10 bg-accent-500 rounded-lg flex items-center justify-center text-white font-bold">
-                  3
-                </div>
-                <div>
-                  <h3 className="text-xl font-semibold mb-2">Staking & Rewards</h3>
-                  <p className="text-gray-400">
-                    Stake MVGA to earn protocol fees. Higher tiers unlock lower fees and governance
-                    voting rights.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="glass rounded-2xl p-8 hover:bg-white/5 transition">
-              <div className="flex items-start gap-4">
-                <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center text-white font-bold">
-                  4
-                </div>
-                <div>
-                  <h3 className="text-xl font-semibold mb-2">Business Grants</h3>
-                  <p className="text-gray-400">
-                    Community-funded micro-grants for Venezuelan small businesses. You vote on who
-                    gets funded.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Self-Sustaining Treasury Section */}
-      <section className="py-20 px-6 bg-black/50">
-        <div className="max-w-7xl mx-auto">
-          <h2 className="text-3xl md:text-5xl font-display font-bold text-center mb-4">
-            Self-Sustaining Treasury
-          </h2>
-          <p className="text-gray-400 text-center max-w-2xl mx-auto mb-16">
-            Every fee flows back to the community. Zero goes to founders.
-          </p>
-
-          {/* Flow Diagram */}
-          <div className="max-w-3xl mx-auto">
-            {/* Fee Source */}
-            <div className="glass rounded-2xl p-6 text-center mb-4">
-              <p className="text-gray-400 text-sm">Swap &amp; Trade Fees (3%)</p>
-              <p className="text-2xl font-bold text-primary-500">Protocol Revenue</p>
-            </div>
-
-            <div className="text-center text-gray-500 text-2xl mb-4">&#8595;</div>
-
-            {/* Burn */}
-            <div className="glass rounded-2xl p-4 text-center mb-4 border border-red-500/30 bg-red-500/5">
-              <p className="text-red-400 font-semibold">5% Burned Forever</p>
-              <p className="text-xs text-gray-400">Reducing supply every week</p>
-            </div>
-
-            <div className="text-center text-gray-500 text-2xl mb-4">&#8595;</div>
-
-            {/* Distribution */}
-            <div className="grid md:grid-cols-3 gap-4">
-              <div className="glass rounded-2xl p-6 text-center border border-blue-500/20">
-                <div className="w-12 h-12 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <span className="text-xl">&#128200;</span>
-                </div>
-                <p className="text-blue-400 font-bold text-xl">40%</p>
-                <p className="text-sm text-gray-400">Liquidity Pool</p>
-                <p className="text-xs text-gray-500 mt-1">Strengthens price floor on Raydium</p>
-              </div>
-              <div className="glass rounded-2xl p-6 text-center border border-green-500/20">
-                <div className="w-12 h-12 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <span className="text-xl">&#128176;</span>
-                </div>
-                <p className="text-green-400 font-bold text-xl">40%</p>
-                <p className="text-sm text-gray-400">Staking Rewards</p>
-                <p className="text-xs text-gray-500 mt-1">50% vault refill + 50% fee sharing</p>
-              </div>
-              <div className="glass rounded-2xl p-6 text-center border border-yellow-500/20">
-                <div className="w-12 h-12 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <span className="text-xl">&#127974;</span>
-                </div>
-                <p className="text-yellow-400 font-bold text-xl">20%</p>
-                <p className="text-sm text-gray-400">Humanitarian Fund</p>
-                <p className="text-xs text-gray-500 mt-1">Community-voted business grants</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Transparency Section */}
-      <section id="transparency" className="py-20 px-6 bg-black/50">
-        <div className="max-w-7xl mx-auto">
-          <h2 className="text-3xl md:text-5xl font-display font-bold text-center mb-4">
-            Full Transparency
-          </h2>
-          <p className="text-gray-400 text-center max-w-2xl mx-auto mb-16">
-            Every wallet is public. Every transaction is on-chain. Verify, don&apos;t trust.
-          </p>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[
-              { name: 'Treasury', address: 'H9j1W4u5LEiw8AZdui6c8AmN6t4tKkPQCAULPW8eMiTE' },
-              {
-                name: 'Humanitarian Fund',
-                address: 'HvtvFhuVMu9XGmhW5zWNvtPK7ttiMBg7Ag7C9oRpyKwP',
-              },
-              { name: 'Staking Vault', address: 'GNhLCjqThNJAJAdDYvRTr2EfWyGXAFUymaPuKaL1duEh' },
-              { name: 'Team Vesting', address: '8m8L2CGoneYwP3xEYyss5sjbj7GKy7cK3YxDcG2yNbH4' },
-              { name: 'Marketing', address: 'DA5VQFLsx87hNQqL2EsM36oVhGnzM2CnqPSe6E9RFpeo' },
-              { name: 'Advisors', address: 'Huq3ea9KKf6HFb5Qiacdx2pJDSM4c881WdyMCBHXq4hF' },
-            ].map((wallet) => (
-              <div key={wallet.name} className="glass rounded-xl p-6">
-                <div className="mb-4">
-                  <span className="text-gray-400">{wallet.name}</span>
-                </div>
-                <a
-                  href={`https://solscan.io/account/${wallet.address}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-gray-500 hover:text-primary-500 break-all transition"
+            <div className="overflow-hidden">
+              {['MAKE', 'VENEZUELA', 'GREAT AGAIN'].map((word, i) => (
+                <motion.div
+                  key={word}
+                  initial={{ opacity: 0, y: 80 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.15 * i, duration: 0.7, ease: [0.25, 0.1, 0.25, 1] }}
                 >
-                  {wallet.address}
-                </a>
-              </div>
-            ))}
-          </div>
+                  <h1 className="text-[14vw] md:text-[10vw] font-black uppercase tracking-tighter leading-[0.85]">
+                    {word}
+                  </h1>
+                </motion.div>
+              ))}
+            </div>
 
-          <div className="text-center mt-12">
-            <Link
-              href="https://github.com/juanpablorosales990/mvga"
-              target="_blank"
-              className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition"
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6, duration: 0.5 }}
+              className="text-lg md:text-xl text-white/40 max-w-2xl mt-10 leading-relaxed"
             >
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                <path
-                  fillRule="evenodd"
-                  d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              View Source Code on GitHub
-            </Link>
+              Venezuela&apos;s open-source financial infrastructure. Zero middlemen. Zero
+              corruption. Zero founder fees.
+            </motion.p>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.75, duration: 0.5 }}
+              className="flex flex-col sm:flex-row gap-4 mt-10"
+            >
+              <Link
+                href="https://app.mvga.io"
+                target="_blank"
+                className="bg-white text-black font-bold text-sm uppercase tracking-wider px-8 py-4 hover:bg-transparent hover:text-white border border-white transition-all text-center"
+              >
+                Open Wallet
+              </Link>
+              <Link
+                href="https://github.com/juanpablorosales990/mvga"
+                target="_blank"
+                className="border border-white/30 text-white font-bold text-sm uppercase tracking-wider px-8 py-4 hover:border-white transition-all text-center"
+              >
+                View Source
+              </Link>
+            </motion.div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Tokenomics Section */}
-      <section id="tokenomics" className="py-20 px-6">
-        <div className="max-w-7xl mx-auto">
-          <h2 className="text-3xl md:text-5xl font-display font-bold text-center mb-4">
-            Tokenomics
-          </h2>
-          <p className="text-gray-400 text-center max-w-2xl mx-auto mb-16">
-            Fair launch. Long vesting. Community first.
-          </p>
+        {/* ── MARQUEE ──────────────────────────────────────────── */}
+        <Marquee items={marqueeItems} />
 
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div>
-              <div className="space-y-4">
+        {/* ── MISSION ──────────────────────────────────────────── */}
+        <section id="mission" className="py-24 md:py-32 px-6" ref={missionRef}>
+          <div className="max-w-7xl mx-auto">
+            <p className="text-xs tracking-[0.3em] text-white/30 uppercase font-mono mb-4">
+              Our Mission
+            </p>
+            <h2 className="text-3xl md:text-5xl font-bold leading-tight max-w-3xl mb-16">
+              Every Venezuelan deserves access to stable money, regardless of where they live.
+            </h2>
+
+            <motion.div
+              className="grid md:grid-cols-3 gap-px bg-white/10"
+              variants={stagger}
+              initial="hidden"
+              animate={missionInView ? 'visible' : 'hidden'}
+            >
+              {[
+                {
+                  num: '01',
+                  title: 'Zero Fee Remittances',
+                  desc: 'Send money to Venezuela without losing 15% to middlemen. P2P exchange directly with other users.',
+                },
+                {
+                  num: '02',
+                  title: 'Support Local Business',
+                  desc: 'Vote on micro-grants for Venezuelan entrepreneurs. Help rebuild the economy from the ground up.',
+                },
+                {
+                  num: '03',
+                  title: '100% Open Source',
+                  desc: 'Every line of code is public. Every wallet is visible. No hidden agendas. No regime ties.',
+                },
+              ].map((card, i) => (
+                <motion.div
+                  key={card.num}
+                  custom={i}
+                  variants={fadeUp}
+                  className="bg-black p-8 hover:bg-white/[0.02] transition group"
+                >
+                  <span className="font-mono text-sm text-gold-500 mb-4 block">{card.num}</span>
+                  <h3 className="text-xl font-bold mb-3">{card.title}</h3>
+                  <p className="text-white/40 leading-relaxed">{card.desc}</p>
+                </motion.div>
+              ))}
+            </motion.div>
+          </div>
+        </section>
+
+        {/* ── FEATURES ─────────────────────────────────────────── */}
+        <section id="features" className="py-24 md:py-32 px-6 border-t border-white/10">
+          <div className="max-w-7xl mx-auto">
+            <p className="text-xs tracking-[0.3em] text-white/30 uppercase font-mono mb-4">
+              What We&apos;re Building
+            </p>
+            <h2 className="text-3xl md:text-5xl font-bold mb-16">
+              A complete financial ecosystem for Venezuelans.
+            </h2>
+
+            <div className="divide-y divide-white/10">
+              {[
+                {
+                  num: '01',
+                  title: 'MVGA Wallet',
+                  desc: 'Hold USDC, MVGA, and SOL. Send to anyone instantly. View your balance in USD. Works on any phone.',
+                },
+                {
+                  num: '02',
+                  title: 'P2P Exchange',
+                  desc: 'Trade crypto for Zelle, PayPal, or bank transfer. Smart contract escrow protects both parties.',
+                },
+                {
+                  num: '03',
+                  title: 'Staking & Rewards',
+                  desc: 'Stake MVGA to earn protocol fees. Higher tiers unlock lower fees and governance voting rights.',
+                },
+                {
+                  num: '04',
+                  title: 'Business Grants',
+                  desc: 'Community-funded micro-grants for Venezuelan small businesses. You vote on who gets funded.',
+                },
+              ].map((feat, i) => (
+                <motion.div
+                  key={feat.num}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1 }}
+                  className="flex items-start gap-6 md:gap-12 py-10"
+                >
+                  <span className="text-[6rem] md:text-[8rem] font-mono text-white/[0.03] font-black leading-none shrink-0 hidden md:block">
+                    {feat.num}
+                  </span>
+                  <div className="pt-4">
+                    <span className="font-mono text-sm text-gold-500 md:hidden">{feat.num}</span>
+                    <h3 className="text-2xl font-bold mb-3">{feat.title}</h3>
+                    <p className="text-white/40 leading-relaxed max-w-xl">{feat.desc}</p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ── TREASURY FLOW ────────────────────────────────────── */}
+        <section className="py-24 md:py-32 px-6 border-t border-white/10">
+          <div className="max-w-7xl mx-auto">
+            <p className="text-xs tracking-[0.3em] text-white/30 uppercase font-mono mb-4">
+              Self-Sustaining Treasury
+            </p>
+            <h2 className="text-3xl md:text-5xl font-bold mb-4">
+              Every fee flows back to the community.
+            </h2>
+            <p className="text-white/40 mb-16">Zero goes to founders.</p>
+
+            <motion.div
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ once: true }}
+              className="max-w-3xl mx-auto flex flex-col items-center"
+            >
+              <div className="w-full border border-white/10 p-6 text-center">
+                <p className="text-xs tracking-[0.3em] uppercase text-white/30 mb-1">
+                  Swap &amp; Trade Fees (3%)
+                </p>
+                <p className="text-xl font-bold">Protocol Revenue</p>
+              </div>
+              <div className="w-px h-10 bg-white/10" />
+              <div className="w-full border border-gold-500/30 bg-gold-500/[0.03] p-4 text-center">
+                <p className="font-mono font-bold text-gold-500">5% BURNED FOREVER</p>
+                <p className="text-xs text-white/30 mt-1">Reducing supply every week</p>
+              </div>
+              <div className="w-px h-10 bg-white/10" />
+              <div className="grid grid-cols-3 gap-px bg-white/10 w-full">
                 {[
-                  { label: 'Community & Liquidity', pct: 40, color: 'bg-primary-500' },
-                  { label: 'Team (2yr vest)', pct: 20, color: 'bg-secondary-500' },
-                  { label: 'Humanitarian Fund', pct: 15, color: 'bg-green-500' },
-                  { label: 'Startup Ecosystem', pct: 10, color: 'bg-purple-500' },
-                  { label: 'Marketing', pct: 10, color: 'bg-pink-500' },
-                  { label: 'Advisors', pct: 5, color: 'bg-gray-500' },
+                  { pct: '40%', label: 'Liquidity', sub: 'Strengthens price floor' },
+                  { pct: '40%', label: 'Staking', sub: 'Vault refill + fee sharing' },
+                  { pct: '20%', label: 'Grants', sub: 'Community-voted funding' },
+                ].map((item) => (
+                  <div key={item.label} className="bg-black p-5 text-center">
+                    <p className="text-2xl font-mono font-bold">{item.pct}</p>
+                    <p className="text-xs tracking-[0.2em] uppercase text-white/30 mt-2">
+                      {item.label}
+                    </p>
+                    <p className="text-xs text-white/15 mt-1">{item.sub}</p>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          </div>
+        </section>
+
+        {/* ── TRANSPARENCY ─────────────────────────────────────── */}
+        <section id="transparency" className="py-24 md:py-32 px-6 border-t border-white/10">
+          <div className="max-w-7xl mx-auto">
+            <p className="text-xs tracking-[0.3em] text-white/30 uppercase font-mono mb-4">
+              Full Transparency
+            </p>
+            <h2 className="text-3xl md:text-5xl font-bold mb-4">
+              Every wallet is public. Every transaction is on-chain.
+            </h2>
+            <p className="text-white/40 mb-16">Verify, don&apos;t trust.</p>
+
+            <motion.div
+              className="grid md:grid-cols-2 lg:grid-cols-3 gap-px bg-white/10"
+              variants={stagger}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+            >
+              {WALLETS.map((wallet, i) => (
+                <motion.div key={wallet.name} custom={i} variants={fadeUp} className="bg-black p-6">
+                  <h3 className="font-bold text-sm uppercase tracking-wide mb-3">{wallet.name}</h3>
+                  <a
+                    href={`https://solscan.io/account/${wallet.address}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-mono text-xs text-white/20 hover:text-gold-500 break-all transition block"
+                  >
+                    {wallet.address}
+                  </a>
+                </motion.div>
+              ))}
+            </motion.div>
+
+            <div className="mt-10">
+              <a
+                href="https://github.com/juanpablorosales990/mvga"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-white/30 hover:text-white transition animated-underline inline-flex items-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                  <path
+                    fillRule="evenodd"
+                    d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                View Source Code on GitHub
+              </a>
+            </div>
+          </div>
+        </section>
+
+        {/* ── TOKENOMICS ───────────────────────────────────────── */}
+        <section id="tokenomics" className="py-24 md:py-32 px-6 border-t border-white/10">
+          <div className="max-w-7xl mx-auto">
+            <p className="text-xs tracking-[0.3em] text-white/30 uppercase font-mono mb-4">
+              Tokenomics
+            </p>
+            <h2 className="text-3xl md:text-5xl font-bold mb-16">
+              Fair launch. Long vesting. Community first.
+            </h2>
+
+            <div className="grid lg:grid-cols-2 gap-12 items-start">
+              <div className="space-y-5">
+                {[
+                  { label: 'Community & Liquidity', pct: 40, gold: true },
+                  { label: 'Team (2yr vest)', pct: 20, gold: false },
+                  { label: 'Humanitarian Fund', pct: 15, gold: false },
+                  { label: 'Startup Ecosystem', pct: 10, gold: false },
+                  { label: 'Marketing', pct: 10, gold: false },
+                  { label: 'Advisors', pct: 5, gold: false },
                 ].map((item) => (
                   <div key={item.label}>
-                    <div className="flex justify-between mb-1">
-                      <span className="text-gray-300">{item.label}</span>
-                      <span className="text-gray-400">{item.pct}%</span>
+                    <div className="flex justify-between mb-2 text-sm">
+                      <span className="text-white/60">{item.label}</span>
+                      <span className="font-mono text-white/60">{item.pct}%</span>
                     </div>
-                    <div className="w-full bg-gray-800 rounded-full h-3">
-                      <div
-                        className={`${item.color} h-3 rounded-full`}
-                        style={{ width: `${item.pct}%` }}
-                      ></div>
+                    <div className="w-full h-2 bg-white/5">
+                      <motion.div
+                        className={item.gold ? 'h-full bg-gold-500' : 'h-full bg-white/30'}
+                        initial={{ width: 0 }}
+                        whileInView={{ width: `${item.pct}%` }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.8 }}
+                      />
                     </div>
                   </div>
                 ))}
               </div>
-            </div>
 
-            <div className="glass rounded-2xl p-8">
-              <h3 className="text-xl font-semibold mb-6">Token Details</h3>
-              <div className="space-y-4">
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Name</span>
-                  <span>Make Venezuela Great Again</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Symbol</span>
-                  <span>MVGA</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Network</span>
-                  <span>Solana</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Total Supply</span>
-                  <span>1,000,000,000</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Buy/Sell Tax</span>
-                  <span>3% each</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Weekly Burn</span>
-                  <span className="text-red-400">5% of fees</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Founder Fees</span>
-                  <span className="text-green-400">0%</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">LP Lock</span>
-                  <span>3 years</span>
+              <div className="border border-white/10 p-8">
+                <h3 className="text-xs tracking-[0.3em] uppercase text-white/30 font-mono mb-6">
+                  Token Details
+                </h3>
+                <div className="divide-y divide-white/5">
+                  {[
+                    { k: 'Name', v: 'Make Venezuela Great Again' },
+                    { k: 'Symbol', v: 'MVGA' },
+                    { k: 'Network', v: 'Solana' },
+                    { k: 'Total Supply', v: '1,000,000,000' },
+                    { k: 'Buy/Sell Tax', v: '3% each' },
+                    { k: 'Weekly Burn', v: '5% of fees', gold: true },
+                    { k: 'Founder Fees', v: '0%', gold: true },
+                    { k: 'LP Lock', v: '3 years' },
+                  ].map((row) => (
+                    <div key={row.k} className="flex justify-between py-3">
+                      <span className="text-white/40 text-sm">{row.k}</span>
+                      <span
+                        className={`font-mono text-sm ${row.gold ? 'text-gold-500' : 'text-white'}`}
+                      >
+                        {row.v}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* CTA Section */}
-      <section className="py-20 px-6 bg-gradient-to-r from-primary-500/20 via-secondary-500/20 to-accent-500/20">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl md:text-5xl font-display font-bold mb-6">Join the Movement</h2>
-          <p className="text-xl text-gray-300 mb-10">
-            Be part of Venezuela&apos;s financial revolution. Community-owned. Open source.
-            Transparent.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              href="https://t.me/mvga"
-              target="_blank"
-              className="bg-white text-black font-semibold px-8 py-4 rounded-full text-lg hover:bg-gray-200 transition"
-            >
-              Join Telegram
-            </Link>
-            <Link
-              href="https://twitter.com/mvga"
-              target="_blank"
-              className="border border-white/30 hover:bg-white/10 text-white font-semibold px-8 py-4 rounded-full text-lg transition"
-            >
-              Follow on X
-            </Link>
-          </div>
-        </div>
-      </section>
+        {/* ── ROADMAP ──────────────────────────────────────────── */}
+        <section className="py-24 md:py-32 px-6 border-t border-white/10">
+          <div className="max-w-7xl mx-auto">
+            <p className="text-xs tracking-[0.3em] text-white/30 uppercase font-mono mb-4">
+              Roadmap
+            </p>
+            <h2 className="text-3xl md:text-5xl font-bold mb-16">Building in public.</h2>
 
-      {/* Footer */}
-      <footer className="py-12 px-6 border-t border-white/10">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-2">
-              <span className="text-xl font-display font-bold gradient-text">MVGA</span>
-              <span className="text-gray-500">|</span>
-              <span className="text-gray-400">Patria y Vida</span>
-            </div>
-            <div className="flex items-center gap-4 text-gray-500 text-sm">
-              <span>100% Open Source. Built with love for Venezuela.</span>
-              <span className="text-gray-700">|</span>
-              <Link href="/privacy" className="hover:text-gray-300 transition">
-                Privacy
+            <motion.div
+              className="grid md:grid-cols-2 lg:grid-cols-4 gap-px bg-white/10"
+              variants={stagger}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+            >
+              {[
+                {
+                  phase: '01',
+                  name: 'Foundation',
+                  items: ['Wallet', 'P2P Exchange', 'Staking', 'Burns'],
+                  live: true,
+                },
+                {
+                  phase: '02',
+                  name: 'Growth',
+                  items: ['Business Grants', 'Referral Program', 'Mobile Push', 'Fiat On-Ramp'],
+                  live: false,
+                },
+                {
+                  phase: '03',
+                  name: 'Expansion',
+                  items: ['Debit Card', 'Multi-chain Support', 'DAO Governance', 'Insurance Fund'],
+                  live: false,
+                },
+                {
+                  phase: '04',
+                  name: 'Scale',
+                  items: [
+                    'Latin America Expansion',
+                    'Banking License',
+                    'Enterprise API',
+                    'Credit System',
+                  ],
+                  live: false,
+                },
+              ].map((phase, i) => (
+                <motion.div key={phase.phase} custom={i} variants={fadeUp} className="bg-black p-6">
+                  <span className="font-mono text-4xl text-white/[0.06] font-bold block mb-4">
+                    {phase.phase}
+                  </span>
+                  <div className="flex items-center gap-2 mb-4">
+                    <h3 className="text-lg font-bold uppercase">{phase.name}</h3>
+                    {phase.live && (
+                      <span className="text-xs font-mono text-gold-500 border border-gold-500/30 px-2 py-0.5">
+                        LIVE
+                      </span>
+                    )}
+                  </div>
+                  <ul className="space-y-2">
+                    {phase.items.map((item) => (
+                      <li key={item} className="text-sm text-white/30">
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </motion.div>
+              ))}
+            </motion.div>
+          </div>
+        </section>
+
+        {/* ── CTA ──────────────────────────────────────────────── */}
+        <section className="py-24 md:py-32 px-6 border-t border-white/10">
+          <div className="max-w-4xl mx-auto text-center">
+            <motion.h2
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-4xl md:text-6xl font-black uppercase tracking-tight mb-6"
+            >
+              Join the Movement
+            </motion.h2>
+            <p className="text-xl text-white/40 mb-10">
+              Be part of Venezuela&apos;s financial revolution. Community-owned. Open source.
+              Transparent.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link
+                href="https://t.me/mvga"
+                target="_blank"
+                className="bg-white text-black font-bold text-sm uppercase tracking-wider px-8 py-4 hover:bg-transparent hover:text-white border border-white transition-all"
+              >
+                Join Telegram
               </Link>
-              <Link href="/terms" className="hover:text-gray-300 transition">
-                Terms
+              <Link
+                href="https://twitter.com/mvga"
+                target="_blank"
+                className="border border-white/30 text-white font-bold text-sm uppercase tracking-wider px-8 py-4 hover:border-white transition-all"
+              >
+                Follow on X
               </Link>
             </div>
           </div>
-        </div>
-      </footer>
-    </main>
+        </section>
+
+        <Footer />
+      </main>
+    </GridBackground>
   );
 }
