@@ -135,11 +135,11 @@ describe('SwapService', () => {
       fetchSpy.mockRestore();
     });
 
-    it('returns empty object on DexScreener failure', async () => {
+    it('falls back to default price for MVGA on DexScreener failure', async () => {
       const fetchSpy = jest.spyOn(globalThis, 'fetch').mockRejectedValueOnce(new Error('network'));
 
       const prices = await service.getMultipleTokenPrices([MVGA_MINT]);
-      expect(prices).toEqual({});
+      expect(prices[MVGA_MINT]).toBe(0.001);
 
       fetchSpy.mockRestore();
     });

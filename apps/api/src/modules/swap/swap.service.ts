@@ -56,6 +56,7 @@ export class SwapService {
       'TREASURY_WALLET',
       'HWRFGiMDWNvPHo5ZLV1MJEDjDNFVDJ8KJMDXcJjLVGa8'
     );
+    this.MVGA_DEFAULT_PRICE = parseFloat(this.config.get('MVGA_DEFAULT_PRICE', '0.001'));
   }
 
   // Common token mints
@@ -139,6 +140,8 @@ export class SwapService {
   // Price cache: mint → { price, timestamp }
   private priceCache = new Map<string, { price: number; timestamp: number }>();
   private readonly PRICE_CACHE_TTL = 30_000; // 30 seconds
+  private readonly MVGA_MINT = 'DRX65kM2n5CLTpdjJCemZvkUwE98ou4RpHrd8Z3GH5Qh';
+  private readonly MVGA_DEFAULT_PRICE: number;
 
   async getTokenPrice(mint: string): Promise<number> {
     const prices = await this.getMultipleTokenPrices([mint]);
@@ -146,9 +149,8 @@ export class SwapService {
   }
 
   async getMvgaPrice(): Promise<number> {
-    const mvgaMint = 'DRX65kM2n5CLTpdjJCemZvkUwE98ou4RpHrd8Z3GH5Qh';
-    const prices = await this.getMultipleTokenPrices([mvgaMint]);
-    return prices[mvgaMint] || 0.001;
+    const prices = await this.getMultipleTokenPrices([this.MVGA_MINT]);
+    return prices[this.MVGA_MINT] || this.MVGA_DEFAULT_PRICE;
   }
 
   async getMultipleTokenPrices(mints: string[]): Promise<Record<string, number>> {
@@ -188,6 +190,12 @@ export class SwapService {
       }
     } catch {
       this.logger.warn('DexScreener price fetch failed');
+    }
+
+    // Fallback: MVGA uses configurable default if not found on DexScreener
+    if (uncached.includes(this.MVGA_MINT) && !prices[this.MVGA_MINT]) {
+      prices[this.MVGA_MINT] = this.MVGA_DEFAULT_PRICE;
+      this.priceCache.set(this.MVGA_MINT, { price: this.MVGA_DEFAULT_PRICE, timestamp: now });
     }
 
     return prices;
