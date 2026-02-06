@@ -175,33 +175,45 @@ export class SwapService {
     return prices[mint] || 0;
   }
 
+  private readonly MVGA_MINT = 'DRX65kM2n5CLTpdjJCemZvkUwE98ou4RpHrd8Z3GH5Qh';
+
   async getMultipleTokenPrices(mints: string[]): Promise<Record<string, number>> {
-    try {
-      // Map mints to CoinGecko IDs
-      const geckoIds = mints.map((m) => this.COINGECKO_IDS[m]).filter(Boolean);
+    const prices: Record<string, number> = {};
 
-      if (geckoIds.length === 0) return {};
+    // Separate MVGA (uses DexScreener) from others (use CoinGecko)
+    const hasMvga = mints.includes(this.MVGA_MINT);
+    const geckoMints = mints.filter((m) => this.COINGECKO_IDS[m]);
 
-      const response = await fetch(
-        `https://api.coingecko.com/api/v3/simple/price?ids=${geckoIds.join(',')}&vs_currencies=usd`
-      );
-
-      if (!response.ok) return {};
-
-      const data = await response.json();
-      const prices: Record<string, number> = {};
-
-      for (const mint of mints) {
-        const geckoId = this.COINGECKO_IDS[mint];
-        if (geckoId && data[geckoId]?.usd) {
-          prices[mint] = data[geckoId].usd;
+    // Fetch CoinGecko prices for SOL/USDC/USDT
+    if (geckoMints.length > 0) {
+      try {
+        const geckoIds = geckoMints.map((m) => this.COINGECKO_IDS[m]);
+        const response = await fetch(
+          `https://api.coingecko.com/api/v3/simple/price?ids=${geckoIds.join(',')}&vs_currencies=usd`
+        );
+        if (response.ok) {
+          const data = await response.json();
+          for (const mint of geckoMints) {
+            const geckoId = this.COINGECKO_IDS[mint];
+            if (geckoId && data[geckoId]?.usd) {
+              prices[mint] = data[geckoId].usd;
+            }
+          }
         }
+      } catch {
+        this.logger.warn('CoinGecko price fetch failed');
       }
-
-      return prices;
-    } catch {
-      return {};
     }
+
+    // Fetch MVGA price from DexScreener
+    if (hasMvga) {
+      const mvgaPrice = await this.getMvgaPrice();
+      if (mvgaPrice > 0) {
+        prices[this.MVGA_MINT] = mvgaPrice;
+      }
+    }
+
+    return prices;
   }
 
   /**

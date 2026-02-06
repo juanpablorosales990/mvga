@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, Get, Query, UseGuards, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
 import { SwapService, SwapQuoteRequest, SwapExecuteRequest } from './swap.service';
 import { QuoteDto, SwapDto, RecordSwapDto } from './swap.dto';
@@ -32,9 +32,18 @@ export class SwapController {
 
   @Get('prices')
   @ApiOperation({ summary: 'Get multiple token prices' })
-  @ApiQuery({ name: 'mints', description: 'Comma-separated token mint addresses' })
+  @ApiQuery({ name: 'mints', description: 'Comma-separated token mint addresses', required: true })
   async getPrices(@Query('mints') mints: string) {
-    const mintArray = mints.split(',').map((m) => m.trim());
+    if (!mints) {
+      throw new BadRequestException('mints query parameter is required');
+    }
+    const mintArray = mints
+      .split(',')
+      .map((m) => m.trim())
+      .filter(Boolean);
+    if (mintArray.length === 0) {
+      throw new BadRequestException('At least one mint address is required');
+    }
     const prices = await this.swapService.getMultipleTokenPrices(mintArray);
     return prices;
   }
