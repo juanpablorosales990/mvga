@@ -33,3 +33,29 @@ export class SwapDto {
   @IsString()
   userPublicKey: string;
 }
+
+export class RecordSwapDto {
+  @ApiProperty({ description: 'User wallet address' })
+  @IsString()
+  walletAddress: string;
+
+  @ApiProperty({ description: 'Transaction signature' })
+  @IsString()
+  signature: string;
+
+  @ApiProperty({ description: 'Input token mint address' })
+  @IsString()
+  inputMint: string;
+
+  @ApiProperty({ description: 'Output token mint address' })
+  @IsString()
+  outputMint: string;
+
+  @ApiProperty({ description: 'Input amount in smallest unit' })
+  @IsString()
+  inputAmount: string;
+
+  @ApiProperty({ description: 'Output amount in smallest unit' })
+  @IsString()
+  outputAmount: string;
+}

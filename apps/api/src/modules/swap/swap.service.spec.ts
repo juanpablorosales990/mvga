@@ -1,11 +1,22 @@
 import { BadRequestException } from '@nestjs/common';
 import { SwapService } from './swap.service';
 
+// Mock dependencies
+const mockPrismaService = {
+  feeCollection: {
+    create: jest.fn(),
+  },
+};
+
+const mockConfigService = {
+  get: jest.fn((key: string, defaultValue?: string) => defaultValue),
+};
+
 describe('SwapService', () => {
   let service: SwapService;
 
   beforeEach(() => {
-    service = new SwapService();
+    service = new SwapService(mockPrismaService as any, mockConfigService as any);
   });
 
   describe('getQuote validation', () => {

@@ -1,4 +1,9 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { PrismaService } from '../../common/prisma.service';
+
+// Platform fee: 0.1% (10 basis points) - goes to treasury for community distribution
+const PLATFORM_FEE_BPS = 10;
 
 export interface JupiterQuote {
   inputMint: string;
@@ -38,7 +43,20 @@ export interface SwapExecuteRequest {
 
 @Injectable()
 export class SwapService {
+  private readonly logger = new Logger(SwapService.name);
   private readonly JUPITER_QUOTE_API = 'https://quote-api.jup.ag/v6';
+  private readonly feeAccount: string;
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly config: ConfigService
+  ) {
+    // Fee account receives platform fees from Jupiter swaps
+    this.feeAccount = this.config.get(
+      'TREASURY_WALLET',
+      'HWRFGiMDWNvPHo5ZLV1MJEDjDNFVDJ8KJMDXcJjLVGa8'
+    );
+  }
 
   // Common token mints
   readonly TOKENS = {
@@ -65,6 +83,8 @@ export class SwapService {
       url.searchParams.set('outputMint', outputMint);
       url.searchParams.set('amount', amount.toString());
       url.searchParams.set('slippageBps', slippageBps.toString());
+      // Add platform fee (0.1%) - goes to treasury for community distribution
+      url.searchParams.set('platformFeeBps', PLATFORM_FEE_BPS.toString());
 
       const response = await fetch(url.toString());
 
@@ -96,6 +116,8 @@ export class SwapService {
           wrapAndUnwrapSol: true,
           dynamicComputeUnitLimit: true,
           prioritizationFeeLamports: 'auto',
+          // Platform fee account - receives 0.1% of swaps for community treasury
+          feeAccount: this.feeAccount,
         }),
       });
 
@@ -180,5 +202,56 @@ export class SwapService {
     } catch {
       return {};
     }
+  }
+
+  /**
+   * Record a completed swap for fee tracking
+   * Called by frontend after successful swap transaction
+   */
+  async recordSwap(params: {
+    walletAddress: string;
+    signature: string;
+    inputMint: string;
+    outputMint: string;
+    inputAmount: string;
+    outputAmount: string;
+  }) {
+    const { signature, inputAmount, inputMint } = params;
+
+    // Calculate platform fee (0.1% of input amount)
+    const inputAmountNum = BigInt(inputAmount);
+    const feeAmount = (inputAmountNum * BigInt(PLATFORM_FEE_BPS)) / BigInt(10000);
+
+    // Determine token for fee (use input token)
+    const token = this.getTokenSymbol(inputMint);
+
+    // Record fee for treasury distribution
+    await this.prisma.feeCollection.create({
+      data: {
+        source: 'SWAP',
+        amount: feeAmount,
+        token,
+        signature,
+        relatedTx: signature,
+        relatedType: 'swap',
+      },
+    });
+
+    this.logger.log(`Swap fee recorded: ${feeAmount} ${token} from ${signature}`);
+
+    return { success: true, feeAmount: feeAmount.toString(), token };
+  }
+
+  /**
+   * Get token symbol from mint address
+   */
+  private getTokenSymbol(mint: string): string {
+    const mintToSymbol: Record<string, string> = {
+      So11111111111111111111111111111111111111112: 'SOL',
+      EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v: 'USDC',
+      Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB: 'USDT',
+      DRX65kM2n5CLTpdjJCemZvkUwE98ou4RpHrd8Z3GH5Qh: 'MVGA',
+    };
+    return mintToSymbol[mint] || 'UNKNOWN';
   }
 }

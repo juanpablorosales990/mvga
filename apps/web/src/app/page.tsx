@@ -1,6 +1,35 @@
+'use client';
+
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://mvga-api-production.up.railway.app';
+
+interface LiveMetrics {
+  tvl: number;
+  volume24h: number;
+  revenue24h: number;
+  totalUsers: number;
+  activeUsers: number;
+  totalStakers: number;
+  totalBurned: number;
+}
+
+function formatNumber(num: number) {
+  if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(1)}M`;
+  if (num >= 1_000) return `${(num / 1_000).toFixed(0)}K`;
+  return new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(num);
+}
 
 export default function Home() {
+  const [metrics, setMetrics] = useState<LiveMetrics | null>(null);
+
+  useEffect(() => {
+    fetch(`${API_URL}/metrics`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then(setMetrics)
+      .catch(() => {});
+  }, []);
   return (
     <main
       id="main-content"
@@ -42,9 +71,14 @@ export default function Home() {
       {/* Hero Section */}
       <section className="pt-32 pb-20 px-6">
         <div className="max-w-7xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 bg-white/10 rounded-full px-4 py-2 mb-8">
-            <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
-            <span className="text-sm text-gray-300">Open Source &bull; Community Owned</span>
+          <div className="flex flex-wrap gap-3 justify-center mb-8">
+            <div className="inline-flex items-center gap-2 bg-white/10 rounded-full px-4 py-2">
+              <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+              <span className="text-sm text-gray-300">Open Source &bull; Community Owned</span>
+            </div>
+            <div className="inline-flex items-center gap-2 bg-green-500/20 border border-green-500/30 rounded-full px-4 py-2">
+              <span className="text-sm text-green-400 font-medium">Zero Founder Fees</span>
+            </div>
           </div>
 
           <h1 className="text-5xl md:text-7xl font-display font-bold mb-6">
@@ -74,19 +108,25 @@ export default function Home() {
             </Link>
           </div>
 
-          {/* Stats */}
+          {/* Live Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mt-20 max-w-4xl mx-auto">
             <div>
-              <div className="text-3xl md:text-4xl font-bold text-primary-500">$0</div>
-              <div className="text-gray-500">Total Volume</div>
+              <div className="text-3xl md:text-4xl font-bold text-primary-500">
+                {metrics ? formatNumber(metrics.tvl) : '---'}
+              </div>
+              <div className="text-gray-500">TVL (MVGA)</div>
             </div>
             <div>
-              <div className="text-3xl md:text-4xl font-bold text-secondary-500">0</div>
+              <div className="text-3xl md:text-4xl font-bold text-secondary-500">
+                {metrics ? formatNumber(metrics.totalUsers) : '---'}
+              </div>
               <div className="text-gray-500">Users</div>
             </div>
             <div>
-              <div className="text-3xl md:text-4xl font-bold text-accent-500">0</div>
-              <div className="text-gray-500">Businesses Funded</div>
+              <div className="text-3xl md:text-4xl font-bold text-red-500">
+                {metrics ? formatNumber(metrics.totalBurned) : '---'}
+              </div>
+              <div className="text-gray-500">Tokens Burned</div>
             </div>
             <div>
               <div className="text-3xl md:text-4xl font-bold text-green-500">100%</div>
@@ -218,6 +258,65 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Self-Sustaining Treasury Section */}
+      <section className="py-20 px-6 bg-black/50">
+        <div className="max-w-7xl mx-auto">
+          <h2 className="text-3xl md:text-5xl font-display font-bold text-center mb-4">
+            Self-Sustaining Treasury
+          </h2>
+          <p className="text-gray-400 text-center max-w-2xl mx-auto mb-16">
+            Every fee flows back to the community. Zero goes to founders.
+          </p>
+
+          {/* Flow Diagram */}
+          <div className="max-w-3xl mx-auto">
+            {/* Fee Source */}
+            <div className="glass rounded-2xl p-6 text-center mb-4">
+              <p className="text-gray-400 text-sm">Swap &amp; Trade Fees (3%)</p>
+              <p className="text-2xl font-bold text-primary-500">Protocol Revenue</p>
+            </div>
+
+            <div className="text-center text-gray-500 text-2xl mb-4">&#8595;</div>
+
+            {/* Burn */}
+            <div className="glass rounded-2xl p-4 text-center mb-4 border border-red-500/30 bg-red-500/5">
+              <p className="text-red-400 font-semibold">5% Burned Forever</p>
+              <p className="text-xs text-gray-400">Reducing supply every week</p>
+            </div>
+
+            <div className="text-center text-gray-500 text-2xl mb-4">&#8595;</div>
+
+            {/* Distribution */}
+            <div className="grid md:grid-cols-3 gap-4">
+              <div className="glass rounded-2xl p-6 text-center border border-blue-500/20">
+                <div className="w-12 h-12 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <span className="text-xl">&#128200;</span>
+                </div>
+                <p className="text-blue-400 font-bold text-xl">40%</p>
+                <p className="text-sm text-gray-400">Liquidity Pool</p>
+                <p className="text-xs text-gray-500 mt-1">Strengthens price floor on Raydium</p>
+              </div>
+              <div className="glass rounded-2xl p-6 text-center border border-green-500/20">
+                <div className="w-12 h-12 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <span className="text-xl">&#128176;</span>
+                </div>
+                <p className="text-green-400 font-bold text-xl">40%</p>
+                <p className="text-sm text-gray-400">Staking Rewards</p>
+                <p className="text-xs text-gray-500 mt-1">50% vault refill + 50% fee sharing</p>
+              </div>
+              <div className="glass rounded-2xl p-6 text-center border border-yellow-500/20">
+                <div className="w-12 h-12 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <span className="text-xl">&#127974;</span>
+                </div>
+                <p className="text-yellow-400 font-bold text-xl">20%</p>
+                <p className="text-sm text-gray-400">Humanitarian Fund</p>
+                <p className="text-xs text-gray-500 mt-1">Community-voted business grants</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Transparency Section */}
       <section id="transparency" className="py-20 px-6 bg-black/50">
         <div className="max-w-7xl mx-auto">
@@ -334,6 +433,14 @@ export default function Home() {
                 <div className="flex justify-between">
                   <span className="text-gray-400">Buy/Sell Tax</span>
                   <span>3% each</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Weekly Burn</span>
+                  <span className="text-red-400">5% of fees</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Founder Fees</span>
+                  <span className="text-green-400">0%</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-400">LP Lock</span>

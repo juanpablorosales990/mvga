@@ -23,6 +23,8 @@ const GrantDetailPage = lazy(() => import('./pages/GrantDetailPage'));
 const CreateProposalPage = lazy(() => import('./pages/CreateProposalPage'));
 const ReferralPage = lazy(() => import('./pages/ReferralPage'));
 const ChartsPage = lazy(() => import('./pages/ChartsPage'));
+const TransparencyPage = lazy(() => import('./pages/TransparencyPage'));
+const MetricsPage = lazy(() => import('./pages/MetricsPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
 // Components
@@ -84,6 +86,8 @@ function App() {
                       <Route path="/grants/:id" element={<GrantDetailPage />} />
                       <Route path="/referral" element={<ReferralPage />} />
                       <Route path="/charts" element={<ChartsPage />} />
+                      <Route path="/transparency" element={<TransparencyPage />} />
+                      <Route path="/metrics" element={<MetricsPage />} />
                       <Route path="*" element={<NotFoundPage />} />
                     </Routes>
                   </Suspense>

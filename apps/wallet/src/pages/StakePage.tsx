@@ -60,6 +60,7 @@ interface StakePosition {
   apy: number;
   rewards: number;
   status: string;
+  autoCompound: boolean;
 }
 
 export default function StakePage() {
@@ -80,14 +81,28 @@ export default function StakePage() {
     totalStakers: 0,
     rewardPool: 0,
     baseApy: 12,
+    dynamicApy: 12,
+    apyMultiplier: 1.0,
+    stakingRate: 0,
+    weeklyFeePool: 0,
   });
   const [position, setPosition] = useState<{
     stakes: StakePosition[];
     totalStaked: number;
     earnedRewards: number;
+    feeRewards: number;
     currentTier: string;
     apy: number;
-  }>({ stakes: [], totalStaked: 0, earnedRewards: 0, currentTier: 'Bronze', apy: 12 });
+    effectiveApy: number;
+  }>({
+    stakes: [],
+    totalStaked: 0,
+    earnedRewards: 0,
+    feeRewards: 0,
+    currentTier: 'Bronze',
+    apy: 12,
+    effectiveApy: 12,
+  });
 
   const fetchData = useCallback(async () => {
     try {
@@ -252,6 +267,23 @@ export default function StakePage() {
     }
   };
 
+  const handleToggleAutoCompound = async (stakeId: string, enabled: boolean) => {
+    if (!authToken) return;
+    try {
+      const res = await fetch(`${API_URL}/staking/auto-compound`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`,
+        },
+        body: JSON.stringify({ stakeId, enabled }),
+      });
+      if (res.ok) fetchData();
+    } catch {
+      // Silent fail — user sees stale state
+    }
+  };
+
   if (!connected) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
@@ -280,11 +312,16 @@ export default function StakePage() {
           )}
         </div>
         <div className="card text-center">
-          <p className="text-gray-400 text-sm">{t('stake.rewards')}</p>
+          <p className="text-gray-400 text-sm">{t('stake.baseRewards')}</p>
           <p className="text-xl font-bold text-green-400">
             +{position.earnedRewards.toFixed(2)} MVGA
           </p>
-          {position.earnedRewards > 0 && (
+          {position.feeRewards > 0 && (
+            <p className="text-xs text-blue-400 mt-1">
+              +{position.feeRewards.toFixed(2)} {t('stake.feeRewards')}
+            </p>
+          )}
+          {(position.earnedRewards > 0 || position.feeRewards > 0) && (
             <button
               onClick={handleClaim}
               disabled={loading}
@@ -307,8 +344,25 @@ export default function StakePage() {
           </span>
         </div>
         <div className="flex items-center justify-between mb-2">
-          <span className="text-gray-400">{t('stake.yourApy')}</span>
-          <span className="text-green-400 font-bold">{position.apy}%</span>
+          <span className="text-gray-400">{t('stake.effectiveApy')}</span>
+          <div className="flex items-center gap-1">
+            <span className="text-green-400 font-bold">{position.effectiveApy.toFixed(1)}%</span>
+            {stakingInfo.dynamicApy > 12 && <span className="text-green-400 text-xs">▲</span>}
+            {stakingInfo.dynamicApy < 12 && <span className="text-red-400 text-xs">▼</span>}
+          </div>
+        </div>
+        {stakingInfo.weeklyFeePool > 0 && (
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-gray-400">{t('stake.weeklyFeePool')}</span>
+            <span className="font-medium text-blue-400">
+              {stakingInfo.weeklyFeePool.toLocaleString(undefined, { maximumFractionDigits: 0 })}{' '}
+              MVGA
+            </span>
+          </div>
+        )}
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-gray-400">{t('stake.stakingRate')}</span>
+          <span className="font-medium">{(stakingInfo.stakingRate * 100).toFixed(1)}%</span>
         </div>
         <div className="flex items-center justify-between mb-2">
           <span className="text-gray-400">{t('stake.totalStakedPool')}</span>
@@ -446,6 +500,21 @@ export default function StakePage() {
                     Unlocks: {new Date(stake.lockedUntil).toLocaleDateString()}
                   </p>
                 )}
+                <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/5">
+                  <span className="text-xs text-gray-400">{t('stake.autoCompound')}</span>
+                  <button
+                    onClick={() => handleToggleAutoCompound(stake.id, !stake.autoCompound)}
+                    className={`relative w-10 h-5 rounded-full transition ${
+                      stake.autoCompound ? 'bg-green-500' : 'bg-white/10'
+                    }`}
+                  >
+                    <span
+                      className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${
+                        stake.autoCompound ? 'translate-x-5' : 'translate-x-0.5'
+                      }`}
+                    />
+                  </button>
+                </div>
               </div>
             ))}
           </div>

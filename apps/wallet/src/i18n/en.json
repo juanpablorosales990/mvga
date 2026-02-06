@@ -102,7 +102,13 @@
     "unlocks": "Unlocks",
     "stakingTiers": "Staking Tiers",
     "anyAmount": "Any amount",
-    "connectPrompt": "Connect your wallet to stake MVGA"
+    "connectPrompt": "Connect your wallet to stake MVGA",
+    "baseRewards": "Base Rewards",
+    "feeRewards": "fee rewards",
+    "effectiveApy": "Effective APY",
+    "weeklyFeePool": "Weekly Fee Pool",
+    "stakingRate": "Staking Rate",
+    "autoCompound": "Auto-Compound"
   },
   "p2p": {
     "title": "P2P Exchange",
@@ -199,7 +205,9 @@
     "receive": "Receive",
     "history": "History",
     "grants": "Grants",
-    "referral": "Referral"
+    "referral": "Referral",
+    "transparency": "Transparency",
+    "metrics": "Protocol Metrics"
   },
   "grants": {
     "title": "Grants",
@@ -288,5 +296,53 @@
     "empty": "No saved addresses yet",
     "labelRequired": "Label is required",
     "invalidAddress": "Invalid Solana address"
+  },
+  "transparency": {
+    "title": "Transparency",
+    "mission": "100% Community-Owned",
+    "missionText": "Every fee collected flows back to the MVGA community. Zero goes to founders. This protocol exists to help Venezuelans.",
+    "howFundsDistributed": "How Funds Are Distributed",
+    "liquidity": "Liquidity Pool",
+    "liquidityDesc": "Strengthens MVGA price floor on Raydium",
+    "stakingRewards": "Staking Rewards",
+    "stakingDesc": "Rewards for MVGA stakers with sustainable APY",
+    "grants": "Humanitarian Fund",
+    "grantsDesc": "Funds Venezuelan businesses through community votes",
+    "treasuryBalances": "Treasury Balances",
+    "pending": "Pending",
+    "totalDistributed": "Total Distributed",
+    "nextDistribution": "Next Distribution",
+    "recentDistributions": "Recent Distributions",
+    "total": "Total",
+    "verifyOnChain": "Verify On-Chain",
+    "verifyText": "All treasury wallets are public. Verify every transaction on Solscan.",
+    "liquidityWallet": "Liquidity Wallet",
+    "stakingWallet": "Staking Vault",
+    "grantsWallet": "Grants Treasury",
+    "zeroFounderFees": "Zero Founder Fees",
+    "zeroFounderFeesText": "The founders take nothing. 100% of protocol revenue is distributed back to the community every week.",
+    "tokenBurns": "Token Burns",
+    "burnDesc": "5% of weekly fees are burned, permanently reducing supply",
+    "totalBurned": "Total Burned",
+    "supplyReduced": "Supply Reduced",
+    "ofTotalSupply": "of total supply",
+    "recentBurns": "Recent Burns",
+    "weeklyBurn": "Weekly Burn",
+    "burnHistory": "Burn History"
+  },
+  "metrics": {
+    "title": "Protocol Metrics",
+    "tvl": "Total Value Locked",
+    "volume24h": "24h Volume",
+    "revenue24h": "24h Revenue",
+    "totalBurned": "Total Burned",
+    "users": "Users",
+    "totalUsers": "Total Users",
+    "activeUsers": "Active (24h)",
+    "stakers": "Stakers",
+    "tvlOverTime": "TVL Over Time",
+    "volumeOverTime": "Volume Over Time",
+    "noData": "No metrics data yet",
+    "lastUpdated": "Last updated"
   }
 }

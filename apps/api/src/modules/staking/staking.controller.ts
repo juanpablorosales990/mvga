@@ -70,4 +70,15 @@ export class StakingController {
   async claimRewards(@CurrentUser('wallet') wallet: string) {
     return this.stakingService.createClaimTransaction(wallet);
   }
+
+  @Post('auto-compound')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Toggle auto-compound for a stake' })
+  async toggleAutoCompound(
+    @CurrentUser('wallet') wallet: string,
+    @Body() body: { stakeId: string; enabled: boolean }
+  ) {
+    return this.stakingService.toggleAutoCompound(wallet, body.stakeId, body.enabled);
+  }
 }

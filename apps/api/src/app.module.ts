@@ -11,6 +11,9 @@ import { P2PModule } from './modules/p2p/p2p.module';
 import { GrantsModule } from './modules/grants/grants.module';
 import { ReferralsModule } from './modules/referrals/referrals.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { TreasuryModule } from './modules/treasury/treasury.module';
+import { BurnModule } from './modules/burn/burn.module';
+import { MetricsModule } from './modules/metrics/metrics.module';
 import { HealthController } from './health.controller';
 
 @Module({
@@ -33,6 +36,9 @@ import { HealthController } from './health.controller';
     P2PModule,
     GrantsModule,
     ReferralsModule,
+    TreasuryModule,
+    BurnModule,
+    MetricsModule,
   ],
   controllers: [HealthController],
   providers: [

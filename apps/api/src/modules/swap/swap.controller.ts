@@ -1,7 +1,9 @@
-import { Controller, Post, Body, Get, Query } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
+import { Controller, Post, Body, Get, Query, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
 import { SwapService, SwapQuoteRequest, SwapExecuteRequest } from './swap.service';
-import { QuoteDto, SwapDto } from './swap.dto';
+import { QuoteDto, SwapDto, RecordSwapDto } from './swap.dto';
+import { AuthGuard } from '../auth/auth.guard';
+import { CurrentUser } from '../auth/auth.decorator';
 
 @ApiTags('Swap')
 @Controller('swap')
@@ -64,6 +66,30 @@ export class SwapController {
         symbol: 'MVGA',
         name: 'Make Venezuela Great Again',
         decimals: 9,
+      },
+    };
+  }
+
+  @Post('record')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Record completed swap for fee tracking' })
+  async recordSwap(@Body() dto: RecordSwapDto, @CurrentUser('wallet') wallet: string) {
+    dto.walletAddress = wallet;
+    return this.swapService.recordSwap(dto);
+  }
+
+  @Get('fee-info')
+  @ApiOperation({ summary: 'Get platform fee information' })
+  getFeeInfo() {
+    return {
+      platformFeeBps: 10, // 0.1%
+      platformFeePercent: 0.1,
+      message: '0.1% of each swap goes to the MVGA community treasury',
+      distribution: {
+        liquidity: '40% - Strengthens MVGA price floor',
+        staking: '40% - Rewards for MVGA stakers',
+        grants: '20% - Funds Venezuelan businesses',
       },
     };
   }

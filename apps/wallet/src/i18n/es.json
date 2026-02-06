@@ -102,7 +102,13 @@
     "unlocks": "Se desbloquea",
     "stakingTiers": "Niveles de Staking",
     "anyAmount": "Cualquier monto",
-    "connectPrompt": "Conecta tu billetera para hacer staking de MVGA"
+    "connectPrompt": "Conecta tu billetera para hacer staking de MVGA",
+    "baseRewards": "Recompensas Base",
+    "feeRewards": "comisiones",
+    "effectiveApy": "APY Efectivo",
+    "weeklyFeePool": "Pool Semanal de Comisiones",
+    "stakingRate": "Tasa de Staking",
+    "autoCompound": "Auto-Compound"
   },
   "p2p": {
     "title": "Intercambio P2P",
@@ -199,7 +205,9 @@
     "receive": "Recibir",
     "history": "Historial",
     "grants": "Subvenciones",
-    "referral": "Referidos"
+    "referral": "Referidos",
+    "transparency": "Transparencia",
+    "metrics": "Metricas del Protocolo"
   },
   "grants": {
     "title": "Subvenciones",
@@ -288,5 +296,53 @@
     "empty": "Sin direcciones guardadas aun",
     "labelRequired": "El nombre es requerido",
     "invalidAddress": "Direccion de Solana invalida"
+  },
+  "transparency": {
+    "title": "Transparencia",
+    "mission": "100% Propiedad Comunitaria",
+    "missionText": "Cada comision recolectada regresa a la comunidad MVGA. Cero va a los fundadores. Este protocolo existe para ayudar a los venezolanos.",
+    "howFundsDistributed": "Como se Distribuyen los Fondos",
+    "liquidity": "Pool de Liquidez",
+    "liquidityDesc": "Fortalece el piso de precio de MVGA en Raydium",
+    "stakingRewards": "Recompensas de Staking",
+    "stakingDesc": "Recompensas para stakers con APY sostenible",
+    "grants": "Fondo Humanitario",
+    "grantsDesc": "Financia negocios venezolanos a traves de votos comunitarios",
+    "treasuryBalances": "Balances de Tesoreria",
+    "pending": "Pendiente",
+    "totalDistributed": "Total Distribuido",
+    "nextDistribution": "Proxima Distribucion",
+    "recentDistributions": "Distribuciones Recientes",
+    "total": "Total",
+    "verifyOnChain": "Verificar en Cadena",
+    "verifyText": "Todas las billeteras de tesoreria son publicas. Verifica cada transaccion en Solscan.",
+    "liquidityWallet": "Billetera de Liquidez",
+    "stakingWallet": "Boveda de Staking",
+    "grantsWallet": "Tesoreria de Subvenciones",
+    "zeroFounderFees": "Cero Comisiones para Fundadores",
+    "zeroFounderFeesText": "Los fundadores no toman nada. El 100% de los ingresos del protocolo se distribuyen a la comunidad cada semana.",
+    "tokenBurns": "Quema de Tokens",
+    "burnDesc": "5% de las comisiones semanales se queman, reduciendo permanentemente el suministro",
+    "totalBurned": "Total Quemado",
+    "supplyReduced": "Suministro Reducido",
+    "ofTotalSupply": "del suministro total",
+    "recentBurns": "Quemas Recientes",
+    "weeklyBurn": "Quema Semanal",
+    "burnHistory": "Historial de Quemas"
+  },
+  "metrics": {
+    "title": "Metricas del Protocolo",
+    "tvl": "Valor Total Bloqueado",
+    "volume24h": "Volumen 24h",
+    "revenue24h": "Ingresos 24h",
+    "totalBurned": "Total Quemado",
+    "users": "Usuarios",
+    "totalUsers": "Total Usuarios",
+    "activeUsers": "Activos (24h)",
+    "stakers": "Stakers",
+    "tvlOverTime": "TVL en el Tiempo",
+    "volumeOverTime": "Volumen en el Tiempo",
+    "noData": "Sin datos de metricas aun",
+    "lastUpdated": "Ultima actualizacion"
   }
 }

@@ -62,6 +62,7 @@ model Stake {
 
   stakeTx     String?   @unique // Solana transaction signature
   unstakeTx   String?   @unique // Solana transaction signature when unstaked
+  autoCompound Boolean  @default(false) // Auto-reinvest rewards
 
   status      StakeStatus @default(ACTIVE)
   createdAt   DateTime    @default(now())
@@ -324,10 +325,161 @@ enum TransactionType {
   SWAP
   TRANSFER
   REFERRAL_BONUS
+  BURN
+  FEE_REWARD
 }
 
 enum TransactionLogStatus {
   PENDING
   CONFIRMED
   FAILED
+}
+
+// ============================================================================
+// Treasury Distribution (Self-Sustaining Protocol)
+// ============================================================================
+
+model TreasuryDistribution {
+  id               String   @id @default(uuid())
+
+  // Distribution amounts
+  totalAmount      BigInt   // Total collected this period
+  burnAmount       BigInt   @default(0) // 5% burned
+  liquidityAmount  BigInt   // 40% of distributable to Raydium LP
+  stakingAmount    BigInt   // 40% of distributable to staking rewards vault
+  grantsAmount     BigInt   // 20% of distributable to humanitarian fund
+
+  // Transaction signatures
+  burnTx           String?  // Burn transaction signature
+  liquidityTx      String?  // Add liquidity tx
+  stakingTx        String?  // Transfer to staking vault tx
+  grantsTx         String?  // Transfer to grants treasury tx
+
+  // Revenue sources breakdown
+  swapFees         BigInt   @default(0)
+  topupFees        BigInt   @default(0)
+  giftcardFees     BigInt   @default(0)
+  yieldEarnings    BigInt   @default(0)
+
+  status           DistributionStatus @default(PENDING)
+  periodStart      DateTime
+  periodEnd        DateTime
+  executedAt       DateTime?
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([status])
+  @@index([periodEnd])
+}
+
+enum DistributionStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+}
+
+model TreasuryBalance {
+  id               String   @id @default(uuid())
+
+  // Wallet balances (in smallest units)
+  mainWallet       BigInt   @default(0)  // Operating treasury
+  liquidityWallet  BigInt   @default(0)  // LP reserves
+  stakingWallet    BigInt   @default(0)  // Staking rewards vault
+  grantsWallet     BigInt   @default(0)  // Humanitarian fund
+
+  // Cumulative totals
+  totalRevenue     BigInt   @default(0)
+  totalDistributed BigInt   @default(0)
+  totalToLiquidity BigInt   @default(0)
+  totalToStaking   BigInt   @default(0)
+  totalToGrants    BigInt   @default(0)
+
+  // Snapshot timestamp
+  snapshotAt       DateTime @default(now())
+
+  @@index([snapshotAt])
+}
+
+model FeeCollection {
+  id               String   @id @default(uuid())
+
+  source           FeeSource
+  amount           BigInt
+  token            String    // USDC, SOL, MVGA
+  signature        String?   @unique
+
+  // Related transaction
+  relatedTx        String?
+  relatedType      String?   // swap, topup, giftcard, yield
+
+  collected        Boolean   @default(false)
+  collectedAt      DateTime?
+
+  createdAt        DateTime  @default(now())
+
+  @@index([source])
+  @@index([collected])
+  @@index([createdAt])
+}
+
+enum FeeSource {
+  SWAP
+  MOBILE_TOPUP
+  GIFT_CARD
+  YIELD
+  P2P
+}
+
+// ============================================================================
+// Token Burns (Deflationary Mechanism)
+// ============================================================================
+
+model TokenBurn {
+  id        String     @id @default(uuid())
+  amount    BigInt     // Amount burned in smallest units
+  signature String     @unique // Solana transaction signature
+  source    BurnSource // WEEKLY or MANUAL
+  createdAt DateTime   @default(now())
+
+  @@index([createdAt])
+}
+
+enum BurnSource {
+  WEEKLY
+  MANUAL
+}
+
+// ============================================================================
+// Fee Sharing (Staker Dividends)
+// ============================================================================
+
+model FeeSnapshot {
+  id           String   @id @default(uuid())
+  totalFees    BigInt   // Total fees allocated to stakers this period
+  totalWeight  BigInt   // Sum of all stake weights at snapshot time
+  feePerWeight Float    // Fees per unit of weight
+  periodEnd    DateTime // End of the distribution period
+  createdAt    DateTime @default(now())
+
+  @@index([periodEnd])
+}
+
+// ============================================================================
+// Protocol Metrics
+// ============================================================================
+
+model MetricsSnapshot {
+  id           String   @id @default(uuid())
+  tvl          BigInt   // Total value locked (staking + liquidity + escrow)
+  volume24h    BigInt   // 24h transaction volume
+  revenue24h   BigInt   // 24h fee revenue
+  totalUsers   Int      // Total registered users
+  activeUsers  Int      // Users active in last 24h
+  totalStakers Int      // Users with active stakes
+  totalBurned  BigInt   @default(0) // Cumulative tokens burned
+  snapshotAt   DateTime @default(now())
+
+  @@index([snapshotAt])
 }

@@ -22,6 +22,14 @@ describe('StakingService', () => {
         findUnique: jest.fn(),
         upsert: jest.fn(),
       },
+      feeSnapshot: {
+        findFirst: jest.fn().mockResolvedValue(null),
+        findMany: jest.fn().mockResolvedValue([]),
+        create: jest.fn(),
+      },
+      tokenBurn: {
+        aggregate: jest.fn().mockResolvedValue({ _sum: { amount: null } }),
+      },
     };
 
     mockConfig = {
@@ -177,6 +185,7 @@ describe('StakingService', () => {
       expect(result.stakes).toEqual([]);
       expect(result.totalStaked).toBe(0);
       expect(result.earnedRewards).toBe(0);
+      expect(result.feeRewards).toBe(0);
       expect(result.currentTier).toBe('Bronze');
       expect(result.apy).toBe(12);
     });
@@ -194,8 +203,14 @@ describe('StakingService', () => {
           lockedUntil: null,
           createdAt: oneDayAgo,
           status: 'ACTIVE',
+          autoCompound: false,
         },
       ]);
+      // Mock getStakingInfo dependencies
+      mockPrisma.stake.aggregate.mockResolvedValue({
+        _sum: { amount: BigInt(10000 * 10 ** MVGA_DECIMALS) },
+      });
+      mockPrisma.stake.groupBy.mockResolvedValue([{ userId: 'user-1' }]);
 
       const result = await service.getStakingPosition('wallet');
       expect(result.stakes).toHaveLength(1);
@@ -214,12 +229,19 @@ describe('StakingService', () => {
           lockedUntil: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
           createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
           status: 'ACTIVE',
+          autoCompound: false,
         },
       ]);
+      // Mock getStakingInfo dependencies
+      mockPrisma.stake.aggregate.mockResolvedValue({
+        _sum: { amount: BigInt(200000 * 10 ** MVGA_DECIMALS) },
+      });
+      mockPrisma.stake.groupBy.mockResolvedValue([{ userId: 'user-1' }]);
 
       const result = await service.getStakingPosition('wallet');
       expect(result.currentTier).toBe('Diamond');
-      expect(result.apy).toBe(24); // 12 * 2.0 multiplier
+      // Dynamic APY at 0.02% staking rate → 1.3x multiplier → 12 * 1.3 * 2.0 = 31.2
+      expect(result.apy).toBeCloseTo(31.2, 0);
     });
   });
 
@@ -261,6 +283,14 @@ describe('StakingService', () => {
   });
 
   describe('createClaimTransaction', () => {
+    beforeEach(() => {
+      // Common mocks needed for getStakingInfo (called indirectly via getStakingPosition)
+      mockPrisma.stake.aggregate.mockResolvedValue({
+        _sum: { amount: BigInt(50000 * 10 ** MVGA_DECIMALS) },
+      });
+      mockPrisma.stake.groupBy.mockResolvedValue([{ userId: 'user-1' }]);
+    });
+
     it('throws if no rewards to claim', async () => {
       mockPrisma.user.findUnique.mockResolvedValue({ id: 'user-1', walletAddress: 'wallet' });
       mockPrisma.stake.findMany.mockResolvedValue([]);
@@ -269,7 +299,7 @@ describe('StakingService', () => {
     });
 
     it('throws if rewards are below minimum (10 MVGA)', async () => {
-      // Stake 1000 MVGA for 10 days at Bronze (12% APY, no lock) => ~3.28 MVGA rewards
+      // Stake 1000 MVGA for 10 days at Bronze (12% APY * 1.3 dynamic, no lock) => ~4.27 MVGA rewards
       const tenDaysAgo = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000);
       mockPrisma.user.findUnique.mockResolvedValue({ id: 'user-1', walletAddress: 'wallet' });
       mockPrisma.stake.findMany.mockResolvedValue([
@@ -280,6 +310,7 @@ describe('StakingService', () => {
           lockedUntil: null,
           createdAt: tenDaysAgo,
           status: 'ACTIVE',
+          autoCompound: false,
         },
       ]);
 
@@ -300,6 +331,7 @@ describe('StakingService', () => {
           lockedUntil: null,
           createdAt: sixMonthsAgo,
           status: 'ACTIVE',
+          autoCompound: false,
         },
       ]);
 
@@ -310,17 +342,19 @@ describe('StakingService', () => {
   });
 
   describe('getStakingInfo', () => {
-    it('returns aggregate staking info', async () => {
+    it('returns aggregate staking info with dynamic APY', async () => {
       mockPrisma.stake.aggregate.mockResolvedValue({
         _sum: { amount: BigInt(100000 * 10 ** MVGA_DECIMALS) },
       });
       mockPrisma.stake.groupBy.mockResolvedValue([{ userId: 'a' }, { userId: 'b' }]);
 
-      // Mock the on-chain vault call to fail (no vault configured)
       const result = await service.getStakingInfo();
       expect(result.totalStaked).toBe(100000);
       expect(result.totalStakers).toBe(2);
       expect(result.baseApy).toBe(12);
+      // 100k/1B = 0.01% staking rate → <10% → 1.3x multiplier
+      expect(result.dynamicApy).toBeCloseTo(15.6, 1);
+      expect(result.stakingRate).toBeCloseTo(0.0001, 4);
     });
 
     it('handles zero staking correctly', async () => {
@@ -330,6 +364,33 @@ describe('StakingService', () => {
       const result = await service.getStakingInfo();
       expect(result.totalStaked).toBe(0);
       expect(result.totalStakers).toBe(0);
+      expect(result.dynamicApy).toBeCloseTo(15.6, 1); // 0% staking → 1.3x
+    });
+  });
+
+  describe('calculateDynamicApy', () => {
+    it('returns 1.3x multiplier for <10% staking rate', () => {
+      const result = service.calculateDynamicApy(0.05);
+      expect(result.apyMultiplier).toBe(1.3);
+      expect(result.dynamicApy).toBeCloseTo(15.6, 1);
+    });
+
+    it('returns 1.0x multiplier for 10-30% staking rate', () => {
+      const result = service.calculateDynamicApy(0.2);
+      expect(result.apyMultiplier).toBe(1.0);
+      expect(result.dynamicApy).toBe(12);
+    });
+
+    it('returns 0.85x multiplier for 30-50% staking rate', () => {
+      const result = service.calculateDynamicApy(0.4);
+      expect(result.apyMultiplier).toBe(0.85);
+      expect(result.dynamicApy).toBeCloseTo(10.2, 1);
+    });
+
+    it('returns 0.7x multiplier for >50% staking rate', () => {
+      const result = service.calculateDynamicApy(0.6);
+      expect(result.apyMultiplier).toBe(0.7);
+      expect(result.dynamicApy).toBeCloseTo(8.4, 1);
     });
   });
 });

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { VersionedTransaction } from '@solana/web3.js';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../hooks/useAuth';
 
 const TOKENS = [
   {
@@ -52,6 +53,7 @@ export default function SwapPage() {
   const { t } = useTranslation();
   const { connected, publicKey, signTransaction } = useWallet();
   const { connection } = useConnection();
+  const { authToken } = useAuth();
 
   const [fromToken, setFromToken] = useState(TOKENS[0]);
   const [toToken, setToToken] = useState(TOKENS[1]);
@@ -152,6 +154,29 @@ export default function SwapPage() {
       // Confirm
       await connection.confirmTransaction(signature, 'confirmed');
       setTxSignature(signature);
+
+      // Record swap for fee tracking (async, non-blocking)
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+        await fetch(`${apiUrl}/swap/record`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+          },
+          body: JSON.stringify({
+            walletAddress: publicKey.toString(),
+            signature,
+            inputMint: fromToken.mint,
+            outputMint: toToken.mint,
+            inputAmount: quote.inAmount,
+            outputAmount: quote.outAmount,
+          }),
+        });
+      } catch {
+        // Non-critical, ignore errors
+      }
+
       setFromAmount('');
       setQuote(null);
     } catch (err) {

@@ -3,12 +3,39 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://mvga-api-production.up.railway.app';
+
 interface WalletInfo {
   name: string;
   address: string;
   description: string;
   balance: number;
   loading: boolean;
+}
+
+interface LiveMetrics {
+  tvl: number;
+  volume24h: number;
+  revenue24h: number;
+  totalUsers: number;
+  activeUsers: number;
+  totalStakers: number;
+  totalBurned: number;
+}
+
+interface BurnStats {
+  totalBurned: number;
+  burnCount: number;
+  lastBurnAt: string | null;
+  supplyReduction: number;
+}
+
+interface BurnRecord {
+  id: string;
+  amount: number;
+  signature: string;
+  source: string;
+  createdAt: string;
 }
 
 const TREASURY_WALLETS: WalletInfo[] = [
@@ -56,8 +83,17 @@ const TREASURY_WALLETS: WalletInfo[] = [
   },
 ];
 
+function formatMvga(num: number) {
+  if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(2)}M`;
+  if (num >= 1_000) return `${(num / 1_000).toFixed(1)}K`;
+  return new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(num);
+}
+
 export default function TransparencyPage() {
   const [wallets, setWallets] = useState(TREASURY_WALLETS);
+  const [metrics, setMetrics] = useState<LiveMetrics | null>(null);
+  const [burnStats, setBurnStats] = useState<BurnStats | null>(null);
+  const [burnHistory, setBurnHistory] = useState<BurnRecord[]>([]);
   const [stats, _setStats] = useState({
     totalHolders: 0,
     marketCap: 0,
@@ -69,7 +105,7 @@ export default function TransparencyPage() {
     // Fetch wallet balances from Solana
     const fetchBalances = async () => {
       const updatedWallets = await Promise.all(
-        wallets.map(async (wallet) => {
+        TREASURY_WALLETS.map(async (wallet) => {
           try {
             // Skip placeholder addresses
             if (wallet.address.includes('_ADDRESS')) {
@@ -101,6 +137,19 @@ export default function TransparencyPage() {
     };
 
     fetchBalances();
+
+    // Fetch live protocol data
+    Promise.all([
+      fetch(`${API_URL}/metrics`).then((r) => (r.ok ? r.json() : null)),
+      fetch(`${API_URL}/burn/stats`).then((r) => (r.ok ? r.json() : null)),
+      fetch(`${API_URL}/burn/history?limit=5`).then((r) => (r.ok ? r.json() : null)),
+    ])
+      .then(([m, b, bh]) => {
+        if (m) setMetrics(m);
+        if (b) setBurnStats(b);
+        if (bh) setBurnHistory(bh);
+      })
+      .catch(() => {});
   }, []);
 
   const formatUSD = (value: number) => {
@@ -142,33 +191,121 @@ export default function TransparencyPage() {
         </div>
       </section>
 
-      {/* Stats Grid */}
+      {/* Live Metrics */}
       <section className="pb-12 px-6">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-white/5 rounded-2xl p-6 text-center">
-              <p className="text-gray-400 text-sm mb-1">Total Holders</p>
+              <p className="text-gray-400 text-sm mb-1">Total Value Locked</p>
               <p className="text-2xl md:text-3xl font-bold text-primary-500">
-                {formatNumber(stats.totalHolders)}
+                {metrics ? formatMvga(metrics.tvl) : formatNumber(stats.totalStaked)} MVGA
               </p>
             </div>
             <div className="bg-white/5 rounded-2xl p-6 text-center">
-              <p className="text-gray-400 text-sm mb-1">Market Cap</p>
+              <p className="text-gray-400 text-sm mb-1">Total Users</p>
               <p className="text-2xl md:text-3xl font-bold text-secondary-500">
-                {formatUSD(stats.marketCap)}
+                {metrics ? formatNumber(metrics.totalUsers) : formatNumber(stats.totalHolders)}
               </p>
             </div>
             <div className="bg-white/5 rounded-2xl p-6 text-center">
-              <p className="text-gray-400 text-sm mb-1">Total Staked</p>
+              <p className="text-gray-400 text-sm mb-1">Total Stakers</p>
               <p className="text-2xl md:text-3xl font-bold text-green-500">
-                {formatNumber(stats.totalStaked)} MVGA
+                {metrics ? formatNumber(metrics.totalStakers) : '0'}
               </p>
             </div>
             <div className="bg-white/5 rounded-2xl p-6 text-center">
               <p className="text-gray-400 text-sm mb-1">24h Volume</p>
               <p className="text-2xl md:text-3xl font-bold text-purple-500">
-                {formatUSD(stats.totalVolume)}
+                {metrics ? formatMvga(metrics.volume24h) : formatUSD(stats.totalVolume)} MVGA
               </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Burn Tracker */}
+      {burnStats && burnStats.totalBurned > 0 && (
+        <section className="pb-12 px-6">
+          <div className="max-w-7xl mx-auto">
+            <h2 className="text-2xl font-bold mb-6">Token Burns</h2>
+            <div className="bg-gradient-to-r from-red-500/10 to-transparent rounded-2xl p-6 border border-red-500/20">
+              <div className="grid md:grid-cols-3 gap-6 mb-6">
+                <div className="text-center">
+                  <p className="text-gray-400 text-sm">Total Burned</p>
+                  <p className="text-3xl font-bold text-red-400">
+                    {formatMvga(burnStats.totalBurned)}
+                  </p>
+                  <p className="text-xs text-gray-500">MVGA permanently destroyed</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-gray-400 text-sm">Burn Count</p>
+                  <p className="text-3xl font-bold text-red-400">{burnStats.burnCount}</p>
+                  <p className="text-xs text-gray-500">weekly burns executed</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-gray-400 text-sm">Supply Reduced</p>
+                  <p className="text-3xl font-bold text-red-400">
+                    {burnStats.supplyReduction.toFixed(4)}%
+                  </p>
+                  <p className="text-xs text-gray-500">of total 1B supply</p>
+                </div>
+              </div>
+              {burnHistory.length > 0 && (
+                <div className="border-t border-white/10 pt-4">
+                  <h3 className="text-sm font-medium text-gray-400 mb-3">Recent Burns</h3>
+                  <div className="space-y-2">
+                    {burnHistory.map((burn) => (
+                      <div key={burn.id} className="flex justify-between items-center text-sm">
+                        <span className="text-red-400 font-medium">
+                          {formatMvga(burn.amount)} MVGA
+                        </span>
+                        <a
+                          href={`https://solscan.io/tx/${burn.signature}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary-500 hover:text-primary-400"
+                        >
+                          {new Date(burn.createdAt).toLocaleDateString()} &#8599;
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Revenue Flow */}
+      <section className="pb-12 px-6">
+        <div className="max-w-7xl mx-auto">
+          <h2 className="text-2xl font-bold mb-6">Revenue Flow</h2>
+          <div className="bg-white/5 rounded-2xl p-6">
+            <div className="flex flex-col items-center gap-3">
+              <div className="bg-primary-500/10 border border-primary-500/20 rounded-xl px-6 py-3 text-center">
+                <p className="text-sm text-gray-400">Swap &amp; Trade Fees (3%)</p>
+                <p className="font-bold text-primary-500">All Protocol Revenue</p>
+              </div>
+              <span className="text-gray-500">&#8595;</span>
+              <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-6 py-2 text-center">
+                <p className="text-sm text-red-400 font-medium">5% Burned (deflationary)</p>
+              </div>
+              <span className="text-gray-500">&#8595;</span>
+              <div className="grid grid-cols-3 gap-3 w-full max-w-lg">
+                <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3 text-center">
+                  <p className="font-bold text-blue-400">40%</p>
+                  <p className="text-xs text-gray-400">Liquidity</p>
+                </div>
+                <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-3 text-center">
+                  <p className="font-bold text-green-400">40%</p>
+                  <p className="text-xs text-gray-400">Staking</p>
+                </div>
+                <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-3 text-center">
+                  <p className="font-bold text-yellow-400">20%</p>
+                  <p className="text-xs text-gray-400">Grants</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>

@@ -1,5 +1,6 @@
 import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../../common/prisma.service';
 import { TransactionLoggerService } from '../../common/transaction-logger.service';
 import { SolanaService } from '../wallet/solana.service';
@@ -20,6 +21,17 @@ export interface StakingTier {
 
 const BASE_APY = 12; // 12% base APY
 const MVGA_DECIMALS = 9;
+const TOTAL_SUPPLY = 1_000_000_000; // 1B MVGA total supply
+const AUTO_COMPOUND_MIN = 100; // Minimum 100 MVGA to auto-compound
+const REFERRAL_BONUS_RATE = 0.05; // 5% of claimed rewards go to referrer
+
+// Dynamic APY multipliers based on staking participation rate
+const DYNAMIC_APY_TIERS: { maxRate: number; multiplier: number }[] = [
+  { maxRate: 0.1, multiplier: 1.3 }, // <10% staked → 1.3x
+  { maxRate: 0.3, multiplier: 1.0 }, // 10-30% → 1.0x (base)
+  { maxRate: 0.5, multiplier: 0.85 }, // 30-50% → 0.85x
+  { maxRate: Infinity, multiplier: 0.7 }, // >50% → 0.7x
+];
 
 @Injectable()
 export class StakingService {
@@ -87,7 +99,7 @@ export class StakingService {
   }
 
   async getStakingInfo() {
-    const [aggregation, stakerCount] = await Promise.all([
+    const [aggregation, stakerCount, latestFeeSnapshot, totalBurnedAgg] = await Promise.all([
       this.prisma.stake.aggregate({
         where: { status: 'ACTIVE' },
         _sum: { amount: true },
@@ -96,10 +108,22 @@ export class StakingService {
         by: ['userId'],
         where: { status: 'ACTIVE' },
       }),
+      this.prisma.feeSnapshot.findFirst({
+        orderBy: { periodEnd: 'desc' },
+      }),
+      this.prisma.tokenBurn.aggregate({
+        _sum: { amount: true },
+      }),
     ]);
 
     const totalStakedRaw = aggregation._sum.amount ?? BigInt(0);
     const totalStaked = Number(totalStakedRaw) / 10 ** MVGA_DECIMALS;
+    const totalBurned = Number(totalBurnedAgg._sum.amount ?? BigInt(0)) / 10 ** MVGA_DECIMALS;
+    const circulatingSupply = TOTAL_SUPPLY - totalBurned;
+
+    // Dynamic APY based on staking rate
+    const stakingRate = circulatingSupply > 0 ? totalStaked / circulatingSupply : 0;
+    const { dynamicApy, apyMultiplier } = this.calculateDynamicApy(stakingRate);
 
     // Get vault on-chain balance
     let rewardPool = 0;
@@ -116,11 +140,20 @@ export class StakingService {
       // Vault ATA may not exist yet
     }
 
+    // Weekly fee pool for stakers
+    const weeklyFeePool = latestFeeSnapshot
+      ? Number(latestFeeSnapshot.totalFees) / 10 ** MVGA_DECIMALS
+      : 0;
+
     return {
       totalStaked,
       totalStakers: stakerCount.length,
       rewardPool,
       baseApy: BASE_APY,
+      dynamicApy,
+      apyMultiplier,
+      stakingRate,
+      weeklyFeePool,
     };
   }
 
@@ -138,8 +171,10 @@ export class StakingService {
         stakes: [],
         totalStaked: 0,
         earnedRewards: 0,
+        feeRewards: 0,
         currentTier: 'Bronze',
         apy: BASE_APY,
+        effectiveApy: BASE_APY,
       };
     }
 
@@ -150,13 +185,17 @@ export class StakingService {
 
     const totalStaked = stakes.reduce((sum, s) => sum + Number(s.amount) / 10 ** MVGA_DECIMALS, 0);
 
-    // Calculate earned rewards for each stake
+    // Get dynamic APY
+    const info = await this.getStakingInfo();
+    const dynamicBase = info.dynamicApy;
+
+    // Calculate earned rewards for each stake using dynamic APY
     let totalRewards = 0;
     const formattedStakes = stakes.map((stake) => {
       const amount = Number(stake.amount) / 10 ** MVGA_DECIMALS;
       const tier = this.getTierForAmount(totalStaked);
       const lockMult = this.lockPeriodMultipliers[stake.lockPeriod] || 1.0;
-      const effectiveApy = BASE_APY * tier.multiplier * lockMult;
+      const effectiveApy = dynamicBase * tier.multiplier * lockMult;
 
       // Days since staked
       const daysSinceStake = (Date.now() - stake.createdAt.getTime()) / (1000 * 60 * 60 * 24);
@@ -172,17 +211,31 @@ export class StakingService {
         apy: effectiveApy,
         rewards,
         status: stake.status,
+        autoCompound: stake.autoCompound,
       };
     });
 
+    // Calculate fee rewards
+    const feeRewards = await this.calculateFeeRewards(user.id, stakes);
+
     const tier = this.getTierForAmount(totalStaked);
+    const baseApy = dynamicBase * tier.multiplier;
+
+    // Effective APY = base APY + annualized fee rewards
+    let effectiveApy = baseApy;
+    if (totalStaked > 0 && feeRewards > 0) {
+      const annualizedFeeYield = (feeRewards / totalStaked) * 52 * 100; // weekly → annual %
+      effectiveApy = baseApy + annualizedFeeYield;
+    }
 
     return {
       stakes: formattedStakes,
       totalStaked,
       earnedRewards: totalRewards,
+      feeRewards,
       currentTier: tier.name,
-      apy: BASE_APY * tier.multiplier,
+      apy: baseApy,
+      effectiveApy,
     };
   }
 
@@ -361,10 +414,287 @@ export class StakingService {
 
     const sig = await sendAndConfirmTransaction(connection, tx, [this.vaultKeypair]);
 
+    // Pay referral bonus (5% of claimed rewards to referrer, non-blocking)
+    this.payReferralBonus(walletAddress, position.earnedRewards);
+
     return {
       signature: sig,
       rewards: position.earnedRewards,
     };
+  }
+
+  /**
+   * Calculate the dynamic APY multiplier based on staking participation rate
+   */
+  calculateDynamicApy(stakingRate: number): { dynamicApy: number; apyMultiplier: number } {
+    let apyMultiplier = 1.0;
+    for (const tier of DYNAMIC_APY_TIERS) {
+      if (stakingRate < tier.maxRate) {
+        apyMultiplier = tier.multiplier;
+        break;
+      }
+    }
+    return {
+      dynamicApy: BASE_APY * apyMultiplier,
+      apyMultiplier,
+    };
+  }
+
+  /**
+   * Calculate a user's weight for fee sharing: sum of (amount × tierMult × lockMult)
+   */
+  calculateStakeWeight(
+    stakes: { amount: bigint; lockPeriod: number }[],
+    totalStakedDecimal: number
+  ): bigint {
+    const tier = this.getTierForAmount(totalStakedDecimal);
+    let totalWeight = BigInt(0);
+
+    for (const stake of stakes) {
+      const lockMult = this.lockPeriodMultipliers[stake.lockPeriod] || 1.0;
+      // Weight = amount × tierMultiplier × lockMultiplier (scaled by 1000 for precision)
+      const weight =
+        (stake.amount * BigInt(Math.round(tier.multiplier * lockMult * 1000))) / BigInt(1000);
+      totalWeight += weight;
+    }
+
+    return totalWeight;
+  }
+
+  /**
+   * Get total weight of all active stakes in the protocol
+   */
+  async getTotalStakeWeight(): Promise<bigint> {
+    const stakes = await this.prisma.stake.findMany({
+      where: { status: 'ACTIVE' },
+      include: { user: true },
+    });
+
+    // Group stakes by user
+    const userStakes = new Map<string, { amount: bigint; lockPeriod: number }[]>();
+    const userTotals = new Map<string, number>();
+
+    for (const stake of stakes) {
+      const userId = stake.userId;
+      if (!userStakes.has(userId)) {
+        userStakes.set(userId, []);
+        userTotals.set(userId, 0);
+      }
+      userStakes.get(userId)!.push({ amount: stake.amount, lockPeriod: stake.lockPeriod });
+      userTotals.set(
+        userId,
+        (userTotals.get(userId) || 0) + Number(stake.amount) / 10 ** MVGA_DECIMALS
+      );
+    }
+
+    let totalWeight = BigInt(0);
+    for (const [userId, stakeList] of userStakes) {
+      const totalDecimal = userTotals.get(userId) || 0;
+      totalWeight += this.calculateStakeWeight(stakeList, totalDecimal);
+    }
+
+    return totalWeight;
+  }
+
+  /**
+   * Calculate a user's unclaimed fee rewards from FeeSnapshots
+   */
+  private async calculateFeeRewards(
+    userId: string,
+    stakes: { amount: bigint; lockPeriod: number; createdAt: Date }[]
+  ): Promise<number> {
+    if (stakes.length === 0) return 0;
+
+    // Get all FeeSnapshots
+    const snapshots = await this.prisma.feeSnapshot.findMany({
+      orderBy: { periodEnd: 'desc' },
+      take: 52, // Up to 1 year of weekly snapshots
+    });
+
+    if (snapshots.length === 0) return 0;
+
+    const totalStakedDecimal = stakes.reduce(
+      (sum, s) => sum + Number(s.amount) / 10 ** MVGA_DECIMALS,
+      0
+    );
+
+    const userWeight = this.calculateStakeWeight(
+      stakes.map((s) => ({ amount: s.amount, lockPeriod: s.lockPeriod })),
+      totalStakedDecimal
+    );
+
+    if (userWeight === BigInt(0)) return 0;
+
+    // Sum up fee rewards from each snapshot where user had active stakes
+    let totalFeeRewards = 0;
+    for (const snapshot of snapshots) {
+      // Only count snapshots where at least one stake existed
+      const activeStakes = stakes.filter((s) => s.createdAt <= snapshot.periodEnd);
+      if (activeStakes.length === 0) continue;
+
+      if (snapshot.totalWeight > BigInt(0)) {
+        const share = Number(userWeight) / Number(snapshot.totalWeight);
+        const feeReward = (share * Number(snapshot.totalFees)) / 10 ** MVGA_DECIMALS;
+        totalFeeRewards += feeReward;
+      }
+    }
+
+    return totalFeeRewards;
+  }
+
+  /**
+   * Toggle auto-compound for a specific stake
+   */
+  async toggleAutoCompound(walletAddress: string, stakeId: string, enabled: boolean) {
+    const user = await this.prisma.user.findUnique({ where: { walletAddress } });
+    if (!user) throw new NotFoundException('User not found');
+
+    const stake = await this.prisma.stake.findFirst({
+      where: { id: stakeId, userId: user.id, status: 'ACTIVE' },
+    });
+    if (!stake) throw new NotFoundException('Stake not found');
+
+    await this.prisma.stake.update({
+      where: { id: stakeId },
+      data: { autoCompound: enabled },
+    });
+
+    return { stakeId, autoCompound: enabled };
+  }
+
+  /**
+   * Auto-compound cron: every 6 hours, re-stake rewards for opted-in stakes >= 100 MVGA
+   */
+  @Cron('0 */6 * * *')
+  async executeAutoCompound() {
+    this.logger.log('Running auto-compound...');
+
+    try {
+      // Find all active stakes with autoCompound enabled
+      const autoCompoundStakes = await this.prisma.stake.findMany({
+        where: { status: 'ACTIVE', autoCompound: true },
+        include: { user: true },
+      });
+
+      if (autoCompoundStakes.length === 0) {
+        this.logger.log('No auto-compound stakes found');
+        return;
+      }
+
+      // Group by user
+      const userStakesMap = new Map<string, typeof autoCompoundStakes>();
+      for (const stake of autoCompoundStakes) {
+        const key = stake.userId;
+        if (!userStakesMap.has(key)) userStakesMap.set(key, []);
+        userStakesMap.get(key)!.push(stake);
+      }
+
+      let compoundCount = 0;
+
+      for (const [userId, stakes] of userStakesMap) {
+        const walletAddress = stakes[0].user.walletAddress;
+
+        // Calculate total rewards for this user
+        const totalStaked = stakes.reduce(
+          (sum, s) => sum + Number(s.amount) / 10 ** MVGA_DECIMALS,
+          0
+        );
+
+        const info = await this.getStakingInfo();
+        const dynamicBase = info.dynamicApy;
+
+        let totalRewards = 0;
+        for (const stake of stakes) {
+          const amount = Number(stake.amount) / 10 ** MVGA_DECIMALS;
+          const tier = this.getTierForAmount(totalStaked);
+          const lockMult = this.lockPeriodMultipliers[stake.lockPeriod] || 1.0;
+          const effectiveApy = dynamicBase * tier.multiplier * lockMult;
+          const daysSinceStake = (Date.now() - stake.createdAt.getTime()) / (1000 * 60 * 60 * 24);
+          totalRewards += amount * (effectiveApy / 100) * (daysSinceStake / 365);
+        }
+
+        if (totalRewards < AUTO_COMPOUND_MIN) continue;
+
+        // Create a new stake record from the rewards (no on-chain transfer needed,
+        // rewards are already in the vault)
+        const rewardRaw = BigInt(Math.round(totalRewards * 10 ** MVGA_DECIMALS));
+
+        await this.prisma.stake.create({
+          data: {
+            userId,
+            amount: rewardRaw,
+            lockPeriod: 0, // Compounded rewards are flexible
+            autoCompound: true,
+            status: 'ACTIVE',
+          },
+        });
+
+        await this.txLogger.log({
+          walletAddress,
+          type: 'STAKE',
+          signature: `auto-compound-${Date.now()}-${userId.slice(0, 8)}`,
+          amount: totalRewards,
+          token: 'MVGA',
+        });
+
+        compoundCount++;
+        this.logger.log(
+          `Auto-compounded ${totalRewards.toFixed(2)} MVGA for ${walletAddress.slice(0, 8)}...`
+        );
+      }
+
+      this.logger.log(`Auto-compound complete: ${compoundCount} users compounded`);
+    } catch (error) {
+      this.logger.error('Auto-compound failed:', error);
+    }
+  }
+
+  /**
+   * Pay referral bonus: 5% of claimed rewards go to the referrer
+   */
+  private async payReferralBonus(walletAddress: string, claimedAmount: number) {
+    try {
+      // Find if user was referred by someone
+      const referral = await this.prisma.referral.findUnique({
+        where: { refereeAddress: walletAddress },
+      });
+
+      if (!referral || !this.vaultKeypair) return;
+
+      const bonusAmount = claimedAmount * REFERRAL_BONUS_RATE;
+      if (bonusAmount < 1) return; // Skip if bonus < 1 MVGA
+
+      const rawBonus = BigInt(Math.round(bonusAmount * 10 ** MVGA_DECIMALS));
+      const connection = this.solana.getConnection();
+      const referrerPubkey = new PublicKey(referral.referrerAddress);
+      const vaultAta = await getAssociatedTokenAddress(
+        this.mintPubkey,
+        this.vaultKeypair.publicKey
+      );
+      const referrerAta = await getAssociatedTokenAddress(this.mintPubkey, referrerPubkey);
+
+      const tx = new Transaction().add(
+        createTransferInstruction(vaultAta, referrerAta, this.vaultKeypair.publicKey, rawBonus)
+      );
+
+      const sig = await sendAndConfirmTransaction(connection, tx, [this.vaultKeypair]);
+
+      await this.txLogger.log({
+        walletAddress: referral.referrerAddress,
+        type: 'REFERRAL_BONUS',
+        signature: sig,
+        amount: bonusAmount,
+        token: 'MVGA',
+      });
+      await this.txLogger.confirm(sig);
+
+      this.logger.log(
+        `Referral bonus: ${bonusAmount.toFixed(2)} MVGA to ${referral.referrerAddress.slice(0, 8)}... (from ${walletAddress.slice(0, 8)}... claim)`
+      );
+    } catch (error) {
+      this.logger.error(`Referral bonus failed for ${walletAddress}:`, error);
+      // Non-critical — don't fail the claim
+    }
   }
 
   private getTierForAmount(amount: number): StakingTier {

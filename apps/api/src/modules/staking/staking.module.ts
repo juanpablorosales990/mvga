@@ -8,5 +8,6 @@ import { AuthModule } from '../auth/auth.module';
   imports: [WalletModule, AuthModule],
   controllers: [StakingController],
   providers: [StakingService],
+  exports: [StakingService],
 })
 export class StakingModule {}
