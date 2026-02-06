@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://mvga-api-production.up.railway.app';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.mvga.io/api';
 
 interface LiveMetrics {
   tvl: number;

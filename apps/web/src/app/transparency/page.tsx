@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://mvga-api-production.up.railway.app';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.mvga.io/api';
+const RPC_URL = process.env.NEXT_PUBLIC_SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com';
 
 interface WalletInfo {
   name: string;
@@ -112,7 +113,7 @@ export default function TransparencyPage() {
               return { ...wallet, loading: false };
             }
 
-            const response = await fetch(`https://api.mainnet-beta.solana.com`, {
+            const response = await fetch(RPC_URL, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -364,14 +365,9 @@ export default function TransparencyPage() {
               <p className="text-sm text-gray-400 mb-3">
                 Liquidity is locked via Streamflow until 2027. Cannot be rugged.
               </p>
-              <a
-                href="https://app.streamflow.finance/contract/LOCK_ID_HERE"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary-500 hover:underline text-sm"
-              >
-                Verify on Streamflow →
-              </a>
+              <span className="text-gray-500 text-sm">
+                Streamflow lock verification coming soon
+              </span>
             </div>
 
             <div className="bg-white/5 rounded-2xl p-6 border border-green-500/30">
@@ -400,14 +396,9 @@ export default function TransparencyPage() {
               <p className="text-sm text-gray-400 mb-3">
                 Team tokens vest over 2 years with a 6-month cliff. All public.
               </p>
-              <a
-                href="https://app.streamflow.finance/contract/VESTING_ID_HERE"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary-500 hover:underline text-sm"
-              >
-                View Vesting Schedule →
-              </a>
+              <span className="text-gray-500 text-sm">
+                Vesting schedule verification coming soon
+              </span>
             </div>
 
             <div className="bg-white/5 rounded-2xl p-6 border border-green-500/30">
