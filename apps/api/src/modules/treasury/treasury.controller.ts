@@ -3,6 +3,8 @@ import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiBearerAuth } from '@ne
 import { TreasuryService } from './treasury.service';
 import { TreasuryStatsResponseDto, DistributionHistoryDto } from './treasury.dto';
 import { AuthGuard } from '../auth/auth.guard';
+import { AdminGuard } from '../auth/admin.guard';
+import { Roles } from '../auth/roles.decorator';
 
 @ApiTags('Treasury')
 @Controller('treasury')
@@ -91,10 +93,11 @@ export class TreasuryController {
 
   /**
    * Trigger manual distribution (admin only)
-   * Protected by auth guard - requires valid wallet token
+   * Protected by auth + admin guard - requires ADMIN role
    */
   @Post('distribute')
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, AdminGuard)
+  @Roles('ADMIN')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Trigger manual distribution (admin)' })
   async triggerDistribution() {

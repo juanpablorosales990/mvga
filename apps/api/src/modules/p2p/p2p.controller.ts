@@ -14,6 +14,8 @@ import { Throttle } from '@nestjs/throttler';
 import { P2PService } from './p2p.service';
 import { CreateOfferDto, AcceptOfferDto } from './dto/create-offer.dto';
 import { AuthGuard } from '../auth/auth.guard';
+import { AdminGuard } from '../auth/admin.guard';
+import { Roles } from '../auth/roles.decorator';
 import { CurrentUser } from '../auth/auth.decorator';
 
 @ApiTags('P2P Exchange')
@@ -176,9 +178,10 @@ export class P2PController {
 
   @Post('trades/:id/resolve-dispute')
   @Throttle({ default: { limit: 3, ttl: 60000 } })
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, AdminGuard)
+  @Roles('ADMIN')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Resolve a dispute (admin action)' })
+  @ApiOperation({ summary: 'Resolve a dispute (admin only)' })
   async resolveDispute(
     @Param('id') id: string,
     @CurrentUser('wallet') wallet: string,

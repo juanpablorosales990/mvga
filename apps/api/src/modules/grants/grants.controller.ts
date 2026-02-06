@@ -4,6 +4,8 @@ import { GrantsService } from './grants.service';
 import { CreateProposalDto } from './dto/create-proposal.dto';
 import { CastVoteDto, PostUpdateDto } from './dto/cast-vote.dto';
 import { AuthGuard } from '../auth/auth.guard';
+import { AdminGuard } from '../auth/admin.guard';
+import { Roles } from '../auth/roles.decorator';
 import { Throttle } from '@nestjs/throttler';
 
 @ApiTags('Grants')
@@ -65,10 +67,11 @@ export class GrantsController {
   }
 
   @Post('proposals/:id/disburse')
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, AdminGuard)
+  @Roles('ADMIN')
   @ApiBearerAuth()
   @Throttle({ default: { ttl: 60000, limit: 3 } })
-  @ApiOperation({ summary: 'Manually trigger grant disbursement (approved proposals only)' })
+  @ApiOperation({ summary: 'Manually trigger grant disbursement (admin only)' })
   async disburseGrant(@Param('id') id: string, @Body() dto: { adminAddress: string }) {
     return this.grantsService.manualDisburse(id, dto.adminAddress);
   }
