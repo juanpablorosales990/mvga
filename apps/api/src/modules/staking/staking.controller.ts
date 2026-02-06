@@ -2,7 +2,7 @@ import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiParam, ApiBearerAuth } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { StakingService } from './staking.service';
-import { StakeDto, UnstakeDto } from './staking.dto';
+import { StakeDto, UnstakeDto, ConfirmStakeDto, ToggleAutoCompoundDto } from './staking.dto';
 import { AuthGuard } from '../auth/auth.guard';
 import { CurrentUser } from '../auth/auth.decorator';
 
@@ -45,11 +45,8 @@ export class StakingController {
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Confirm stake after user signs the transaction' })
-  async confirmStake(
-    @CurrentUser('wallet') wallet: string,
-    @Body() body: { signature: string; amount: number; lockPeriod: number }
-  ) {
-    return this.stakingService.confirmStake(wallet, body.signature, body.amount, body.lockPeriod);
+  async confirmStake(@CurrentUser('wallet') wallet: string, @Body() dto: ConfirmStakeDto) {
+    return this.stakingService.confirmStake(wallet, dto.signature, dto.amount, dto.lockPeriod);
   }
 
   @Post('unstake')
@@ -77,8 +74,8 @@ export class StakingController {
   @ApiOperation({ summary: 'Toggle auto-compound for a stake' })
   async toggleAutoCompound(
     @CurrentUser('wallet') wallet: string,
-    @Body() body: { stakeId: string; enabled: boolean }
+    @Body() dto: ToggleAutoCompoundDto
   ) {
-    return this.stakingService.toggleAutoCompound(wallet, body.stakeId, body.enabled);
+    return this.stakingService.toggleAutoCompound(wallet, dto.stakeId, dto.enabled);
   }
 }

@@ -1,4 +1,14 @@
-import { IsString, IsNumber, IsPositive, IsIn, Min, Max } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsPositive,
+  IsIn,
+  Min,
+  Max,
+  IsOptional,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsSolanaAddress } from '../../../common/validators/solana-address.validator';
 
@@ -64,4 +74,45 @@ export class UpdateTradeStatusDto {
   @ApiProperty({ description: 'Evidence/notes', required: false })
   @IsString()
   notes?: string;
+}
+
+export class MarkPaidDto {
+  @ApiProperty({ description: 'Payment notes', required: false })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  notes?: string;
+}
+
+export class OpenDisputeDto {
+  @ApiProperty({ description: 'Reason for dispute' })
+  @IsString()
+  @MinLength(10)
+  @MaxLength(1000)
+  reason: string;
+
+  @ApiProperty({ description: 'Supporting evidence', required: false })
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  evidence?: string;
+}
+
+export class ConfirmEscrowDto {
+  @ApiProperty({ description: 'Transaction signature' })
+  @IsString()
+  @MinLength(64)
+  signature: string;
+}
+
+export class ResolveDisputeDto {
+  @ApiProperty({ enum: ['RELEASE_TO_BUYER', 'REFUND_TO_SELLER'] })
+  @IsIn(['RELEASE_TO_BUYER', 'REFUND_TO_SELLER'])
+  resolution: 'RELEASE_TO_BUYER' | 'REFUND_TO_SELLER';
+
+  @ApiProperty({ description: 'Resolution notes' })
+  @IsString()
+  @MinLength(10)
+  @MaxLength(1000)
+  notes: string;
 }

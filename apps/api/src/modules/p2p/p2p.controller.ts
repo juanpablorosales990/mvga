@@ -12,7 +12,14 @@ import {
 import { ApiTags, ApiOperation, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { P2PService } from './p2p.service';
-import { CreateOfferDto, AcceptOfferDto } from './dto/create-offer.dto';
+import {
+  CreateOfferDto,
+  AcceptOfferDto,
+  MarkPaidDto,
+  OpenDisputeDto,
+  ConfirmEscrowDto,
+  ResolveDisputeDto,
+} from './dto/create-offer.dto';
 import { AuthGuard } from '../auth/auth.guard';
 import { AdminGuard } from '../auth/admin.guard';
 import { Roles } from '../auth/roles.decorator';
@@ -104,11 +111,11 @@ export class P2PController {
   async markAsPaid(
     @Param('id') id: string,
     @CurrentUser('wallet') wallet: string,
-    @Body() body: { notes?: string }
+    @Body() dto: MarkPaidDto
   ) {
     return this.p2pService.updateTradeStatus(id, wallet, {
       status: 'PAID',
-      notes: body.notes,
+      notes: dto.notes,
     });
   }
 
@@ -129,11 +136,11 @@ export class P2PController {
   async openDispute(
     @Param('id') id: string,
     @CurrentUser('wallet') wallet: string,
-    @Body() body: { reason: string; evidence?: string }
+    @Body() dto: OpenDisputeDto
   ) {
     return this.p2pService.updateTradeStatus(id, wallet, {
       status: 'DISPUTED',
-      notes: body.reason,
+      notes: dto.reason,
     });
   }
 
@@ -170,8 +177,8 @@ export class P2PController {
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Confirm escrow lock after seller signs the transfer' })
-  async confirmEscrowLock(@Param('id') id: string, @Body() body: { signature: string }) {
-    return this.p2pService.confirmEscrowLock(id, body.signature);
+  async confirmEscrowLock(@Param('id') id: string, @Body() dto: ConfirmEscrowDto) {
+    return this.p2pService.confirmEscrowLock(id, dto.signature);
   }
 
   // ============ DISPUTE RESOLUTION ============
@@ -185,12 +192,8 @@ export class P2PController {
   async resolveDispute(
     @Param('id') id: string,
     @CurrentUser('wallet') wallet: string,
-    @Body()
-    body: {
-      resolution: 'RELEASE_TO_BUYER' | 'REFUND_TO_SELLER';
-      notes: string;
-    }
+    @Body() dto: ResolveDisputeDto
   ) {
-    return this.p2pService.resolveDispute(id, body.resolution, wallet, body.notes);
+    return this.p2pService.resolveDispute(id, dto.resolution, wallet, dto.notes);
   }
 }
