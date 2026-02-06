@@ -79,12 +79,16 @@ export default function BottomNav() {
   const { t } = useTranslation();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-[#0a0a0a]/95 backdrop-blur-lg border-t border-white/10 safe-bottom">
+    <nav
+      aria-label="Main navigation"
+      className="fixed bottom-0 left-0 right-0 bg-[#0a0a0a]/95 backdrop-blur-lg border-t border-white/10 safe-bottom"
+    >
       <div className="max-w-lg mx-auto flex justify-around py-2">
         {navItems.map((item) => (
           <NavLink
             key={item.path}
             to={item.path}
+            aria-label={t(item.labelKey)}
             className={({ isActive }) =>
               clsx(
                 'flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-colors',
@@ -92,7 +96,7 @@ export default function BottomNav() {
               )
             }
           >
-            {item.icon}
+            <span aria-hidden="true">{item.icon}</span>
             <span className="text-xs">{t(item.labelKey)}</span>
           </NavLink>
         ))}

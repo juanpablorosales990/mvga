@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useTranslation } from 'react-i18next';
+import { showToast } from '../hooks/useToast';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
 
@@ -126,7 +127,7 @@ export default function HistoryPage() {
         merged.sort((a, b) => b.timestamp - a.timestamp);
         setItems(merged);
       } catch {
-        // silently fail
+        showToast('error', t('common.somethingWrong'));
       } finally {
         setLoading(false);
       }

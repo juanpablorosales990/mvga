@@ -34,12 +34,14 @@ export default function Header() {
         <div className="flex items-center gap-2">
           <button
             onClick={toggleCurrency}
+            aria-label={`Switch to ${preferredCurrency === 'USD' ? 'VES' : 'USD'}`}
             className="text-xs font-medium px-2 py-1 rounded-full bg-white/10 text-gray-300 hover:bg-white/20 transition"
           >
             {preferredCurrency === 'USD' ? 'VES' : 'USD'}
           </button>
           <button
             onClick={toggleLang}
+            aria-label={`Switch to ${i18n.language === 'es' ? 'English' : 'Español'}`}
             className="text-xs font-medium px-2 py-1 rounded-full bg-white/10 text-gray-300 hover:bg-white/20 transition"
           >
             {i18n.language === 'es' ? 'EN' : 'ES'}

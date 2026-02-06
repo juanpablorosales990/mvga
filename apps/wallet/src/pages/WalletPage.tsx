@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import TokenCard from '../components/TokenCard';
 import { usePrices } from '../hooks/usePrices';
 import { useWalletStore } from '../stores/walletStore';
+import { showToast } from '../hooks/useToast';
 
 const KNOWN_TOKENS: Record<
   string,
@@ -140,7 +141,7 @@ export default function WalletPage() {
         setBalances(newBalances);
         setTotalValue(newBalances.reduce((sum, b) => sum + b.usdValue, 0));
       } catch {
-        // Balance fetch failed — user sees stale or empty state
+        showToast('error', t('common.somethingWrong'));
       } finally {
         setLoading(false);
       }

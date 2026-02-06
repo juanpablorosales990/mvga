@@ -316,7 +316,7 @@ export default function SwapPage() {
           <div className="flex gap-3">
             <div className="flex-1 text-2xl font-semibold">
               {loading ? (
-                <span className="text-gray-500 animate-pulse">Loading...</span>
+                <span className="inline-block h-8 w-24 bg-gray-700 rounded animate-pulse" />
               ) : (
                 formatOutput()
               )}

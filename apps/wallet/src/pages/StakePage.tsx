@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
 import FiatValue from '../components/FiatValue';
 import TransactionPreviewModal from '../components/TransactionPreviewModal';
+import { showToast } from '../hooks/useToast';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
 
@@ -113,7 +114,7 @@ export default function StakePage() {
       if (infoRes.ok) setStakingInfo(await infoRes.json());
       if (posRes?.ok) setPosition(await posRes.json());
     } catch {
-      // Staking data fetch failed — user sees stale state
+      showToast('error', t('common.somethingWrong'));
     }
   }, [publicKey]);
 
@@ -280,7 +281,7 @@ export default function StakePage() {
       });
       if (res.ok) fetchData();
     } catch {
-      // Silent fail — user sees stale state
+      showToast('error', t('common.somethingWrong'));
     }
   };
 

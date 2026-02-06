@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip } from 'recharts';
+import { showToast } from '../hooks/useToast';
+import { SkeletonStatCard } from '../components/Skeleton';
 
 interface Metrics {
   tvl: number;
@@ -41,8 +43,8 @@ export default function MetricsPage() {
       try {
         const res = await fetch(`${API_URL}/metrics`);
         if (res.ok) setMetrics(await res.json());
-      } catch (error) {
-        console.error('Failed to fetch metrics:', error);
+      } catch {
+        showToast('error', t('common.somethingWrong'));
       }
     };
     fetchMetrics();
@@ -59,7 +61,7 @@ export default function MetricsPage() {
         if (res.ok) setHistory(await res.json());
       } catch (error) {
         if (error instanceof DOMException && error.name === 'AbortError') return;
-        console.error('Failed to fetch metrics history:', error);
+        showToast('error', t('common.somethingWrong'));
       } finally {
         setLoading(false);
       }
@@ -99,6 +101,13 @@ export default function MetricsPage() {
       </div>
 
       {/* Stat Cards */}
+      {!metrics && (
+        <div className="grid grid-cols-2 gap-3">
+          {[1, 2, 3, 4].map((i) => (
+            <SkeletonStatCard key={i} />
+          ))}
+        </div>
+      )}
       {metrics && (
         <div className="grid grid-cols-2 gap-3">
           <div className="card bg-gradient-to-br from-blue-500/10 to-transparent border border-blue-500/20">
