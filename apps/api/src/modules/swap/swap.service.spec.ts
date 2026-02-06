@@ -110,33 +110,47 @@ describe('SwapService', () => {
     });
   });
 
-  describe('getMvgaPrice', () => {
-    it('returns cached price within 60s window', async () => {
-      // Seed the cache
-      (service as any).mvgaPriceCache = { price: 0.0012, timestamp: Date.now() };
+  describe('getMultipleTokenPrices', () => {
+    const MVGA_MINT = 'DRX65kM2n5CLTpdjJCemZvkUwE98ou4RpHrd8Z3GH5Qh';
+    const SOL_MINT = 'So11111111111111111111111111111111111111112';
 
-      const price = await service.getMvgaPrice();
-      expect(price).toBe(0.0012);
+    it('returns cached prices without fetching', async () => {
+      const cache = (service as any).priceCache as Map<string, any>;
+      cache.set(SOL_MINT, { price: 85.0, timestamp: Date.now() });
+
+      const prices = await service.getMultipleTokenPrices([SOL_MINT]);
+      expect(prices[SOL_MINT]).toBe(85.0);
     });
 
-    it('fetches fresh price when cache is expired', async () => {
-      (service as any).mvgaPriceCache = { price: 0.001, timestamp: Date.now() - 120_000 };
-
+    it('fetches from DexScreener for uncached mints', async () => {
       const fetchSpy = jest.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ pairs: [{ priceUsd: '0.0015' }] }),
+        json: async () => [{ baseToken: { address: MVGA_MINT }, priceUsd: '0.0015' }],
       } as any);
 
-      const price = await service.getMvgaPrice();
-      expect(price).toBe(0.0015);
+      const prices = await service.getMultipleTokenPrices([MVGA_MINT]);
+      expect(prices[MVGA_MINT]).toBe(0.0015);
+      expect(fetchSpy.mock.calls[0][0]).toContain('api.dexscreener.com/tokens/v1/solana/');
 
       fetchSpy.mockRestore();
     });
 
-    it('returns fallback 0.001 on API failure with no cache', async () => {
-      (service as any).mvgaPriceCache = null;
-
+    it('returns empty object on DexScreener failure', async () => {
       const fetchSpy = jest.spyOn(globalThis, 'fetch').mockRejectedValueOnce(new Error('network'));
+
+      const prices = await service.getMultipleTokenPrices([MVGA_MINT]);
+      expect(prices).toEqual({});
+
+      fetchSpy.mockRestore();
+    });
+  });
+
+  describe('getMvgaPrice', () => {
+    it('returns fallback 0.001 when DexScreener returns no data', async () => {
+      const fetchSpy = jest.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
+        ok: true,
+        json: async () => [],
+      } as any);
 
       const price = await service.getMvgaPrice();
       expect(price).toBe(0.001);

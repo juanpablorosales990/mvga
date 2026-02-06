@@ -136,81 +136,58 @@ export class SwapService {
     }
   }
 
-  // MVGA price via DexScreener (reads from Raydium CPMM pool)
-  private mvgaPriceCache: { price: number; timestamp: number } | null = null;
-  private readonly MVGA_POOL = '9KuzsCCCSeuF15hwBDz6FguqLR2hbgJkmaAZikrTDu1y';
-
-  async getMvgaPrice(): Promise<number> {
-    if (this.mvgaPriceCache && Date.now() - this.mvgaPriceCache.timestamp < 60_000) {
-      return this.mvgaPriceCache.price;
-    }
-
-    try {
-      const response = await fetch(
-        `https://api.dexscreener.com/latest/dex/pairs/solana/${this.MVGA_POOL}`
-      );
-      if (!response.ok) return this.mvgaPriceCache?.price ?? 0.001;
-
-      const data = await response.json();
-      const price = parseFloat(data.pairs?.[0]?.priceUsd ?? '0');
-      if (price > 0) {
-        this.mvgaPriceCache = { price, timestamp: Date.now() };
-        return price;
-      }
-      return this.mvgaPriceCache?.price ?? 0.001;
-    } catch {
-      return this.mvgaPriceCache?.price ?? 0.001;
-    }
-  }
-
-  // Map Solana mint addresses to CoinGecko IDs
-  private readonly COINGECKO_IDS: Record<string, string> = {
-    So11111111111111111111111111111111111111112: 'solana',
-    EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v: 'usd-coin',
-    Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB: 'tether',
-  };
+  // Price cache: mint → { price, timestamp }
+  private priceCache = new Map<string, { price: number; timestamp: number }>();
+  private readonly PRICE_CACHE_TTL = 30_000; // 30 seconds
 
   async getTokenPrice(mint: string): Promise<number> {
     const prices = await this.getMultipleTokenPrices([mint]);
     return prices[mint] || 0;
   }
 
-  private readonly MVGA_MINT = 'DRX65kM2n5CLTpdjJCemZvkUwE98ou4RpHrd8Z3GH5Qh';
+  async getMvgaPrice(): Promise<number> {
+    const mvgaMint = 'DRX65kM2n5CLTpdjJCemZvkUwE98ou4RpHrd8Z3GH5Qh';
+    const prices = await this.getMultipleTokenPrices([mvgaMint]);
+    return prices[mvgaMint] || 0.001;
+  }
 
   async getMultipleTokenPrices(mints: string[]): Promise<Record<string, number>> {
     const prices: Record<string, number> = {};
+    const now = Date.now();
 
-    // Separate MVGA (uses DexScreener) from others (use CoinGecko)
-    const hasMvga = mints.includes(this.MVGA_MINT);
-    const geckoMints = mints.filter((m) => this.COINGECKO_IDS[m]);
-
-    // Fetch CoinGecko prices for SOL/USDC/USDT
-    if (geckoMints.length > 0) {
-      try {
-        const geckoIds = geckoMints.map((m) => this.COINGECKO_IDS[m]);
-        const response = await fetch(
-          `https://api.coingecko.com/api/v3/simple/price?ids=${geckoIds.join(',')}&vs_currencies=usd`
-        );
-        if (response.ok) {
-          const data = await response.json();
-          for (const mint of geckoMints) {
-            const geckoId = this.COINGECKO_IDS[mint];
-            if (geckoId && data[geckoId]?.usd) {
-              prices[mint] = data[geckoId].usd;
-            }
-          }
-        }
-      } catch {
-        this.logger.warn('CoinGecko price fetch failed');
+    // Check cache first, collect uncached mints
+    const uncached: string[] = [];
+    for (const mint of mints) {
+      const cached = this.priceCache.get(mint);
+      if (cached && now - cached.timestamp < this.PRICE_CACHE_TTL) {
+        prices[mint] = cached.price;
+      } else {
+        uncached.push(mint);
       }
     }
 
-    // Fetch MVGA price from DexScreener
-    if (hasMvga) {
-      const mvgaPrice = await this.getMvgaPrice();
-      if (mvgaPrice > 0) {
-        prices[this.MVGA_MINT] = mvgaPrice;
+    if (uncached.length === 0) return prices;
+
+    // Fetch all uncached prices from DexScreener in one call
+    try {
+      const response = await fetch(
+        `https://api.dexscreener.com/tokens/v1/solana/${uncached.join(',')}`
+      );
+      if (response.ok) {
+        const pairs = await response.json();
+        if (Array.isArray(pairs)) {
+          for (const pair of pairs) {
+            const mint = pair.baseToken?.address;
+            const price = parseFloat(pair.priceUsd ?? '0');
+            if (mint && price > 0 && uncached.includes(mint) && !prices[mint]) {
+              prices[mint] = price;
+              this.priceCache.set(mint, { price, timestamp: now });
+            }
+          }
+        }
       }
+    } catch {
+      this.logger.warn('DexScreener price fetch failed');
     }
 
     return prices;
