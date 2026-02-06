@@ -37,6 +37,12 @@ interface WalletState {
   // Address Book
   addressBook: AddressBookEntry[];
 
+  // Settings
+  autoCompoundDefault: boolean;
+
+  // Notifications
+  readNotifications: string[];
+
   // Actions
   setPublicKey: (key: string | null) => void;
   setConnected: (connected: boolean) => void;
@@ -45,6 +51,9 @@ interface WalletState {
   setLoadingBalances: (loading: boolean) => void;
   setActiveTab: (tab: WalletState['activeTab']) => void;
   setPreferredCurrency: (currency: 'USD' | 'VES') => void;
+  setAutoCompoundDefault: (enabled: boolean) => void;
+  markNotificationRead: (id: string) => void;
+  markAllNotificationsRead: (ids: string[]) => void;
   addAddress: (entry: Omit<AddressBookEntry, 'createdAt'>) => void;
   removeAddress: (address: string) => void;
   disconnect: () => void;
@@ -63,6 +72,8 @@ export const useWalletStore = create<WalletState>()(
       activeTab: 'wallet',
       preferredCurrency: 'USD',
       addressBook: [],
+      autoCompoundDefault: false,
+      readNotifications: [],
 
       // Actions
       setPublicKey: (key) => set({ publicKey: key, isConnected: !!key }),
@@ -76,6 +87,17 @@ export const useWalletStore = create<WalletState>()(
       setLoadingBalances: (loading) => set({ isLoadingBalances: loading }),
       setActiveTab: (tab) => set({ activeTab: tab }),
       setPreferredCurrency: (currency) => set({ preferredCurrency: currency }),
+      setAutoCompoundDefault: (enabled) => set({ autoCompoundDefault: enabled }),
+      markNotificationRead: (id) =>
+        set((state) => ({
+          readNotifications: state.readNotifications.includes(id)
+            ? state.readNotifications
+            : [...state.readNotifications, id],
+        })),
+      markAllNotificationsRead: (ids) =>
+        set((state) => ({
+          readNotifications: [...new Set([...state.readNotifications, ...ids])],
+        })),
       addAddress: (entry) =>
         set((state) => ({
           addressBook: [
@@ -103,6 +125,8 @@ export const useWalletStore = create<WalletState>()(
         authToken: state.authToken,
         preferredCurrency: state.preferredCurrency,
         addressBook: state.addressBook,
+        autoCompoundDefault: state.autoCompoundDefault,
+        readNotifications: state.readNotifications,
       }),
     }
   )

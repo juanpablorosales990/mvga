@@ -207,7 +207,11 @@
     "grants": "Grants",
     "referral": "Referral",
     "transparency": "Transparency",
-    "metrics": "Protocol Metrics"
+    "metrics": "Protocol Metrics",
+    "portfolio": "Portfolio",
+    "notifications": "Notifications",
+    "settings": "Settings",
+    "help": "Help"
   },
   "grants": {
     "title": "Grants",
@@ -344,5 +348,59 @@
     "volumeOverTime": "Volume Over Time",
     "noData": "No metrics data yet",
     "lastUpdated": "Last updated"
+  },
+  "help": {
+    "title": "Help & FAQ",
+    "subtitle": "Answers to common questions about MVGA Wallet.",
+    "faq1q": "What is MVGA?",
+    "faq1a": "MVGA (Make Venezuela Great Again) is a community-owned DeFi protocol on Solana. It provides zero-fee remittances, staking rewards, P2P trading, and humanitarian grants for Venezuelans.",
+    "faq2q": "How do I receive remittances?",
+    "faq2a": "Share your wallet address or QR code with the sender. They can send SOL, USDC, USDT, or MVGA tokens directly. Funds arrive in seconds with minimal fees on Solana.",
+    "faq3q": "How does staking work?",
+    "faq3a": "Stake your MVGA tokens to earn rewards. Choose a lock period for higher APY — 30-day, 90-day, or 180-day locks earn 1.5x, 2x, or 3x rewards respectively. Flexible staking has no lock.",
+    "faq4q": "How do I use P2P trading?",
+    "faq4a": "Go to P2P Exchange to buy or sell crypto with Zelle, Venmo, PayPal, or bank transfer. Trades use an escrow system — crypto is locked until both parties confirm the fiat payment.",
+    "faq5q": "How do I create a grant proposal?",
+    "faq5a": "Navigate to Grants and tap 'Propose'. You need staked MVGA to create a proposal. Describe your Venezuelan business, set a funding amount, and the community votes with their staked tokens.",
+    "faq6q": "What are the fees?",
+    "faq6a": "MVGA charges a small fee on swaps and P2P trades. 100% of fees go back to the community: staking rewards, liquidity, humanitarian grants, and token burns. Zero goes to founders.",
+    "needMore": "Need more help?"
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "currency": "Display Currency",
+    "connectedWallet": "Connected Wallet",
+    "autoCompound": "Auto-Compound Default",
+    "autoCompoundDesc": "Automatically compound rewards for new stakes",
+    "helpSupport": "Help & Support"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "markAllRead": "Mark All as Read",
+    "empty": "No activity yet",
+    "connectPrompt": "Connect your wallet to view notifications",
+    "transfer": "Transfer",
+    "stake": "Stake",
+    "unstake": "Unstake",
+    "p2p": "P2P Trade",
+    "p2pRelease": "Escrow Release",
+    "p2pRefund": "Escrow Refund",
+    "referral": "Referral",
+    "activity": "Activity"
+  },
+  "portfolio": {
+    "title": "Portfolio",
+    "totalValue": "Total Portfolio Value",
+    "allocation": "Allocation",
+    "walletBalances": "Wallet Balances",
+    "staked": "Staked",
+    "referralEarnings": "Referral Earnings",
+    "stakingSummary": "Staking Summary",
+    "viewStaking": "View Staking",
+    "referralSummary": "Referral Summary",
+    "viewReferrals": "View Referrals",
+    "recentActivity": "Recent Activity",
+    "connectPrompt": "Connect your wallet to view your portfolio"
   }
 }

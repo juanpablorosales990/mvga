@@ -25,6 +25,10 @@ const ReferralPage = lazy(() => import('./pages/ReferralPage'));
 const ChartsPage = lazy(() => import('./pages/ChartsPage'));
 const TransparencyPage = lazy(() => import('./pages/TransparencyPage'));
 const MetricsPage = lazy(() => import('./pages/MetricsPage'));
+const SettingsPage = lazy(() => import('./pages/SettingsPage'));
+const PortfolioPage = lazy(() => import('./pages/PortfolioPage'));
+const NotificationsPage = lazy(() => import('./pages/NotificationsPage'));
+const HelpPage = lazy(() => import('./pages/HelpPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
 // Components
@@ -88,6 +92,10 @@ function App() {
                       <Route path="/charts" element={<ChartsPage />} />
                       <Route path="/transparency" element={<TransparencyPage />} />
                       <Route path="/metrics" element={<MetricsPage />} />
+                      <Route path="/settings" element={<SettingsPage />} />
+                      <Route path="/portfolio" element={<PortfolioPage />} />
+                      <Route path="/notifications" element={<NotificationsPage />} />
+                      <Route path="/help" element={<HelpPage />} />
                       <Route path="*" element={<NotFoundPage />} />
                     </Routes>
                   </Suspense>

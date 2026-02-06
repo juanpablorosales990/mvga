@@ -207,7 +207,11 @@
     "grants": "Subvenciones",
     "referral": "Referidos",
     "transparency": "Transparencia",
-    "metrics": "Métricas del Protocolo"
+    "metrics": "Métricas del Protocolo",
+    "portfolio": "Portafolio",
+    "notifications": "Notificaciones",
+    "settings": "Ajustes",
+    "help": "Ayuda"
   },
   "grants": {
     "title": "Subvenciones",
@@ -344,5 +348,59 @@
     "volumeOverTime": "Volumen en el Tiempo",
     "noData": "Sin datos de métricas aún",
     "lastUpdated": "Última actualización"
+  },
+  "help": {
+    "title": "Ayuda y Preguntas Frecuentes",
+    "subtitle": "Respuestas a preguntas comunes sobre MVGA Wallet.",
+    "faq1q": "¿Qué es MVGA?",
+    "faq1a": "MVGA (Make Venezuela Great Again) es un protocolo DeFi comunitario en Solana. Ofrece remesas sin comisiones, recompensas de staking, intercambio P2P y subvenciones humanitarias para venezolanos.",
+    "faq2q": "¿Cómo recibo remesas?",
+    "faq2a": "Comparte tu dirección de billetera o código QR con el remitente. Pueden enviar SOL, USDC, USDT o tokens MVGA directamente. Los fondos llegan en segundos con comisiones mínimas en Solana.",
+    "faq3q": "¿Cómo funciona el staking?",
+    "faq3a": "Haz staking de tus tokens MVGA para ganar recompensas. Elige un período de bloqueo para mayor APY — bloqueos de 30, 90 o 180 días ganan 1.5x, 2x o 3x recompensas respectivamente. El staking flexible no tiene bloqueo.",
+    "faq4q": "¿Cómo uso el intercambio P2P?",
+    "faq4a": "Ve a Intercambio P2P para comprar o vender crypto con Zelle, Venmo, PayPal o transferencia bancaria. Las operaciones usan un sistema de custodia — la crypto se bloquea hasta que ambas partes confirmen el pago.",
+    "faq5q": "¿Cómo creo una propuesta de subvención?",
+    "faq5a": "Navega a Subvenciones y toca 'Proponer'. Necesitas MVGA en staking para crear una propuesta. Describe tu negocio venezolano, establece un monto y la comunidad vota con sus tokens en staking.",
+    "faq6q": "¿Cuáles son las comisiones?",
+    "faq6a": "MVGA cobra una pequeña comisión en cambios y operaciones P2P. El 100% de las comisiones regresa a la comunidad: recompensas de staking, liquidez, subvenciones humanitarias y quema de tokens. Cero va a los fundadores.",
+    "needMore": "¿Necesitas más ayuda?"
+  },
+  "settings": {
+    "title": "Ajustes",
+    "language": "Idioma",
+    "currency": "Moneda de Visualización",
+    "connectedWallet": "Billetera Conectada",
+    "autoCompound": "Auto-Compound por Defecto",
+    "autoCompoundDesc": "Componer automáticamente las recompensas para nuevos stakes",
+    "helpSupport": "Ayuda y Soporte"
+  },
+  "notifications": {
+    "title": "Notificaciones",
+    "markAllRead": "Marcar Todo como Leído",
+    "empty": "Sin actividad aún",
+    "connectPrompt": "Conecta tu billetera para ver notificaciones",
+    "transfer": "Transferencia",
+    "stake": "Staking",
+    "unstake": "Retiro de Staking",
+    "p2p": "Operación P2P",
+    "p2pRelease": "Liberación de Custodia",
+    "p2pRefund": "Reembolso de Custodia",
+    "referral": "Referido",
+    "activity": "Actividad"
+  },
+  "portfolio": {
+    "title": "Portafolio",
+    "totalValue": "Valor Total del Portafolio",
+    "allocation": "Distribución",
+    "walletBalances": "Balances de Billetera",
+    "staked": "En Staking",
+    "referralEarnings": "Ganancias de Referidos",
+    "stakingSummary": "Resumen de Staking",
+    "viewStaking": "Ver Staking",
+    "referralSummary": "Resumen de Referidos",
+    "viewReferrals": "Ver Referidos",
+    "recentActivity": "Actividad Reciente",
+    "connectPrompt": "Conecta tu billetera para ver tu portafolio"
   }
 }
