@@ -452,6 +452,19 @@ enum BurnSource {
 }
 
 // ============================================================================
+// Banking (Card Waitlist)
+// ============================================================================
+
+model CardWaitlist {
+  id            String   @id @default(uuid())
+  walletAddress String
+  email         String?
+  createdAt     DateTime @default(now())
+
+  @@index([walletAddress])
+}
+
+// ============================================================================
 // Fee Sharing (Staker Dividends)
 // ============================================================================
 

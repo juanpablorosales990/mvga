@@ -5,6 +5,8 @@ export default function MorePage() {
   const { t } = useTranslation();
 
   const menuItems = [
+    { labelKey: 'more.banking', path: '/banking', icon: '🏛', color: 'bg-violet-500' },
+    { labelKey: 'more.stake', path: '/stake', icon: '💰', color: 'bg-yellow-500' },
     { labelKey: 'more.send', path: '/send', icon: '↑', color: 'bg-blue-500' },
     { labelKey: 'more.receive', path: '/receive', icon: '↓', color: 'bg-green-500' },
     { labelKey: 'more.history', path: '/history', icon: '↺', color: 'bg-indigo-500' },
@@ -13,7 +15,7 @@ export default function MorePage() {
     { labelKey: 'more.transparency', path: '/transparency', icon: '✓', color: 'bg-emerald-500' },
     { labelKey: 'more.metrics', path: '/metrics', icon: '📊', color: 'bg-cyan-500' },
     { labelKey: 'more.portfolio', path: '/portfolio', icon: '📈', color: 'bg-purple-500' },
-    { labelKey: 'more.notifications', path: '/notifications', icon: '🔔', color: 'bg-yellow-500' },
+    { labelKey: 'more.notifications', path: '/notifications', icon: '🔔', color: 'bg-orange-500' },
     { labelKey: 'more.settings', path: '/settings', icon: '⚙️', color: 'bg-gray-500' },
     { labelKey: 'more.help', path: '/help', icon: '❓', color: 'bg-blue-400' },
   ];

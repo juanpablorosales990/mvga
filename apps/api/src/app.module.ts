@@ -14,6 +14,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { TreasuryModule } from './modules/treasury/treasury.module';
 import { BurnModule } from './modules/burn/burn.module';
 import { MetricsModule } from './modules/metrics/metrics.module';
+import { BankingModule } from './modules/banking/banking.module';
 import { HealthController } from './health.controller';
 
 @Module({
@@ -39,6 +40,7 @@ import { HealthController } from './health.controller';
     TreasuryModule,
     BurnModule,
     MetricsModule,
+    BankingModule,
   ],
   controllers: [HealthController],
   providers: [

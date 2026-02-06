@@ -43,6 +43,10 @@ interface WalletState {
   // Notifications
   readNotifications: string[];
 
+  // Banking
+  savingsGoal: { targetAmount: number; label: string } | null;
+  cardWaitlisted: boolean;
+
   // Actions
   setPublicKey: (key: string | null) => void;
   setConnected: (connected: boolean) => void;
@@ -54,6 +58,8 @@ interface WalletState {
   setAutoCompoundDefault: (enabled: boolean) => void;
   markNotificationRead: (id: string) => void;
   markAllNotificationsRead: (ids: string[]) => void;
+  setSavingsGoal: (goal: { targetAmount: number; label: string } | null) => void;
+  setCardWaitlisted: (waitlisted: boolean) => void;
   addAddress: (entry: Omit<AddressBookEntry, 'createdAt'>) => void;
   removeAddress: (address: string) => void;
   disconnect: () => void;
@@ -74,6 +80,8 @@ export const useWalletStore = create<WalletState>()(
       addressBook: [],
       autoCompoundDefault: false,
       readNotifications: [],
+      savingsGoal: null,
+      cardWaitlisted: false,
 
       // Actions
       setPublicKey: (key) => set({ publicKey: key, isConnected: !!key }),
@@ -98,6 +106,8 @@ export const useWalletStore = create<WalletState>()(
         set((state) => ({
           readNotifications: [...new Set([...state.readNotifications, ...ids])],
         })),
+      setSavingsGoal: (goal) => set({ savingsGoal: goal }),
+      setCardWaitlisted: (waitlisted) => set({ cardWaitlisted: waitlisted }),
       addAddress: (entry) =>
         set((state) => ({
           addressBook: [
@@ -127,6 +137,8 @@ export const useWalletStore = create<WalletState>()(
         addressBook: state.addressBook,
         autoCompoundDefault: state.autoCompoundDefault,
         readNotifications: state.readNotifications,
+        savingsGoal: state.savingsGoal,
+        cardWaitlisted: state.cardWaitlisted,
       }),
     }
   )

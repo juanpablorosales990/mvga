@@ -29,6 +29,9 @@ const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const PortfolioPage = lazy(() => import('./pages/PortfolioPage'));
 const NotificationsPage = lazy(() => import('./pages/NotificationsPage'));
 const HelpPage = lazy(() => import('./pages/HelpPage'));
+const BankingPage = lazy(() => import('./pages/BankingPage'));
+const SavingsPage = lazy(() => import('./pages/SavingsPage'));
+const CardPage = lazy(() => import('./pages/CardPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
 // Components
@@ -96,6 +99,9 @@ function App() {
                       <Route path="/portfolio" element={<PortfolioPage />} />
                       <Route path="/notifications" element={<NotificationsPage />} />
                       <Route path="/help" element={<HelpPage />} />
+                      <Route path="/banking" element={<BankingPage />} />
+                      <Route path="/banking/savings" element={<SavingsPage />} />
+                      <Route path="/banking/card" element={<CardPage />} />
                       <Route path="*" element={<NotFoundPage />} />
                     </Routes>
                   </Suspense>
