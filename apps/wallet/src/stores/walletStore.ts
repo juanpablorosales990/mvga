@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import type { CardStatus } from '../services/cardService.types';
 
 export interface TokenBalance {
   mint: string;
@@ -45,7 +46,7 @@ interface WalletState {
 
   // Banking
   savingsGoal: { targetAmount: number; label: string } | null;
-  cardWaitlisted: boolean;
+  cardStatus: CardStatus;
 
   // Balance refresh trigger
   balanceVersion: number;
@@ -62,6 +63,7 @@ interface WalletState {
   markNotificationRead: (id: string) => void;
   markAllNotificationsRead: (ids: string[]) => void;
   setSavingsGoal: (goal: { targetAmount: number; label: string } | null) => void;
+  setCardStatus: (status: CardStatus) => void;
   setCardWaitlisted: (waitlisted: boolean) => void;
   invalidateBalances: () => void;
   addAddress: (entry: Omit<AddressBookEntry, 'createdAt'>) => void;
@@ -85,7 +87,7 @@ export const useWalletStore = create<WalletState>()(
       autoCompoundDefault: false,
       readNotifications: [],
       savingsGoal: null,
-      cardWaitlisted: false,
+      cardStatus: 'none' as CardStatus,
       balanceVersion: 0,
 
       // Actions
@@ -112,7 +114,8 @@ export const useWalletStore = create<WalletState>()(
           readNotifications: [...new Set([...state.readNotifications, ...ids])],
         })),
       setSavingsGoal: (goal) => set({ savingsGoal: goal }),
-      setCardWaitlisted: (waitlisted) => set({ cardWaitlisted: waitlisted }),
+      setCardStatus: (status) => set({ cardStatus: status }),
+      setCardWaitlisted: (waitlisted) => set({ cardStatus: waitlisted ? 'waitlisted' : 'none' }),
       invalidateBalances: () => set((state) => ({ balanceVersion: state.balanceVersion + 1 })),
       addAddress: (entry) =>
         set((state) => ({
@@ -144,7 +147,7 @@ export const useWalletStore = create<WalletState>()(
         autoCompoundDefault: state.autoCompoundDefault,
         readNotifications: state.readNotifications,
         savingsGoal: state.savingsGoal,
-        cardWaitlisted: state.cardWaitlisted,
+        cardStatus: state.cardStatus,
       }),
     }
   )

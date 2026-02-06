@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { usePrices } from '../hooks/usePrices';
 import { useWalletStore } from '../stores/walletStore';
+import { useCard } from '../hooks/useCard';
 import { showToast } from '../hooks/useToast';
 import { SkeletonStatCard } from '../components/Skeleton';
 import { API_URL } from '../config';
@@ -31,6 +32,7 @@ export default function BankingPage() {
   const [recentTxs, setRecentTxs] = useState<RecentTx[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const { cardStatus, card, balance: cardBalance } = useCard();
   const usdcBalance = balances.find((b) => b.symbol === 'USDC');
   const usdtBalance = balances.find((b) => b.symbol === 'USDT');
   const stablecoinUsd = (usdcBalance?.usdValue ?? 0) + (usdtBalance?.usdValue ?? 0);
@@ -154,7 +156,11 @@ export default function BankingPage() {
                   />
                 </svg>
               </div>
-              <span className="text-xs font-medium">{t('banking.card')}</span>
+              <span className="text-xs font-medium">
+                {cardStatus === 'active' || cardStatus === 'frozen'
+                  ? t('card.myCard')
+                  : t('banking.card')}
+              </span>
             </Link>
           </div>
 
@@ -179,37 +185,82 @@ export default function BankingPage() {
           </Link>
 
           {/* Virtual Card Preview */}
-          <div className="card overflow-hidden">
-            <div
-              className="relative p-5"
-              style={{ background: 'linear-gradient(135deg, #667eea, #764ba2)' }}
+          {cardStatus === 'active' || cardStatus === 'frozen' ? (
+            <Link
+              to="/banking/card"
+              className="card overflow-hidden block hover:bg-white/5 transition"
             >
-              <div className="absolute top-3 right-3 bg-black/30 text-white text-[10px] px-2 py-0.5 rounded-full font-medium">
-                {t('banking.comingSoon')}
-              </div>
-              <p className="text-white/70 text-xs font-medium tracking-wider">MVGA</p>
-              <p className="text-white font-mono text-lg mt-6 tracking-widest">
-                {t('banking.cardNumber')}
-              </p>
-              <div className="flex justify-between items-end mt-4">
-                <div>
-                  <p className="text-white/50 text-[10px]">{t('banking.cardHolder')}</p>
-                  <p className="text-white text-sm font-medium">MVGA USER</p>
-                </div>
-                <p className="text-white/70 text-sm font-medium">VISA</p>
-              </div>
-            </div>
-            <div className="p-4">
-              <h2 className="font-semibold">{t('banking.virtualCard')}</h2>
-              <p className="text-xs text-gray-400 mt-1">{t('banking.cardFeatures')}</p>
-              <Link
-                to="/banking/card"
-                className="mt-3 block w-full text-center py-2.5 rounded-xl bg-primary-500 text-black font-medium text-sm hover:bg-primary-400 transition"
+              <div
+                className="relative p-5"
+                style={{
+                  background:
+                    cardStatus === 'frozen'
+                      ? 'linear-gradient(135deg, #374151, #1f2937)'
+                      : 'linear-gradient(135deg, #f59e0b, #b45309)',
+                }}
               >
-                {t('banking.joinWaitlist')}
-              </Link>
+                {cardStatus === 'frozen' && (
+                  <div className="absolute top-3 right-3 bg-red-500/80 text-white text-[10px] px-2 py-0.5 rounded-full font-medium">
+                    {t('card.frozen')}
+                  </div>
+                )}
+                <p className="text-white/70 text-xs font-medium tracking-wider">MVGA</p>
+                <p className="text-white font-mono text-lg mt-6 tracking-widest">
+                  •••• •••• •••• {card?.last4 ?? '4242'}
+                </p>
+                <div className="flex justify-between items-end mt-4">
+                  <div>
+                    <p className="text-white/50 text-[10px]">{t('banking.cardHolder')}</p>
+                    <p className="text-white text-sm font-medium">
+                      {card?.cardholderName ?? 'MVGA USER'}
+                    </p>
+                  </div>
+                  <p className="text-white/70 text-sm font-medium">VISA</p>
+                </div>
+              </div>
+              <div className="p-4 flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-gray-400">{t('card.balance')}</p>
+                  <p className="text-lg font-bold">
+                    ${cardBalance?.available.toFixed(2) ?? '0.00'}
+                  </p>
+                </div>
+                <span className="text-xs text-primary-400">{t('card.manage')}</span>
+              </div>
+            </Link>
+          ) : (
+            <div className="card overflow-hidden">
+              <div
+                className="relative p-5"
+                style={{ background: 'linear-gradient(135deg, #667eea, #764ba2)' }}
+              >
+                <div className="absolute top-3 right-3 bg-black/30 text-white text-[10px] px-2 py-0.5 rounded-full font-medium">
+                  {t('banking.comingSoon')}
+                </div>
+                <p className="text-white/70 text-xs font-medium tracking-wider">MVGA</p>
+                <p className="text-white font-mono text-lg mt-6 tracking-widest">
+                  {t('banking.cardNumber')}
+                </p>
+                <div className="flex justify-between items-end mt-4">
+                  <div>
+                    <p className="text-white/50 text-[10px]">{t('banking.cardHolder')}</p>
+                    <p className="text-white text-sm font-medium">MVGA USER</p>
+                  </div>
+                  <p className="text-white/70 text-sm font-medium">VISA</p>
+                </div>
+              </div>
+              <div className="p-4">
+                <h2 className="font-semibold">{t('banking.virtualCard')}</h2>
+                <p className="text-xs text-gray-400 mt-1">{t('banking.cardFeatures')}</p>
+                <Link
+                  to="/banking/card"
+                  className="mt-3 block w-full text-center py-2.5 rounded-xl bg-primary-500 text-black font-medium text-sm hover:bg-primary-400 transition"
+                >
+                  {t('banking.joinWaitlist')}
+                </Link>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Recent Stablecoin Transactions */}
           {recentTxs.length > 0 && (
