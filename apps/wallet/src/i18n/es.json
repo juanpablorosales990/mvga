@@ -85,7 +85,14 @@
     "enterAmount": "Ingresa monto",
     "success": "¡Cambio exitoso!",
     "poweredBy": "Impulsado por Jupiter Aggregator - Mejores tasas en Solana",
-    "connectPrompt": "Conecta tu billetera para cambiar tokens"
+    "connectPrompt": "Conecta tu billetera para cambiar tokens",
+    "platformFee": "Comisión",
+    "feeDiscount": "Descuento",
+    "cashback": "Reembolso",
+    "tier": "Nivel",
+    "tierBenefits": "Beneficios de Nivel Aplicados",
+    "zeroFees": "Sin Comisiones",
+    "stakeForBenefits": "Stakea MVGA para descuentos y reembolsos"
   },
   "stake": {
     "title": "Staking MVGA",

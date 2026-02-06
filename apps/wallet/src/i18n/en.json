@@ -85,7 +85,14 @@
     "enterAmount": "Enter amount",
     "success": "Swap successful!",
     "poweredBy": "Powered by Jupiter Aggregator - Best rates across Solana",
-    "connectPrompt": "Connect your wallet to swap tokens"
+    "connectPrompt": "Connect your wallet to swap tokens",
+    "platformFee": "Platform Fee",
+    "feeDiscount": "Fee Discount",
+    "cashback": "Cashback",
+    "tier": "Tier",
+    "tierBenefits": "Tier Benefits Applied",
+    "zeroFees": "Zero Fees",
+    "stakeForBenefits": "Stake MVGA for fee discounts & cashback"
   },
   "stake": {
     "title": "Stake MVGA",

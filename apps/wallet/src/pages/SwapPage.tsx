@@ -69,6 +69,32 @@ export default function SwapPage() {
   const [slippageBps, setSlippageBps] = useState(50);
   const [showSlippage, setShowSlippage] = useState(false);
   const [customSlippage, setCustomSlippage] = useState('');
+  const [feeInfo, setFeeInfo] = useState<{
+    tier: string;
+    effectiveFeePercent: number;
+    feeDiscount: number;
+    cashbackRate: number;
+  } | null>(null);
+
+  // Fetch tier-based fee info when wallet connects
+  useEffect(() => {
+    if (!connected || !publicKey) {
+      setFeeInfo(null);
+      return;
+    }
+    const controller = new AbortController();
+    fetch(`${API_URL}/swap/fee-info?wallet=${publicKey.toBase58()}`, {
+      signal: controller.signal,
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data) setFeeInfo(data);
+      })
+      .catch((err) => {
+        if (err?.name !== 'AbortError') setFeeInfo(null);
+      });
+    return () => controller.abort();
+  }, [connected, publicKey]);
 
   // Fetch quote when amount changes
   const fetchQuote = useCallback(async () => {
@@ -399,6 +425,31 @@ export default function SwapPage() {
               </span>
             </div>
             <div className="flex justify-between text-gray-400">
+              <span>{t('swap.platformFee')}</span>
+              {feeInfo && feeInfo.feeDiscount > 0 ? (
+                <span className="text-green-400">
+                  {feeInfo.effectiveFeePercent.toFixed(2)}%
+                  <span className="text-xs ml-1 line-through text-gray-500">0.1%</span>
+                </span>
+              ) : (
+                <span>0.1%</span>
+              )}
+            </div>
+            {feeInfo && feeInfo.feeDiscount > 0 && (
+              <div className="flex justify-between text-gray-400">
+                <span>{t('swap.feeDiscount')}</span>
+                <span className="text-green-400">
+                  -{feeInfo.feeDiscount}% ({feeInfo.tier})
+                </span>
+              </div>
+            )}
+            {feeInfo && feeInfo.cashbackRate > 0 && (
+              <div className="flex justify-between text-gray-400">
+                <span>{t('swap.cashback')}</span>
+                <span className="text-primary-400">+{feeInfo.cashbackRate}%</span>
+              </div>
+            )}
+            <div className="flex justify-between text-gray-400">
               <span>{t('swap.slippage')}</span>
               <span>{(slippageBps / 100).toFixed(1)}%</span>
             </div>
@@ -407,6 +458,23 @@ export default function SwapPage() {
               <span>{quote.routePlan.map((r) => r.swapInfo.label).join(' → ')}</span>
             </div>
           </div>
+        )}
+
+        {/* Tier Benefits Banner */}
+        {feeInfo && feeInfo.tier !== 'Bronze' && (
+          <div className="bg-primary-500/10 border border-primary-500/20 rounded-xl px-4 py-2 flex items-center justify-between">
+            <span className="text-xs text-primary-400 font-medium">{t('swap.tierBenefits')}</span>
+            <span className="text-xs text-primary-300">
+              {feeInfo.feeDiscount === 100
+                ? t('swap.zeroFees')
+                : `-${feeInfo.feeDiscount}% ${t('swap.platformFee').toLowerCase()}`}
+              {feeInfo.cashbackRate > 0 &&
+                ` + ${feeInfo.cashbackRate}% ${t('swap.cashback').toLowerCase()}`}
+            </span>
+          </div>
+        )}
+        {feeInfo && feeInfo.tier === 'Bronze' && (
+          <p className="text-xs text-gray-500 text-center">{t('swap.stakeForBenefits')}</p>
         )}
 
         {/* Error */}

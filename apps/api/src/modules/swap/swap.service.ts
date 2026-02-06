@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../common/prisma.service';
+import { TiersService } from '../tiers/tiers.service';
 
 // Platform fee: 0.1% (10 basis points) - goes to treasury for community distribution
 const PLATFORM_FEE_BPS = 10;
@@ -49,7 +50,8 @@ export class SwapService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly config: ConfigService
+    private readonly config: ConfigService,
+    private readonly tiersService: TiersService
   ) {
     // Fee account receives platform fees from Jupiter swaps
     this.feeAccount = this.config.get(
@@ -202,7 +204,7 @@ export class SwapService {
   }
 
   /**
-   * Record a completed swap for fee tracking
+   * Record a completed swap for fee tracking with tier-based discounts and cashback
    * Called by frontend after successful swap transaction
    */
   async recordSwap(params: {
@@ -213,11 +215,27 @@ export class SwapService {
     inputAmount: string;
     outputAmount: string;
   }) {
-    const { signature, inputAmount, inputMint } = params;
+    const { walletAddress, signature, inputAmount, inputMint } = params;
 
-    // Calculate platform fee (0.1% of input amount)
+    // Calculate base platform fee (0.1% of input amount)
     const inputAmountNum = BigInt(inputAmount);
-    const feeAmount = (inputAmountNum * BigInt(PLATFORM_FEE_BPS)) / BigInt(10000);
+    const baseFeeAmount = (inputAmountNum * BigInt(PLATFORM_FEE_BPS)) / BigInt(10000);
+
+    // Get tier-based benefits
+    const { tier } = await this.tiersService.getUserTier(walletAddress);
+    const feeDiscount = tier.feeDiscount; // 0 to 1.0
+    const cashbackRate = tier.cashbackRate; // 0 to 0.02
+
+    // Apply fee discount (Diamond gets 100% discount = zero fees)
+    const discountBps = Math.round(feeDiscount * PLATFORM_FEE_BPS);
+    const effectiveFeeBps = PLATFORM_FEE_BPS - discountBps;
+    const feeAmount =
+      effectiveFeeBps > 0 ? (inputAmountNum * BigInt(effectiveFeeBps)) / BigInt(10000) : BigInt(0);
+
+    // Calculate cashback amount (percentage of input amount)
+    const cashbackBps = Math.round(cashbackRate * 10000);
+    const cashbackAmount =
+      cashbackBps > 0 ? (inputAmountNum * BigInt(cashbackBps)) / BigInt(10000) : BigInt(0);
 
     // Determine token for fee (use input token)
     const token = this.getTokenSymbol(inputMint);
@@ -234,9 +252,54 @@ export class SwapService {
       },
     });
 
-    this.logger.log(`Swap fee recorded: ${feeAmount} ${token} from ${signature}`);
+    this.logger.log(
+      `Swap fee recorded: ${feeAmount} ${token} (tier: ${tier.name}, discount: ${feeDiscount * 100}%, cashback: ${cashbackAmount} ${token}) from ${signature}`
+    );
 
-    return { success: true, feeAmount: feeAmount.toString(), token };
+    return {
+      success: true,
+      feeAmount: feeAmount.toString(),
+      baseFeeAmount: baseFeeAmount.toString(),
+      cashbackAmount: cashbackAmount.toString(),
+      token,
+      tier: tier.name,
+      feeDiscount: feeDiscount * 100,
+      cashbackRate: cashbackRate * 100,
+    };
+  }
+
+  /**
+   * Get fee details for a wallet address with tier benefits applied
+   */
+  async getFeeDetails(walletAddress?: string) {
+    const base = {
+      platformFeeBps: PLATFORM_FEE_BPS,
+      platformFeePercent: PLATFORM_FEE_BPS / 100,
+    };
+
+    if (!walletAddress) {
+      return {
+        ...base,
+        effectiveFeeBps: PLATFORM_FEE_BPS,
+        effectiveFeePercent: PLATFORM_FEE_BPS / 100,
+        tier: 'Bronze',
+        feeDiscount: 0,
+        cashbackRate: 0,
+      };
+    }
+
+    const { tier } = await this.tiersService.getUserTier(walletAddress);
+    const discountBps = Math.round(tier.feeDiscount * PLATFORM_FEE_BPS);
+    const effectiveFeeBps = PLATFORM_FEE_BPS - discountBps;
+
+    return {
+      ...base,
+      effectiveFeeBps,
+      effectiveFeePercent: effectiveFeeBps / 100,
+      tier: tier.name,
+      feeDiscount: tier.feeDiscount * 100,
+      cashbackRate: tier.cashbackRate * 100,
+    };
   }
 
   /**

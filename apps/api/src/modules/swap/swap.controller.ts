@@ -89,11 +89,16 @@ export class SwapController {
   }
 
   @Get('fee-info')
-  @ApiOperation({ summary: 'Get platform fee information' })
-  getFeeInfo() {
+  @ApiOperation({ summary: 'Get platform fee information with optional tier benefits' })
+  @ApiQuery({
+    name: 'wallet',
+    description: 'Wallet address for tier-based fee calculation',
+    required: false,
+  })
+  async getFeeInfo(@Query('wallet') wallet?: string) {
+    const feeDetails = await this.swapService.getFeeDetails(wallet);
     return {
-      platformFeeBps: 10, // 0.1%
-      platformFeePercent: 0.1,
+      ...feeDetails,
       message: '0.1% of each swap goes to the MVGA community treasury',
       distribution: {
         liquidity: '40% - Strengthens MVGA price floor',
