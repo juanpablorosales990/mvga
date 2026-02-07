@@ -579,3 +579,101 @@ model VaultReconciliation {
   @@index([snapshotAt])
   @@index([status])
 }
+
+// ============================================================================
+// Push Notifications
+// ============================================================================
+
+model PushSubscription {
+  id            String   @id @default(uuid())
+  walletAddress String
+  endpoint      String   @unique
+  p256dh        String   // Push encryption key
+  auth          String   // Push auth secret
+  userAgent     String?  // For multi-device debugging
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([walletAddress])
+}
+
+model NotificationPreference {
+  id            String   @id @default(uuid())
+  walletAddress String   @unique
+  p2pTrades     Boolean  @default(true)
+  staking       Boolean  @default(true)
+  referrals     Boolean  @default(true)
+  grants        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// ============================================================================
+// Savings / Yield
+// ============================================================================
+
+model SavingsPosition {
+  id              String        @id @default(uuid())
+  walletAddress   String
+  protocol        String        @default("KAMINO") // Future: MARGINFI, DRIFT
+  token           String        @default("USDC")
+  depositedAmount BigInt                           // Original deposit in smallest units
+  currentAmount   BigInt                           // Current value including yield
+  kTokenBalance   BigInt        @default(0)        // Kamino receipt tokens held
+  status          SavingsStatus @default(ACTIVE)
+  depositTx       String?       @unique
+  withdrawTx      String?       @unique
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([walletAddress])
+  @@index([status])
+}
+
+enum SavingsStatus {
+  ACTIVE
+  WITHDRAWING
+  CLOSED
+}
+
+model YieldSnapshot {
+  id            String   @id @default(uuid())
+  protocol      String
+  token         String
+  supplyApy     Float              // Current supply APY from protocol
+  totalDeposits BigInt             // Total MVGA user deposits in protocol
+  totalYield    BigInt             // Cumulative yield earned
+  snapshotAt    DateTime @default(now())
+
+  @@index([protocol, token])
+  @@index([snapshotAt])
+}
+
+// ============================================================================
+// Card Applications (Rain Integration)
+// ============================================================================
+
+model CardApplication {
+  id            String        @id @default(uuid())
+  walletAddress String
+  rainUserId    String?       @unique // Rain's user ID after KYC
+  rainCardId    String?       @unique // Rain's card ID after issuance
+  status        CardAppStatus @default(WAITLISTED)
+  kycData       Json?                 // Encrypted KYC submission (never logged)
+  chainId       Int?                  // Collateral contract chain
+  depositAddr   String?               // Rain collateral deposit address
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([walletAddress])
+  @@index([status])
+}
+
+enum CardAppStatus {
+  WAITLISTED
+  KYC_PENDING
+  KYC_APPROVED
+  KYC_REJECTED
+  CARD_ISSUED
+  FROZEN
+}

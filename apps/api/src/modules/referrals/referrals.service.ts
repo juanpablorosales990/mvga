@@ -1,5 +1,6 @@
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../../common/prisma.service';
 import { TransactionLoggerService } from '../../common/transaction-logger.service';
 import { SolanaService } from '../wallet/solana.service';
@@ -24,7 +25,8 @@ export class ReferralsService {
     private readonly prisma: PrismaService,
     private readonly txLogger: TransactionLoggerService,
     private readonly solana: SolanaService,
-    private readonly config: ConfigService
+    private readonly config: ConfigService,
+    private readonly eventEmitter: EventEmitter2
   ) {
     this.mintPubkey = new PublicKey(
       this.config.get('MVGA_TOKEN_MINT', 'DRX65kM2n5CLTpdjJCemZvkUwE98ou4RpHrd8Z3GH5Qh')
@@ -202,6 +204,15 @@ export class ReferralsService {
     this.logger.log(
       `Referral bonus paid: ${BONUS_AMOUNT} MVGA each to ${referrerAddress} and ${refereeAddress}`
     );
+
+    this.eventEmitter.emit('referral.bonus.paid', {
+      walletAddress: referrerAddress,
+      amount: BONUS_AMOUNT,
+    });
+    this.eventEmitter.emit('referral.bonus.paid', {
+      walletAddress: refereeAddress,
+      amount: BONUS_AMOUNT,
+    });
   }
 
   async getStats(walletAddress: string) {

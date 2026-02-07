@@ -53,7 +53,8 @@ describe('StakingService', () => {
       {} as any, // txLogger
       { acquireLock: jest.fn(), releaseLock: jest.fn() } as any, // cronLockService
       {} as any, // solana
-      mockConfig
+      mockConfig,
+      { emit: jest.fn() } as any // eventEmitter
     );
   });
 

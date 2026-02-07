@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../../common/prisma.service';
 import { TransactionLoggerService } from '../../common/transaction-logger.service';
 import { SolanaService } from '../wallet/solana.service';
@@ -74,7 +75,8 @@ export class P2PService {
     private readonly prisma: PrismaService,
     private readonly txLogger: TransactionLoggerService,
     private readonly solana: SolanaService,
-    private readonly config: ConfigService
+    private readonly config: ConfigService,
+    private readonly eventEmitter: EventEmitter2
   ) {
     // Load escrow wallet keypair from env
     const keypairStr = this.config.get<string>('ESCROW_WALLET_KEYPAIR');
@@ -343,6 +345,28 @@ export class P2PService {
       await this.updateReputation(trade.sellerAddress, true);
     }
 
+    // Push notification events
+    if (dto.status === 'PAID') {
+      this.eventEmitter.emit('p2p.payment.marked', {
+        tradeId,
+        buyerWallet: trade.buyerAddress,
+        sellerWallet: trade.sellerAddress,
+      });
+    } else if (dto.status === 'DISPUTED') {
+      this.eventEmitter.emit('p2p.trade.disputed', {
+        tradeId,
+        buyerWallet: trade.buyerAddress,
+        sellerWallet: trade.sellerAddress,
+        reason: dto.notes,
+      });
+    } else if (dto.status === 'CANCELLED') {
+      this.eventEmitter.emit('p2p.trade.cancelled', {
+        tradeId,
+        buyerWallet: trade.buyerAddress,
+        sellerWallet: trade.sellerAddress,
+      });
+    }
+
     return this.formatTrade(updated);
   }
 
@@ -555,6 +579,14 @@ export class P2PService {
           .then(() => this.txLogger.confirm(signature))
           .catch((e) => this.logger.error('Failed to log escrow lock:', e));
 
+        this.eventEmitter.emit('p2p.escrow.locked', {
+          tradeId,
+          buyerWallet: trade.buyerAddress,
+          sellerWallet: trade.sellerAddress,
+          amount: expectedAmount,
+          token: currency,
+        });
+
         return { success: true, tradeId, signature };
       },
       { maxWait: 5000, timeout: 30000 }
@@ -652,6 +684,14 @@ export class P2PService {
         this.updateReputation(trade.sellerAddress, true).catch((e) =>
           this.logger.error('Reputation update failed:', e)
         );
+
+        this.eventEmitter.emit('p2p.funds.released', {
+          tradeId,
+          buyerWallet: trade.buyerAddress,
+          sellerWallet: trade.sellerAddress,
+          amount: Number(trade.cryptoAmount) / AMOUNT_SCALE,
+          token: currency,
+        });
 
         return sig;
       },

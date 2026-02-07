@@ -3,6 +3,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { ScheduleModule } from '@nestjs/schedule';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { PrismaModule } from './common/prisma.module';
 import { WalletModule } from './modules/wallet/wallet.module';
 import { StakingModule } from './modules/staking/staking.module';
@@ -16,6 +17,8 @@ import { BurnModule } from './modules/burn/burn.module';
 import { MetricsModule } from './modules/metrics/metrics.module';
 import { BankingModule } from './modules/banking/banking.module';
 import { TiersModule } from './modules/tiers/tiers.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
+import { SavingsModule } from './modules/savings/savings.module';
 import { HealthController } from './health.controller';
 
 @Module({
@@ -30,6 +33,7 @@ import { HealthController } from './health.controller';
       },
     ]),
     ScheduleModule.forRoot(),
+    EventEmitterModule.forRoot(),
     PrismaModule,
     AuthModule,
     WalletModule,
@@ -43,6 +47,8 @@ import { HealthController } from './health.controller';
     MetricsModule,
     BankingModule,
     TiersModule,
+    NotificationsModule,
+    SavingsModule,
   ],
   controllers: [HealthController],
   providers: [

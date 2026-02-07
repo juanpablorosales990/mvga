@@ -1,11 +1,13 @@
 import { Module } from '@nestjs/common';
 import { BankingController } from './banking.controller';
 import { BankingService } from './banking.service';
+import { RainAdapter } from './rain.adapter';
 import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [AuthModule],
   controllers: [BankingController],
-  providers: [BankingService],
+  providers: [BankingService, RainAdapter],
+  exports: [BankingService],
 })
 export class BankingModule {}

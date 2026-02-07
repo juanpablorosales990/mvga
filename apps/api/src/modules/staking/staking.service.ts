@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Cron } from '@nestjs/schedule';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../../common/prisma.service';
 import { TransactionLoggerService } from '../../common/transaction-logger.service';
 import { CronLockService } from '../../common/cron-lock.service';
@@ -94,7 +95,8 @@ export class StakingService {
     private readonly txLogger: TransactionLoggerService,
     private readonly cronLockService: CronLockService,
     private readonly solana: SolanaService,
-    private readonly config: ConfigService
+    private readonly config: ConfigService,
+    private readonly eventEmitter: EventEmitter2
   ) {
     this.mintPubkey = new PublicKey(
       this.config.get('MVGA_TOKEN_MINT', 'DRX65kM2n5CLTpdjJCemZvkUwE98ou4RpHrd8Z3GH5Qh')
@@ -407,6 +409,11 @@ export class StakingService {
           .then(() => this.txLogger.confirm(sig))
           .catch((e) => this.logger.error('Failed to log unstake:', e));
 
+        this.eventEmitter.emit('staking.unstake.complete', {
+          walletAddress: dto.address,
+          amount: requestedAmount,
+        });
+
         return {
           signature: sig,
           amount: requestedAmount,
@@ -512,6 +519,11 @@ export class StakingService {
 
         // Pay referral bonus (non-blocking, outside transaction)
         this.payReferralBonus(walletAddress, totalRewards);
+
+        this.eventEmitter.emit('staking.rewards.ready', {
+          walletAddress,
+          amount: totalRewards,
+        });
 
         return {
           signature: sig,

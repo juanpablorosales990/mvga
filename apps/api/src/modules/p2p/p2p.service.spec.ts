@@ -52,7 +52,8 @@ describe('P2PService', () => {
       mockPrisma,
       {} as any, // txLogger
       {} as any, // solana
-      mockConfig as any
+      mockConfig as any,
+      { emit: jest.fn() } as any // eventEmitter
     );
   });
 
