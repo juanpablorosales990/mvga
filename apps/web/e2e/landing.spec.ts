@@ -5,7 +5,7 @@ test.describe('Landing Page — Hero', () => {
     await page.goto('/');
     await expect(page.locator('text=Make Venezuela Great Again')).toBeVisible();
     await expect(page.getByText('Open Source').first()).toBeVisible();
-    await expect(page.getByText('Zero Founder Fees')).toBeVisible();
+    await expect(page.getByText('Zero Founder Fees').first()).toBeVisible();
   });
 
   test('Open Wallet button links to app.mvga.io', async ({ page }) => {
