@@ -295,6 +295,14 @@ export class StakingService {
       throw new BadRequestException('Transaction failed on-chain');
     }
 
+    // Verify the transaction signer matches the authenticated wallet
+    const signers = tx.transaction.message.accountKeys
+      .filter((k) => k.signer)
+      .map((k) => k.pubkey.toBase58());
+    if (!signers.includes(walletAddress)) {
+      throw new BadRequestException('Transaction signer does not match authenticated wallet');
+    }
+
     // Upsert user + create stake record
     const user = await this.prisma.user.upsert({
       where: { walletAddress },
@@ -687,85 +695,88 @@ export class StakingService {
     try {
       this.logger.log('Running auto-compound...');
 
-      // Find all active stakes with autoCompound enabled
-      const autoCompoundStakes = await this.prisma.stake.findMany({
-        where: { status: 'ACTIVE', autoCompound: true },
-        include: { user: true },
-      });
-
-      if (autoCompoundStakes.length === 0) {
-        this.logger.log('No auto-compound stakes found');
-        return;
-      }
-
-      // Group by user
-      const userStakesMap = new Map<string, typeof autoCompoundStakes>();
-      for (const stake of autoCompoundStakes) {
-        const key = stake.userId;
-        if (!userStakesMap.has(key)) userStakesMap.set(key, []);
-        userStakesMap.get(key)!.push(stake);
-      }
-
+      // Process in batches to avoid unbounded memory usage at scale
+      const BATCH_SIZE = 100;
+      let cursor: string | undefined;
       let compoundCount = 0;
       const info = await this.getStakingInfo();
       const dynamicBase = info.dynamicApy;
 
-      for (const [_userId, stakes] of userStakesMap) {
-        const walletAddress = stakes[0].user.walletAddress;
-
-        const totalStaked = stakes.reduce(
-          (sum, s) => sum + Number(s.amount) / 10 ** MVGA_DECIMALS,
-          0
-        );
-
-        // Calculate rewards from lastClaimedAt (or createdAt) for each stake
-        let totalRewards = 0;
-        const rewardsPerStake: { stakeId: string; rewards: number }[] = [];
-
-        for (const stake of stakes) {
-          const amount = Number(stake.amount) / 10 ** MVGA_DECIMALS;
-          const tier = this.getTierForAmount(totalStaked);
-          const lockMult = this.lockPeriodMultipliers[stake.lockPeriod] || 1.0;
-          const effectiveApy = dynamicBase * tier.multiplier * lockMult;
-
-          const since = stake.lastClaimedAt || stake.createdAt;
-          const daysSince = (Date.now() - since.getTime()) / (1000 * 60 * 60 * 24);
-          const rewards = amount * (effectiveApy / 100) * (daysSince / 365);
-
-          totalRewards += rewards;
-          rewardsPerStake.push({ stakeId: stake.id, rewards });
-        }
-
-        if (totalRewards < AUTO_COMPOUND_MIN) continue;
-
-        // Instead of creating phantom stakes, UPDATE the primary stake's amount
-        // and reset lastClaimedAt to prevent double-counting.
-        // Wrap in a transaction so all updates succeed or fail together.
-        const primaryStake = stakes[0]; // Compound into the first stake
-        const rewardRaw = BigInt(Math.round(totalRewards * 10 ** MVGA_DECIMALS));
-
-        await this.prisma.$transaction(async (tx) => {
-          await tx.stake.update({
-            where: { id: primaryStake.id },
-            data: {
-              amount: { increment: rewardRaw },
-              lastClaimedAt: new Date(),
-            },
-          });
-
-          // Reset lastClaimedAt on all other stakes too
-          for (const stake of stakes.slice(1)) {
-            await tx.stake.update({
-              where: { id: stake.id },
-              data: { lastClaimedAt: new Date() },
-            });
-          }
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const autoCompoundStakes = await this.prisma.stake.findMany({
+          where: { status: 'ACTIVE', autoCompound: true },
+          include: { user: true },
+          take: BATCH_SIZE,
+          ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
+          orderBy: { id: 'asc' },
         });
 
-        compoundCount++;
-        this.logger.log(
-          `Auto-compounded ${totalRewards.toFixed(2)} MVGA for ${walletAddress.slice(0, 8)}...`
-        );
+        if (autoCompoundStakes.length === 0) break;
+        cursor = autoCompoundStakes[autoCompoundStakes.length - 1].id;
+
+        // Group by user
+        const userStakesMap = new Map<string, typeof autoCompoundStakes>();
+        for (const stake of autoCompoundStakes) {
+          const key = stake.userId;
+          if (!userStakesMap.has(key)) userStakesMap.set(key, []);
+          userStakesMap.get(key)!.push(stake);
+        }
+
+        for (const [_userId, stakes] of userStakesMap) {
+          const walletAddress = stakes[0].user.walletAddress;
+
+          const totalStaked = stakes.reduce(
+            (sum, s) => sum + Number(s.amount) / 10 ** MVGA_DECIMALS,
+            0
+          );
+
+          // Calculate rewards from lastClaimedAt (or createdAt) for each stake
+          let totalRewards = 0;
+
+          for (const stake of stakes) {
+            const amount = Number(stake.amount) / 10 ** MVGA_DECIMALS;
+            const tier = this.getTierForAmount(totalStaked);
+            const lockMult = this.lockPeriodMultipliers[stake.lockPeriod] || 1.0;
+            const effectiveApy = dynamicBase * tier.multiplier * lockMult;
+
+            const since = stake.lastClaimedAt || stake.createdAt;
+            const daysSince = (Date.now() - since.getTime()) / (1000 * 60 * 60 * 24);
+            const rewards = amount * (effectiveApy / 100) * (daysSince / 365);
+
+            totalRewards += rewards;
+          }
+
+          if (totalRewards < AUTO_COMPOUND_MIN) continue;
+
+          // Update the primary stake's amount and reset lastClaimedAt
+          const primaryStake = stakes[0];
+          const rewardRaw = BigInt(Math.round(totalRewards * 10 ** MVGA_DECIMALS));
+
+          await this.prisma.$transaction(async (tx) => {
+            await tx.stake.update({
+              where: { id: primaryStake.id },
+              data: {
+                amount: { increment: rewardRaw },
+                lastClaimedAt: new Date(),
+              },
+            });
+
+            for (const stake of stakes.slice(1)) {
+              await tx.stake.update({
+                where: { id: stake.id },
+                data: { lastClaimedAt: new Date() },
+              });
+            }
+          });
+
+          compoundCount++;
+          this.logger.log(
+            `Auto-compounded ${totalRewards.toFixed(2)} MVGA for ${walletAddress.slice(0, 8)}...`
+          );
+        }
+
+        if (autoCompoundStakes.length < BATCH_SIZE) break;
       }
 
       this.logger.log(`Auto-compound complete: ${compoundCount} users compounded`);

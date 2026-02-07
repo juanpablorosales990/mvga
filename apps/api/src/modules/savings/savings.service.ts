@@ -112,6 +112,14 @@ export class SavingsService {
 
   /** Confirm a deposit after the user has signed the transaction. */
   async confirmDeposit(walletAddress: string, signature: string) {
+    // Check for signature replay — reject if already used
+    const existing = await this.prisma.savingsPosition.findFirst({
+      where: { depositTx: signature },
+    });
+    if (existing) {
+      throw new BadRequestException('Transaction signature already used');
+    }
+
     // Find the most recent unconfirmed position for this wallet
     const position = await this.prisma.savingsPosition.findFirst({
       where: { walletAddress, depositTx: null, status: 'ACTIVE' },

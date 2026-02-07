@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Param, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, UseGuards } from '@nestjs/common';
 import { BankingService } from './banking.service';
 import { AuthGuard } from '../auth/auth.guard';
 import { CurrentUser } from '../auth/auth.decorator';
@@ -40,7 +40,8 @@ export class BankingController {
   }
 
   @Get('kyc/status/:wallet')
-  async getKycStatus(@Param('wallet') wallet: string) {
+  @UseGuards(AuthGuard)
+  async getKycStatus(@CurrentUser('wallet') wallet: string) {
     return this.bankingService.getKycStatus(wallet);
   }
 
@@ -53,12 +54,14 @@ export class BankingController {
   }
 
   @Get('card/:wallet')
-  async getCard(@Param('wallet') wallet: string) {
+  @UseGuards(AuthGuard)
+  async getCard(@CurrentUser('wallet') wallet: string) {
     return this.bankingService.getCard(wallet);
   }
 
   @Get('card/:wallet/balance')
-  async getCardBalance(@Param('wallet') wallet: string) {
+  @UseGuards(AuthGuard)
+  async getCardBalance(@CurrentUser('wallet') wallet: string) {
     return this.bankingService.getCardBalance(wallet);
   }
 

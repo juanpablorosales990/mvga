@@ -10,6 +10,9 @@ mvga_escrow = "6GXdYCDckUVEFBaQSgfQGX95gZSNN7FWN19vRDSyTJ5E"
 [programs.devnet]
 mvga_escrow = "6GXdYCDckUVEFBaQSgfQGX95gZSNN7FWN19vRDSyTJ5E"
 
+[programs.mainnet]
+mvga_escrow = "6GXdYCDckUVEFBaQSgfQGX95gZSNN7FWN19vRDSyTJ5E"
+
 [registry]
 url = "https://api.apr.dev"
 

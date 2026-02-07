@@ -1,7 +1,9 @@
 import { IsString, IsNumber, IsPositive, IsOptional, IsIn } from 'class-validator';
+import { IsSolanaAddress } from '../../common/validators/solana-address.validator';
 
 export class DepositDto {
   @IsString()
+  @IsSolanaAddress()
   walletAddress: string;
 
   @IsNumber()
@@ -16,6 +18,7 @@ export class DepositDto {
 
 export class ConfirmDepositDto {
   @IsString()
+  @IsSolanaAddress()
   walletAddress: string;
 
   @IsString()
@@ -24,6 +27,7 @@ export class ConfirmDepositDto {
 
 export class WithdrawDto {
   @IsString()
+  @IsSolanaAddress()
   walletAddress: string;
 
   @IsString()
@@ -37,6 +41,7 @@ export class WithdrawDto {
 
 export class ConfirmWithdrawDto {
   @IsString()
+  @IsSolanaAddress()
   walletAddress: string;
 
   @IsString()
