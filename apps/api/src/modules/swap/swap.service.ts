@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../common/prisma.service';
+import { SolanaService } from '../wallet/solana.service';
 import { TiersService } from '../tiers/tiers.service';
 
 // Platform fee: 0.1% (10 basis points) - goes to treasury for community distribution
@@ -51,7 +52,8 @@ export class SwapService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
-    private readonly tiersService: TiersService
+    private readonly tiersService: TiersService,
+    private readonly solana: SolanaService
   ) {
     // Fee account receives platform fees from Jupiter swaps
     this.feeAccount = this.config.get(
@@ -204,8 +206,9 @@ export class SwapService {
   }
 
   /**
-   * Record a completed swap for fee tracking with tier-based discounts and cashback
-   * Called by frontend after successful swap transaction
+   * Record a completed swap for fee tracking with tier-based discounts and cashback.
+   * Idempotent: returns existing record if signature already recorded.
+   * Verifies the transaction exists on-chain and was signed by the claimed wallet.
    */
   async recordSwap(params: {
     walletAddress: string;
@@ -216,6 +219,53 @@ export class SwapService {
     outputAmount: string;
   }) {
     const { walletAddress, signature, inputAmount, inputMint } = params;
+
+    // Idempotency: check if this signature was already recorded
+    const existing = await this.prisma.feeCollection.findFirst({
+      where: { signature },
+    });
+    if (existing) {
+      this.logger.log(`Swap fee already recorded for signature ${signature}`);
+      return {
+        success: true,
+        feeAmount: existing.amount.toString(),
+        baseFeeAmount: '0',
+        cashbackAmount: '0',
+        token: existing.token,
+        tier: 'cached',
+        feeDiscount: 0,
+        cashbackRate: 0,
+      };
+    }
+
+    // Verify the transaction on-chain
+    try {
+      const connection = this.solana.getConnection();
+      const parsedTx = await connection.getParsedTransaction(signature, {
+        maxSupportedTransactionVersion: 0,
+      });
+
+      if (!parsedTx) {
+        throw new BadRequestException('Transaction not found on-chain');
+      }
+
+      if (parsedTx.meta?.err) {
+        throw new BadRequestException('Transaction failed on-chain');
+      }
+
+      // Verify signer matches the claimed wallet
+      const accountKeys = parsedTx.transaction.message.accountKeys;
+      const signerKey = accountKeys[0]?.pubkey?.toBase58();
+      if (signerKey !== walletAddress) {
+        throw new BadRequestException('Transaction signer does not match claimed wallet');
+      }
+    } catch (error) {
+      if (error instanceof BadRequestException) throw error;
+      this.logger.warn(
+        `On-chain verification failed for ${signature}: ${(error as Error).message}`
+      );
+      throw new BadRequestException('Failed to verify swap transaction on-chain');
+    }
 
     // Calculate base platform fee (0.1% of input amount)
     const inputAmountNum = BigInt(inputAmount);

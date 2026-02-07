@@ -2,56 +2,73 @@ import { Injectable, UnauthorizedException, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../../common/prisma.service';
+import { CronLockService } from '../../common/cron-lock.service';
 import * as nacl from 'tweetnacl';
 import * as bs58 from 'bs58';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
 
-  // In-memory nonce store with TTL (5 minutes)
-  private nonces = new Map<string, { nonce: string; expiresAt: number }>();
-
   constructor(
     private readonly jwt: JwtService,
-    private readonly prisma: PrismaService
+    private readonly prisma: PrismaService,
+    private readonly cronLockService: CronLockService
   ) {}
 
   @Cron('*/5 * * * *')
-  cleanupExpiredNonces() {
-    const now = Date.now();
-    let cleaned = 0;
-    for (const [key, value] of this.nonces.entries()) {
-      if (now > value.expiresAt) {
-        this.nonces.delete(key);
-        cleaned++;
+  async cleanupExpiredNonces() {
+    const lockId = await this.cronLockService.acquireLock('nonce-cleanup', 60_000);
+    if (!lockId) return;
+
+    try {
+      const result = await this.prisma.authNonce.deleteMany({
+        where: {
+          OR: [{ expiresAt: { lt: new Date() } }, { used: true }],
+        },
+      });
+      if (result.count > 0) {
+        this.logger.debug(`Cleaned up ${result.count} expired/used nonces`);
       }
-    }
-    if (cleaned > 0) {
-      this.logger.debug(`Cleaned up ${cleaned} expired nonces`);
+    } finally {
+      await this.cronLockService.releaseLock(lockId);
     }
   }
 
-  generateNonce(walletAddress: string): { nonce: string; message: string } {
-    const nonce = Math.random().toString(36).substring(2) + Date.now().toString(36);
+  async generateNonce(walletAddress: string): Promise<{ nonce: string; message: string }> {
+    const nonce = crypto.randomBytes(32).toString('hex');
     const message = `Sign this message to authenticate with MVGA.\n\nWallet: ${walletAddress}\nNonce: ${nonce}`;
 
-    this.nonces.set(walletAddress, {
-      nonce,
-      expiresAt: Date.now() + 5 * 60 * 1000, // 5 minutes
+    // Upsert — replaces any existing nonce for this wallet
+    await this.prisma.authNonce.upsert({
+      where: { walletAddress },
+      update: {
+        nonce,
+        expiresAt: new Date(Date.now() + 5 * 60 * 1000),
+        used: false,
+      },
+      create: {
+        walletAddress,
+        nonce,
+        expiresAt: new Date(Date.now() + 5 * 60 * 1000),
+      },
     });
 
     return { nonce, message };
   }
 
   async verify(walletAddress: string, signature: string): Promise<{ accessToken: string }> {
-    const stored = this.nonces.get(walletAddress);
-    if (!stored) {
+    const stored = await this.prisma.authNonce.findUnique({
+      where: { walletAddress },
+    });
+
+    if (!stored || stored.used) {
       throw new UnauthorizedException('No nonce found. Request a nonce first.');
     }
 
-    if (Date.now() > stored.expiresAt) {
-      this.nonces.delete(walletAddress);
+    if (new Date() > stored.expiresAt) {
+      await this.prisma.authNonce.delete({ where: { id: stored.id } });
       throw new UnauthorizedException('Nonce expired. Request a new one.');
     }
 
@@ -66,8 +83,11 @@ export class AuthService {
       throw new UnauthorizedException('Invalid signature');
     }
 
-    // Clean up nonce
-    this.nonces.delete(walletAddress);
+    // Mark nonce as used (atomic — prevents replay)
+    await this.prisma.authNonce.update({
+      where: { id: stored.id },
+      data: { used: true },
+    });
 
     // Upsert user in database
     const user = await this.prisma.user.upsert({

@@ -12,7 +12,7 @@ export class AuthController {
   @Post('nonce')
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @ApiOperation({ summary: 'Request a nonce for wallet signature authentication' })
-  getNonce(@Body() dto: NonceDto) {
+  async getNonce(@Body() dto: NonceDto) {
     return this.authService.generateNonce(dto.walletAddress);
   }
 

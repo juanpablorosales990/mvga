@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../../common/prisma.service';
+import { CronLockService } from '../../common/cron-lock.service';
 import { P2PService } from './p2p.service';
 
 @Injectable()
@@ -9,11 +10,26 @@ export class P2PTimeoutService {
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly cronLockService: CronLockService,
     private readonly p2pService: P2PService
   ) {}
 
   @Cron('*/5 * * * *')
   async handleTradeTimeouts() {
+    const lockId = await this.cronLockService.acquireLock('p2p-timeout', 300_000);
+    if (!lockId) {
+      this.logger.debug('P2P timeout: another instance holds the lock, skipping');
+      return;
+    }
+
+    try {
+      await this.runTimeoutSweep();
+    } finally {
+      await this.cronLockService.releaseLock(lockId);
+    }
+  }
+
+  private async runTimeoutSweep() {
     const now = new Date();
 
     // 1. Auto-cancel PENDING trades older than 30 minutes

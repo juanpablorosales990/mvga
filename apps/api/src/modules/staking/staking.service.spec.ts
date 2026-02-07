@@ -44,6 +44,7 @@ describe('StakingService', () => {
     service = new StakingService(
       mockPrisma,
       {} as any, // txLogger
+      { acquireLock: jest.fn(), releaseLock: jest.fn() } as any, // cronLockService
       {} as any, // solana
       mockConfig
     );

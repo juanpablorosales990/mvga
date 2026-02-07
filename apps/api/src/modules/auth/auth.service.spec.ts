@@ -6,6 +6,7 @@ describe('AuthService', () => {
   let service: AuthService;
   let jwtService: jest.Mocked<JwtService>;
   let prismaService: any;
+  let cronLockService: any;
 
   beforeEach(() => {
     jwtService = {
@@ -17,91 +18,85 @@ describe('AuthService', () => {
       user: {
         upsert: jest.fn().mockResolvedValue({ id: 'user-1', walletAddress: 'addr' }),
       },
+      authNonce: {
+        upsert: jest.fn().mockResolvedValue({}),
+        findUnique: jest.fn(),
+        update: jest.fn().mockResolvedValue({}),
+        delete: jest.fn().mockResolvedValue({}),
+        deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+      },
     };
 
-    service = new AuthService(jwtService, prismaService);
+    cronLockService = {
+      acquireLock: jest.fn().mockResolvedValue('lock-id'),
+      releaseLock: jest.fn().mockResolvedValue(undefined),
+    };
+
+    service = new AuthService(jwtService, prismaService, cronLockService);
   });
 
   describe('generateNonce', () => {
-    it('returns a nonce and formatted message', () => {
+    it('returns a nonce and formatted message', async () => {
       const wallet = '7EqJj2FvNCqiTVJYwcqYgndNeCakBt9dZZpx53bfFu81';
-      const result = service.generateNonce(wallet);
+      const result = await service.generateNonce(wallet);
 
       expect(result.nonce).toBeDefined();
-      expect(result.nonce.length).toBeGreaterThan(0);
+      expect(result.nonce.length).toBe(64); // 32 bytes hex = 64 chars
       expect(result.message).toContain('Sign this message to authenticate with MVGA');
       expect(result.message).toContain(wallet);
       expect(result.message).toContain(result.nonce);
     });
 
-    it('generates unique nonces per call', () => {
+    it('generates unique nonces per call', async () => {
       const wallet = '7EqJj2FvNCqiTVJYwcqYgndNeCakBt9dZZpx53bfFu81';
-      const r1 = service.generateNonce(wallet);
-      const r2 = service.generateNonce(wallet);
+      const r1 = await service.generateNonce(wallet);
+      const r2 = await service.generateNonce(wallet);
       expect(r1.nonce).not.toBe(r2.nonce);
     });
 
-    it('overwrites previous nonce for same wallet', () => {
+    it('calls prisma upsert to store nonce in DB', async () => {
       const wallet = '7EqJj2FvNCqiTVJYwcqYgndNeCakBt9dZZpx53bfFu81';
-      service.generateNonce(wallet);
-      const r2 = service.generateNonce(wallet);
+      await service.generateNonce(wallet);
 
-      const nonces = (service as any).nonces;
-      expect(nonces.get(wallet).nonce).toBe(r2.nonce);
-    });
-
-    it('sets expiration 5 minutes from now', () => {
-      const wallet = '7EqJj2FvNCqiTVJYwcqYgndNeCakBt9dZZpx53bfFu81';
-      const before = Date.now();
-      service.generateNonce(wallet);
-      const after = Date.now();
-
-      const nonces = (service as any).nonces;
-      const stored = nonces.get(wallet);
-      expect(stored.expiresAt).toBeGreaterThanOrEqual(before + 5 * 60 * 1000);
-      expect(stored.expiresAt).toBeLessThanOrEqual(after + 5 * 60 * 1000);
+      expect(prismaService.authNonce.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { walletAddress: wallet },
+          create: expect.objectContaining({ walletAddress: wallet }),
+          update: expect.objectContaining({ used: false }),
+        })
+      );
     });
   });
 
   describe('verify', () => {
     it('throws if no nonce was generated', async () => {
+      prismaService.authNonce.findUnique.mockResolvedValue(null);
       await expect(service.verify('unknown-wallet', 'sig')).rejects.toThrow(UnauthorizedException);
     });
 
     it('throws if nonce has expired', async () => {
-      const wallet = '7EqJj2FvNCqiTVJYwcqYgndNeCakBt9dZZpx53bfFu81';
-      service.generateNonce(wallet);
+      prismaService.authNonce.findUnique.mockResolvedValue({
+        id: 'nonce-1',
+        walletAddress: 'wallet',
+        nonce: 'test-nonce',
+        expiresAt: new Date(Date.now() - 1000),
+        used: false,
+      });
 
-      // Manually expire the nonce
-      const nonces = (service as any).nonces;
-      const stored = nonces.get(wallet);
-      stored.expiresAt = Date.now() - 1000;
-      nonces.set(wallet, stored);
-
-      await expect(service.verify(wallet, 'sig')).rejects.toThrow('Nonce expired');
+      await expect(service.verify('wallet', 'sig')).rejects.toThrow('Nonce expired');
+      expect(prismaService.authNonce.delete).toHaveBeenCalled();
     });
 
-    it('deletes nonce after expiration check', async () => {
-      const wallet = '7EqJj2FvNCqiTVJYwcqYgndNeCakBt9dZZpx53bfFu81';
-      service.generateNonce(wallet);
+    it('throws if nonce is already used', async () => {
+      prismaService.authNonce.findUnique.mockResolvedValue({
+        id: 'nonce-1',
+        walletAddress: 'wallet',
+        nonce: 'test-nonce',
+        expiresAt: new Date(Date.now() + 300000),
+        used: true,
+      });
 
-      const nonces = (service as any).nonces;
-      const stored = nonces.get(wallet);
-      stored.expiresAt = Date.now() - 1000;
-      nonces.set(wallet, stored);
-
-      await expect(service.verify(wallet, 'sig')).rejects.toThrow();
-      expect(nonces.has(wallet)).toBe(false);
-    });
-
-    it('throws UnauthorizedException with specific message when no nonce', async () => {
-      try {
-        await service.verify('wallet', 'sig');
-        fail('should have thrown');
-      } catch (e) {
-        expect(e).toBeInstanceOf(UnauthorizedException);
-        expect((e as any).message).toBe('No nonce found. Request a nonce first.');
-      }
+      await expect(service.verify('wallet', 'sig')).rejects.toThrow('No nonce found');
     });
   });
 
@@ -119,66 +114,23 @@ describe('AuthService', () => {
 
       expect(() => service.validateToken('bad-token')).toThrow(UnauthorizedException);
     });
-
-    it('throws UnauthorizedException with "Invalid token" message', () => {
-      jwtService.verify.mockImplementation(() => {
-        throw new Error('jwt expired');
-      });
-
-      try {
-        service.validateToken('expired-token');
-        fail('should have thrown');
-      } catch (e) {
-        expect((e as any).message).toBe('Invalid token');
-      }
-    });
   });
 
   describe('cleanupExpiredNonces', () => {
-    it('removes expired nonces', () => {
-      const wallet1 = 'wallet1';
-      const wallet2 = 'wallet2';
-      service.generateNonce(wallet1);
-      service.generateNonce(wallet2);
+    it('acquires lock and cleans up expired nonces', async () => {
+      prismaService.authNonce.deleteMany.mockResolvedValue({ count: 3 });
+      await service.cleanupExpiredNonces();
 
-      // Expire wallet1's nonce
-      const nonces = (service as any).nonces;
-      const stored1 = nonces.get(wallet1);
-      stored1.expiresAt = Date.now() - 1000;
-      nonces.set(wallet1, stored1);
-
-      service.cleanupExpiredNonces();
-
-      expect(nonces.has(wallet1)).toBe(false);
-      expect(nonces.has(wallet2)).toBe(true);
+      expect(cronLockService.acquireLock).toHaveBeenCalledWith('nonce-cleanup', 60000);
+      expect(prismaService.authNonce.deleteMany).toHaveBeenCalled();
+      expect(cronLockService.releaseLock).toHaveBeenCalledWith('lock-id');
     });
 
-    it('does nothing when no nonces are expired', () => {
-      service.generateNonce('wallet1');
-      service.generateNonce('wallet2');
+    it('skips if lock cannot be acquired', async () => {
+      cronLockService.acquireLock.mockResolvedValue(null);
+      await service.cleanupExpiredNonces();
 
-      const nonces = (service as any).nonces;
-      expect(nonces.size).toBe(2);
-
-      service.cleanupExpiredNonces();
-      expect(nonces.size).toBe(2);
-    });
-
-    it('cleans all expired nonces in a single pass', () => {
-      const wallets = ['w1', 'w2', 'w3', 'w4'];
-      wallets.forEach((w) => service.generateNonce(w));
-
-      const nonces = (service as any).nonces;
-      // Expire all but w4
-      for (const w of ['w1', 'w2', 'w3']) {
-        const stored = nonces.get(w);
-        stored.expiresAt = Date.now() - 1000;
-        nonces.set(w, stored);
-      }
-
-      service.cleanupExpiredNonces();
-      expect(nonces.size).toBe(1);
-      expect(nonces.has('w4')).toBe(true);
+      expect(prismaService.authNonce.deleteMany).not.toHaveBeenCalled();
     });
   });
 });

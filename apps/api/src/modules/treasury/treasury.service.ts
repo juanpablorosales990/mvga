@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../../common/prisma.service';
+import { CronLockService } from '../../common/cron-lock.service';
 import { SolanaService } from '../wallet/solana.service';
 import { Keypair, PublicKey, Transaction, sendAndConfirmTransaction } from '@solana/web3.js';
 import {
@@ -41,6 +42,7 @@ export class TreasuryService {
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly cronLockService: CronLockService,
     private readonly solana: SolanaService,
     private readonly config: ConfigService,
     private readonly burnService: BurnService,
@@ -88,179 +90,247 @@ export class TreasuryService {
    * Weekly cron job: Every Monday at 00:00 UTC
    * Distributes all collected fees to: liquidity (40%), staking (40%), grants (20%)
    */
+  private static readonly STEP_ORDER = [
+    'BURN',
+    'LIQUIDITY',
+    'STAKING',
+    'GRANTS',
+    'FEE_SNAPSHOT',
+    'MARK_COLLECTED',
+  ];
+
   @Cron(CronExpression.EVERY_WEEK)
   async executeWeeklyDistribution() {
-    this.logger.log('Starting weekly treasury distribution...');
-
-    if (!this.treasuryKeypair) {
-      this.logger.warn('Treasury keypair not configured, skipping distribution');
+    const lockId = await this.cronLockService.acquireLock('weekly-distribution', 900_000);
+    if (!lockId) {
+      this.logger.debug('Weekly distribution: another instance holds the lock, skipping');
       return;
     }
 
     try {
-      // Calculate period
-      const periodEnd = new Date();
-      const periodStart = new Date(periodEnd.getTime() - 7 * 24 * 60 * 60 * 1000);
+      this.logger.log('Starting weekly treasury distribution...');
 
-      // Get uncollected fees
-      const uncollectedFees = await this.prisma.feeCollection.findMany({
-        where: { collected: false },
-      });
-
-      if (uncollectedFees.length === 0) {
-        this.logger.log('No fees to distribute this period');
+      if (!this.treasuryKeypair) {
+        this.logger.warn('Treasury keypair not configured, skipping distribution');
         return;
       }
 
-      // Calculate totals by source
-      const swapFees = uncollectedFees
-        .filter((f) => f.source === 'SWAP')
-        .reduce((sum, f) => sum + f.amount, BigInt(0));
-      const topupFees = uncollectedFees
-        .filter((f) => f.source === 'MOBILE_TOPUP')
-        .reduce((sum, f) => sum + f.amount, BigInt(0));
-      const giftcardFees = uncollectedFees
-        .filter((f) => f.source === 'GIFT_CARD')
-        .reduce((sum, f) => sum + f.amount, BigInt(0));
-      const yieldEarnings = uncollectedFees
-        .filter((f) => f.source === 'YIELD')
-        .reduce((sum, f) => sum + f.amount, BigInt(0));
-
-      const totalAmount = swapFees + topupFees + giftcardFees + yieldEarnings;
-
-      if (totalAmount === BigInt(0)) {
-        this.logger.log('Total fees are zero, skipping distribution');
-        return;
-      }
-
-      // Burn 5% before distribution
-      const burnAmount = (totalAmount * BigInt(BURN_PERCENT)) / BigInt(100);
-      const distributable = totalAmount - burnAmount;
-
-      // Calculate distribution amounts from the remaining 95%
-      const liquidityAmount = (distributable * BigInt(LIQUIDITY_PERCENT)) / BigInt(100);
-      const stakingAmount = (distributable * BigInt(STAKING_PERCENT)) / BigInt(100);
-      const grantsAmount = (distributable * BigInt(GRANTS_PERCENT)) / BigInt(100);
-
-      // Create distribution record
-      const distribution = await this.prisma.treasuryDistribution.create({
-        data: {
-          totalAmount,
-          burnAmount,
-          liquidityAmount,
-          stakingAmount,
-          grantsAmount,
-          swapFees,
-          topupFees,
-          giftcardFees,
-          yieldEarnings,
-          status: 'IN_PROGRESS',
-          periodStart,
-          periodEnd,
-        },
+      // Check for an existing IN_PROGRESS distribution (resume after crash)
+      let distribution = await this.prisma.treasuryDistribution.findFirst({
+        where: { status: 'IN_PROGRESS' },
+        include: { steps: true },
       });
 
-      // Execute burn + transfers
-      let burnTx: string | null = null;
-      let liquidityTx: string | null = null;
-      let stakingTx: string | null = null;
-      let grantsTx: string | null = null;
+      if (!distribution) {
+        distribution = await this.createDistributionWithSteps();
+        if (!distribution) return; // No fees to distribute
+      }
 
-      try {
-        // Burn 5% of fees
-        if (burnAmount > BigInt(0)) {
-          try {
-            burnTx = await this.burnService.executeBurn(burnAmount, 'WEEKLY');
-            this.logger.log(
-              `Burn: ${Number(burnAmount) / 10 ** MVGA_DECIMALS} MVGA — tx: ${burnTx}`
+      // Execute each step in order; skip already-completed steps
+      for (const stepName of TreasuryService.STEP_ORDER) {
+        const step = distribution.steps.find((s) => s.stepName === stepName);
+        if (!step || step.status === 'COMPLETED' || step.status === 'SKIPPED') continue;
+
+        try {
+          await this.executeDistributionStep(distribution, step);
+        } catch (error: any) {
+          await this.prisma.distributionStep.update({
+            where: { id: step.id },
+            data: { status: 'FAILED', error: error.message, completedAt: new Date() },
+          });
+
+          // Burn and FEE_SNAPSHOT failures are non-critical, continue
+          if (stepName !== 'BURN' && stepName !== 'FEE_SNAPSHOT') {
+            this.logger.error(
+              `Critical step ${stepName} failed, halting distribution: ${error.message}`
             );
-          } catch (burnError) {
-            this.logger.error('Weekly burn failed, continuing with distribution:', burnError);
+            break;
           }
+          this.logger.warn(`Non-critical step ${stepName} failed, continuing: ${error.message}`);
         }
+      }
 
-        // Transfer to liquidity wallet
-        if (liquidityAmount > BigInt(0)) {
-          liquidityTx = await this.transferMVGA(this.liquidityWallet, liquidityAmount);
-          this.logger.log(`Liquidity transfer: ${liquidityTx}`);
-        }
+      // Check final state
+      const updatedSteps = await this.prisma.distributionStep.findMany({
+        where: { distributionId: distribution.id },
+      });
 
-        // Split staking amount: 50% to vault refill, 50% to fee sharing pool
-        const feeShareAmount = (stakingAmount * BigInt(FEE_SHARE_PERCENT)) / BigInt(100);
-        const vaultRefillAmount = stakingAmount - feeShareAmount;
+      const allDone = updatedSteps.every(
+        (s) => s.status === 'COMPLETED' || s.status === 'SKIPPED' || s.status === 'FAILED'
+      );
+      const criticalFailed = updatedSteps.some(
+        (s) => s.status === 'FAILED' && !['BURN', 'FEE_SNAPSHOT'].includes(s.stepName)
+      );
 
-        // Transfer vault refill to staking vault
-        if (vaultRefillAmount > BigInt(0)) {
-          stakingTx = await this.transferMVGA(this.stakingWallet, vaultRefillAmount);
-          this.logger.log(`Staking vault refill: ${stakingTx}`);
-        }
-
-        // Transfer to grants treasury
-        if (grantsAmount > BigInt(0)) {
-          grantsTx = await this.transferMVGA(this.grantsWallet, grantsAmount);
-          this.logger.log(`Grants transfer: ${grantsTx}`);
-        }
-
-        // Create FeeSnapshot for pro-rata staker fee sharing
-        if (feeShareAmount > BigInt(0)) {
-          try {
-            const totalWeight = await this.stakingService.getTotalStakeWeight();
-            if (totalWeight > BigInt(0)) {
-              const feePerWeight = Number(feeShareAmount) / Number(totalWeight);
-              await this.prisma.feeSnapshot.create({
-                data: {
-                  totalFees: feeShareAmount,
-                  totalWeight,
-                  feePerWeight,
-                  periodEnd: periodEnd,
-                },
-              });
-              this.logger.log(
-                `Fee snapshot created: ${Number(feeShareAmount) / 10 ** MVGA_DECIMALS} MVGA shared across ${totalWeight} weight`
-              );
-            } else {
-              this.logger.log('No active stakes — fee share amount stays in treasury');
-            }
-          } catch (feeError) {
-            this.logger.error('Fee snapshot creation failed:', feeError);
-          }
-        }
-
-        // Mark fees as collected
-        await this.prisma.feeCollection.updateMany({
-          where: { id: { in: uncollectedFees.map((f) => f.id) } },
-          data: { collected: true, collectedAt: new Date() },
-        });
-
-        // Update distribution record
+      if (allDone) {
         await this.prisma.treasuryDistribution.update({
           where: { id: distribution.id },
           data: {
-            burnTx,
-            liquidityTx,
-            stakingTx,
-            grantsTx,
-            status: 'COMPLETED',
+            status: criticalFailed ? 'FAILED' : 'COMPLETED',
             executedAt: new Date(),
+            burnTx: updatedSteps.find((s) => s.stepName === 'BURN')?.signature ?? null,
+            liquidityTx: updatedSteps.find((s) => s.stepName === 'LIQUIDITY')?.signature ?? null,
+            stakingTx: updatedSteps.find((s) => s.stepName === 'STAKING')?.signature ?? null,
+            grantsTx: updatedSteps.find((s) => s.stepName === 'GRANTS')?.signature ?? null,
           },
         });
 
-        // Update treasury balance snapshot
-        await this.updateBalanceSnapshot();
-
-        this.logger.log(
-          `Weekly distribution completed! Total: ${Number(totalAmount) / 10 ** MVGA_DECIMALS} MVGA`
-        );
-      } catch (txError) {
-        this.logger.error('Distribution transfer failed:', txError);
-        await this.prisma.treasuryDistribution.update({
-          where: { id: distribution.id },
-          data: { status: 'FAILED' },
-        });
+        if (!criticalFailed) {
+          await this.updateBalanceSnapshot();
+          this.logger.log(
+            `Weekly distribution completed! Total: ${Number(distribution.totalAmount) / 10 ** MVGA_DECIMALS} MVGA`
+          );
+        } else {
+          this.logger.error(
+            'Weekly distribution partially failed — check DistributionStep records'
+          );
+        }
       }
     } catch (error) {
       this.logger.error('Weekly distribution failed:', error);
+    } finally {
+      await this.cronLockService.releaseLock(lockId);
     }
+  }
+
+  private async createDistributionWithSteps() {
+    const periodEnd = new Date();
+    const periodStart = new Date(periodEnd.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    const uncollectedFees = await this.prisma.feeCollection.findMany({
+      where: { collected: false },
+    });
+
+    if (uncollectedFees.length === 0) {
+      this.logger.log('No fees to distribute this period');
+      return null;
+    }
+
+    const swapFees = uncollectedFees
+      .filter((f) => f.source === 'SWAP')
+      .reduce((sum, f) => sum + f.amount, BigInt(0));
+    const topupFees = uncollectedFees
+      .filter((f) => f.source === 'MOBILE_TOPUP')
+      .reduce((sum, f) => sum + f.amount, BigInt(0));
+    const giftcardFees = uncollectedFees
+      .filter((f) => f.source === 'GIFT_CARD')
+      .reduce((sum, f) => sum + f.amount, BigInt(0));
+    const yieldEarnings = uncollectedFees
+      .filter((f) => f.source === 'YIELD')
+      .reduce((sum, f) => sum + f.amount, BigInt(0));
+
+    const totalAmount = swapFees + topupFees + giftcardFees + yieldEarnings;
+    if (totalAmount === BigInt(0)) {
+      this.logger.log('Total fees are zero, skipping distribution');
+      return null;
+    }
+
+    const burnAmount = (totalAmount * BigInt(BURN_PERCENT)) / BigInt(100);
+    const distributable = totalAmount - burnAmount;
+    const liquidityAmount = (distributable * BigInt(LIQUIDITY_PERCENT)) / BigInt(100);
+    const stakingAmount = (distributable * BigInt(STAKING_PERCENT)) / BigInt(100);
+    const grantsAmount = (distributable * BigInt(GRANTS_PERCENT)) / BigInt(100);
+
+    const distribution = await this.prisma.treasuryDistribution.create({
+      data: {
+        totalAmount,
+        burnAmount,
+        liquidityAmount,
+        stakingAmount,
+        grantsAmount,
+        swapFees,
+        topupFees,
+        giftcardFees,
+        yieldEarnings,
+        status: 'IN_PROGRESS',
+        periodStart,
+        periodEnd,
+        steps: {
+          create: TreasuryService.STEP_ORDER.map((stepName) => ({ stepName })),
+        },
+      },
+      include: { steps: true },
+    });
+
+    return distribution;
+  }
+
+  private async executeDistributionStep(distribution: any, step: any): Promise<void> {
+    await this.prisma.distributionStep.update({
+      where: { id: step.id },
+      data: { status: 'IN_PROGRESS', startedAt: new Date() },
+    });
+
+    let signature: string | null = null;
+
+    switch (step.stepName) {
+      case 'BURN':
+        if (distribution.burnAmount > BigInt(0)) {
+          signature = await this.burnService.executeBurn(distribution.burnAmount, 'WEEKLY');
+          this.logger.log(
+            `Burn: ${Number(distribution.burnAmount) / 10 ** MVGA_DECIMALS} MVGA — tx: ${signature}`
+          );
+        }
+        break;
+
+      case 'LIQUIDITY':
+        if (distribution.liquidityAmount > BigInt(0)) {
+          signature = await this.transferMVGA(this.liquidityWallet, distribution.liquidityAmount);
+          this.logger.log(`Liquidity transfer: ${signature}`);
+        }
+        break;
+
+      case 'STAKING': {
+        const feeShareAmount =
+          (distribution.stakingAmount * BigInt(FEE_SHARE_PERCENT)) / BigInt(100);
+        const vaultRefillAmount = distribution.stakingAmount - feeShareAmount;
+        if (vaultRefillAmount > BigInt(0)) {
+          signature = await this.transferMVGA(this.stakingWallet, vaultRefillAmount);
+          this.logger.log(`Staking vault refill: ${signature}`);
+        }
+        break;
+      }
+
+      case 'GRANTS':
+        if (distribution.grantsAmount > BigInt(0)) {
+          signature = await this.transferMVGA(this.grantsWallet, distribution.grantsAmount);
+          this.logger.log(`Grants transfer: ${signature}`);
+        }
+        break;
+
+      case 'FEE_SNAPSHOT': {
+        const feeShare = (distribution.stakingAmount * BigInt(FEE_SHARE_PERCENT)) / BigInt(100);
+        if (feeShare > BigInt(0)) {
+          const totalWeight = await this.stakingService.getTotalStakeWeight();
+          if (totalWeight > BigInt(0)) {
+            const feePerWeight = Number(feeShare) / Number(totalWeight);
+            await this.prisma.feeSnapshot.create({
+              data: {
+                totalFees: feeShare,
+                totalWeight,
+                feePerWeight,
+                periodEnd: distribution.periodEnd,
+              },
+            });
+            this.logger.log(`Fee snapshot created: ${Number(feeShare) / 10 ** MVGA_DECIMALS} MVGA`);
+          }
+        }
+        break;
+      }
+
+      case 'MARK_COLLECTED':
+        await this.prisma.feeCollection.updateMany({
+          where: { collected: false },
+          data: { collected: true, collectedAt: new Date() },
+        });
+        this.logger.log('Fees marked as collected');
+        break;
+    }
+
+    await this.prisma.distributionStep.update({
+      where: { id: step.id },
+      data: { status: 'COMPLETED', signature, completedAt: new Date() },
+    });
   }
 
   /**
@@ -471,7 +541,15 @@ export class TreasuryService {
    * Trigger manual distribution (admin only)
    */
   async triggerManualDistribution() {
-    this.logger.log('Manual distribution triggered');
+    // Check for an existing in-progress distribution
+    const existing = await this.prisma.treasuryDistribution.findFirst({
+      where: { status: 'IN_PROGRESS' },
+    });
+    if (existing) {
+      this.logger.log('Resuming existing in-progress distribution');
+    } else {
+      this.logger.log('Manual distribution triggered');
+    }
     await this.executeWeeklyDistribution();
     return { success: true, message: 'Distribution triggered' };
   }

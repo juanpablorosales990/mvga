@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../../common/prisma.service';
+import { CronLockService } from '../../common/cron-lock.service';
 
 const MVGA_DECIMALS = 9;
 
@@ -8,13 +9,30 @@ const MVGA_DECIMALS = 9;
 export class MetricsService {
   private readonly logger = new Logger(MetricsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly cronLockService: CronLockService
+  ) {}
 
   /**
    * Hourly snapshot of protocol metrics
    */
   @Cron('0 * * * *')
   async takeSnapshot() {
+    const lockId = await this.cronLockService.acquireLock('metrics-snapshot', 120_000);
+    if (!lockId) {
+      this.logger.debug('Metrics snapshot: another instance holds the lock, skipping');
+      return;
+    }
+
+    try {
+      await this.runSnapshot();
+    } finally {
+      await this.cronLockService.releaseLock(lockId);
+    }
+  }
+
+  private async runSnapshot() {
     this.logger.log('Taking hourly metrics snapshot...');
 
     try {

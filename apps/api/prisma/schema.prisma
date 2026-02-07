@@ -21,6 +21,7 @@ model User {
 
   // Relations
   stakes        Stake[]
+  stakingClaims StakingClaim[]
   offers        P2POffer[]     @relation("SellerOffers")
   buyerTrades   P2PTrade[]     @relation("BuyerTrades")
   sellerTrades  P2PTrade[]     @relation("SellerTrades")
@@ -65,10 +66,11 @@ model Stake {
   unstakeTx   String?   @unique // Solana transaction signature when unstaked
   autoCompound Boolean  @default(false) // Auto-reinvest rewards
 
-  status      StakeStatus @default(ACTIVE)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  unstakedAt  DateTime?
+  status        StakeStatus @default(ACTIVE)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  unstakedAt    DateTime?
+  lastClaimedAt DateTime?
 
   @@index([userId])
   @@index([status])
@@ -157,6 +159,7 @@ model P2PTrade {
   updatedAt    DateTime  @updatedAt
   paidAt       DateTime?
   completedAt  DateTime?
+  processingAt DateTime?
 
   @@index([offerId])
   @@index([buyerId])
@@ -370,6 +373,8 @@ model TreasuryDistribution {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
+  steps            DistributionStep[]
+
   @@index([status])
   @@index([periodEnd])
 }
@@ -496,4 +501,73 @@ model MetricsSnapshot {
   snapshotAt   DateTime @default(now())
 
   @@index([snapshotAt])
+}
+
+// ============================================================================
+// Security Hardening (Auth, Locking, Auditing)
+// ============================================================================
+
+model AuthNonce {
+  id            String   @id @default(uuid())
+  walletAddress String   @unique
+  nonce         String
+  expiresAt     DateTime
+  used          Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  @@index([expiresAt])
+}
+
+model StakingClaim {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount     BigInt
+  feeRewards BigInt   @default(0)
+  signature  String   @unique
+  claimedAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([claimedAt])
+}
+
+model CronLock {
+  id          String    @id @default(uuid())
+  jobName     String
+  lockedBy    String
+  lockedAt    DateTime  @default(now())
+  expiresAt   DateTime
+  completedAt DateTime?
+
+  @@index([expiresAt])
+}
+
+model DistributionStep {
+  id             String               @id @default(uuid())
+  distributionId String
+  distribution   TreasuryDistribution @relation(fields: [distributionId], references: [id], onDelete: Cascade)
+  stepName       String
+  status         String               @default("PENDING")
+  signature      String?
+  error          String?
+  startedAt      DateTime?
+  completedAt    DateTime?
+  createdAt      DateTime             @default(now())
+
+  @@unique([distributionId, stepName])
+  @@index([distributionId])
+}
+
+model VaultReconciliation {
+  id                 String   @id @default(uuid())
+  vaultType          String   @default("STAKING")
+  onChainBalance     BigInt
+  dbSum              BigInt
+  discrepancy        BigInt
+  discrepancyPercent Float
+  status             String   @default("OK")
+  snapshotAt         DateTime @default(now())
+
+  @@index([snapshotAt])
+  @@index([status])
 }

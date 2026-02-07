@@ -23,7 +23,13 @@ describe('SwapService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     tiersService = new TiersService(mockPrismaService as any);
-    service = new SwapService(mockPrismaService as any, mockConfigService as any, tiersService);
+    const mockSolanaService = { getConnection: jest.fn() };
+    service = new SwapService(
+      mockPrismaService as any,
+      mockConfigService as any,
+      tiersService,
+      mockSolanaService as any
+    );
   });
 
   describe('getQuote validation', () => {

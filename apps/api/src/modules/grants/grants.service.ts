@@ -2,6 +2,7 @@ import { Injectable, BadRequestException, NotFoundException, Logger } from '@nes
 import { ConfigService } from '@nestjs/config';
 import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../../common/prisma.service';
+import { CronLockService } from '../../common/cron-lock.service';
 import { TransactionLoggerService } from '../../common/transaction-logger.service';
 import { SolanaService } from '../wallet/solana.service';
 import { CreateProposalDto } from './dto/create-proposal.dto';
@@ -27,6 +28,7 @@ export class GrantsService {
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly cronLockService: CronLockService,
     private readonly config: ConfigService,
     private readonly txLogger: TransactionLoggerService,
     private readonly solana: SolanaService
@@ -262,6 +264,20 @@ export class GrantsService {
   // Hourly cron: tally votes for expired proposals
   @Cron('0 * * * *')
   async tallyVotes() {
+    const lockId = await this.cronLockService.acquireLock('grant-vote-tally', 300_000);
+    if (!lockId) {
+      this.logger.debug('Vote tally: another instance holds the lock, skipping');
+      return;
+    }
+
+    try {
+      await this.runTallyVotes();
+    } finally {
+      await this.cronLockService.releaseLock(lockId);
+    }
+  }
+
+  private async runTallyVotes() {
     const expiredProposals = await this.prisma.grantProposal.findMany({
       where: {
         status: 'VOTING',
@@ -318,6 +334,20 @@ export class GrantsService {
       return; // Can't disburse without keypair
     }
 
+    const lockId = await this.cronLockService.acquireLock('grant-disbursement', 600_000);
+    if (!lockId) {
+      this.logger.debug('Grant disbursement: another instance holds the lock, skipping');
+      return;
+    }
+
+    try {
+      await this.runAutoDisburse();
+    } finally {
+      await this.cronLockService.releaseLock(lockId);
+    }
+  }
+
+  private async runAutoDisburse() {
     const approvedGrants = await this.prisma.grantProposal.findMany({
       where: { status: 'APPROVED' },
       take: 5, // Process 5 at a time to avoid timeout

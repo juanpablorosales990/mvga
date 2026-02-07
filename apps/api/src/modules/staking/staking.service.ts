@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../../common/prisma.service';
 import { TransactionLoggerService } from '../../common/transaction-logger.service';
+import { CronLockService } from '../../common/cron-lock.service';
 import { SolanaService } from '../wallet/solana.service';
 import { StakeDto, UnstakeDto } from './staking.dto';
 import { Keypair, PublicKey, Transaction, sendAndConfirmTransaction } from '@solana/web3.js';
@@ -76,6 +77,7 @@ export class StakingService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly txLogger: TransactionLoggerService,
+    private readonly cronLockService: CronLockService,
     private readonly solana: SolanaService,
     private readonly config: ConfigService
   ) {
@@ -197,8 +199,9 @@ export class StakingService {
       const lockMult = this.lockPeriodMultipliers[stake.lockPeriod] || 1.0;
       const effectiveApy = dynamicBase * tier.multiplier * lockMult;
 
-      // Days since staked
-      const daysSinceStake = (Date.now() - stake.createdAt.getTime()) / (1000 * 60 * 60 * 24);
+      // Days since last claimed (or since staked if never claimed)
+      const since = stake.lastClaimedAt || stake.createdAt;
+      const daysSinceStake = (Date.now() - since.getTime()) / (1000 * 60 * 60 * 24);
       const rewards = amount * (effectiveApy / 100) * (daysSinceStake / 365);
       totalRewards += rewards;
 
@@ -317,110 +320,191 @@ export class StakingService {
   }
 
   async createUnstakeTransaction(dto: UnstakeDto) {
-    const user = await this.prisma.user.findUnique({
-      where: { walletAddress: dto.address },
-    });
-    if (!user) throw new NotFoundException('No staking position found');
+    return this.prisma.$transaction(
+      async (tx) => {
+        const user = await tx.user.findUnique({
+          where: { walletAddress: dto.address },
+        });
+        if (!user) throw new NotFoundException('No staking position found');
 
-    // Find active stake
-    const stake = await this.prisma.stake.findFirst({
-      where: { userId: user.id, status: 'ACTIVE' },
-      orderBy: { createdAt: 'asc' },
-    });
+        // Lock the stake row to prevent concurrent unstake
+        const [stake] = await tx.$queryRaw<any[]>`
+        SELECT * FROM "Stake"
+        WHERE "userId" = ${user.id} AND "status" = 'ACTIVE'
+        ORDER BY "createdAt" ASC
+        LIMIT 1
+        FOR UPDATE
+      `;
 
-    if (!stake) {
-      throw new BadRequestException('No active stake found');
-    }
+        if (!stake) {
+          throw new BadRequestException('No active stake found');
+        }
 
-    // Check lock period
-    if (stake.lockedUntil && new Date() < stake.lockedUntil) {
-      throw new BadRequestException(`Stake locked until ${stake.lockedUntil.toISOString()}`);
-    }
+        // Check lock period
+        if (stake.lockedUntil && new Date() < new Date(stake.lockedUntil)) {
+          throw new BadRequestException(
+            `Stake locked until ${new Date(stake.lockedUntil).toISOString()}`
+          );
+        }
 
-    if (!this.vaultKeypair) {
-      throw new BadRequestException('Staking vault not configured. Contact support.');
-    }
+        if (!this.vaultKeypair) {
+          throw new BadRequestException('Staking vault not configured. Contact support.');
+        }
 
-    const amountToUnstake = Number(stake.amount) / 10 ** MVGA_DECIMALS;
-    const requestedAmount = Math.min(dto.amount, amountToUnstake);
-    const rawAmount = BigInt(Math.round(requestedAmount * 10 ** MVGA_DECIMALS));
+        const amountToUnstake = Number(stake.amount) / 10 ** MVGA_DECIMALS;
+        const requestedAmount = Math.min(dto.amount, amountToUnstake);
+        const rawAmount = BigInt(Math.round(requestedAmount * 10 ** MVGA_DECIMALS));
 
-    // Build transfer: vault → user
-    const connection = this.solana.getConnection();
-    const userPubkey = new PublicKey(dto.address);
-    const vaultAta = await getAssociatedTokenAddress(this.mintPubkey, this.vaultKeypair.publicKey);
-    const userAta = await getAssociatedTokenAddress(this.mintPubkey, userPubkey);
+        // Build transfer: vault → user
+        const connection = this.solana.getConnection();
+        const userPubkey = new PublicKey(dto.address);
+        const vaultAta = await getAssociatedTokenAddress(
+          this.mintPubkey,
+          this.vaultKeypair.publicKey
+        );
+        const userAta = await getAssociatedTokenAddress(this.mintPubkey, userPubkey);
 
-    const tx = new Transaction().add(
-      createTransferInstruction(vaultAta, userAta, this.vaultKeypair.publicKey, rawAmount)
-    );
+        const solanaTx = new Transaction().add(
+          createTransferInstruction(vaultAta, userAta, this.vaultKeypair.publicKey, rawAmount)
+        );
 
-    const sig = await sendAndConfirmTransaction(connection, tx, [this.vaultKeypair]);
+        const sig = await sendAndConfirmTransaction(connection, solanaTx, [this.vaultKeypair]);
 
-    // Update stake in database
-    await this.prisma.stake.update({
-      where: { id: stake.id },
-      data: {
-        status: 'UNSTAKED',
-        unstakeTx: sig,
-        unstakedAt: new Date(),
+        // Update stake in database
+        await tx.stake.update({
+          where: { id: stake.id },
+          data: {
+            status: 'UNSTAKED',
+            unstakeTx: sig,
+            unstakedAt: new Date(),
+          },
+        });
+
+        // Log the transaction (non-blocking)
+        this.txLogger
+          .log({
+            walletAddress: dto.address,
+            type: 'UNSTAKE',
+            signature: sig,
+            amount: requestedAmount,
+            token: 'MVGA',
+          })
+          .then(() => this.txLogger.confirm(sig))
+          .catch((e) => this.logger.error('Failed to log unstake:', e));
+
+        return {
+          signature: sig,
+          amount: requestedAmount,
+          stakeId: stake.id,
+        };
       },
-    });
-
-    // Log the transaction
-    await this.txLogger.log({
-      walletAddress: dto.address,
-      type: 'UNSTAKE',
-      signature: sig,
-      amount: requestedAmount,
-      token: 'MVGA',
-    });
-    await this.txLogger.confirm(sig);
-
-    return {
-      signature: sig,
-      amount: requestedAmount,
-      stakeId: stake.id,
-    };
+      { maxWait: 10000, timeout: 60000 }
+    );
   }
 
   async createClaimTransaction(walletAddress: string) {
-    const position = await this.getStakingPosition(walletAddress);
+    return this.prisma.$transaction(
+      async (tx) => {
+        const user = await tx.user.findUnique({ where: { walletAddress } });
+        if (!user) throw new NotFoundException('No staking position found');
 
-    if (position.earnedRewards <= 0) {
-      throw new BadRequestException('No rewards to claim');
-    }
+        // Lock user's active stakes to prevent concurrent claims
+        const stakes = await tx.$queryRaw<any[]>`
+        SELECT * FROM "Stake"
+        WHERE "userId" = ${user.id} AND "status" = 'ACTIVE'
+        FOR UPDATE
+      `;
 
-    // Minimum claim threshold: 10 MVGA
-    if (position.earnedRewards < 10) {
-      throw new BadRequestException('Minimum claim amount is 10 MVGA');
-    }
+        if (stakes.length === 0) {
+          throw new BadRequestException('No active stakes found');
+        }
 
-    if (!this.vaultKeypair) {
-      throw new BadRequestException('Staking vault not configured. Contact support.');
-    }
+        // Check cooldown: 1 hour minimum between claims
+        const lastClaim = await tx.stakingClaim.findFirst({
+          where: { userId: user.id },
+          orderBy: { claimedAt: 'desc' },
+        });
 
-    const rawRewards = BigInt(Math.round(position.earnedRewards * 10 ** MVGA_DECIMALS));
+        if (lastClaim && Date.now() - lastClaim.claimedAt.getTime() < 3600_000) {
+          throw new BadRequestException('Please wait at least 1 hour between claims');
+        }
 
-    // Build transfer: vault → user (rewards)
-    const connection = this.solana.getConnection();
-    const userPubkey = new PublicKey(walletAddress);
-    const vaultAta = await getAssociatedTokenAddress(this.mintPubkey, this.vaultKeypair.publicKey);
-    const userAta = await getAssociatedTokenAddress(this.mintPubkey, userPubkey);
+        // Calculate rewards from lastClaimedAt (not createdAt) to prevent re-claiming
+        const info = await this.getStakingInfo();
+        const dynamicBase = info.dynamicApy;
 
-    const tx = new Transaction().add(
-      createTransferInstruction(vaultAta, userAta, this.vaultKeypair.publicKey, rawRewards)
+        const totalStaked = stakes.reduce(
+          (sum: number, s: any) => sum + Number(s.amount) / 10 ** MVGA_DECIMALS,
+          0
+        );
+
+        let totalRewards = 0;
+        for (const stake of stakes) {
+          const amount = Number(stake.amount) / 10 ** MVGA_DECIMALS;
+          const tier = this.getTierForAmount(totalStaked);
+          const lockMult = this.lockPeriodMultipliers[stake.lockPeriod] || 1.0;
+          const effectiveApy = dynamicBase * tier.multiplier * lockMult;
+
+          // Calculate from lastClaimedAt if available, otherwise createdAt
+          const since = stake.lastClaimedAt
+            ? new Date(stake.lastClaimedAt)
+            : new Date(stake.createdAt);
+          const daysSinceLast = (Date.now() - since.getTime()) / (1000 * 60 * 60 * 24);
+          totalRewards += amount * (effectiveApy / 100) * (daysSinceLast / 365);
+        }
+
+        if (totalRewards < 10) {
+          throw new BadRequestException('Minimum claim amount is 10 MVGA');
+        }
+
+        if (!this.vaultKeypair) {
+          throw new BadRequestException('Staking vault not configured. Contact support.');
+        }
+
+        const rawRewards = BigInt(Math.round(totalRewards * 10 ** MVGA_DECIMALS));
+
+        // Build transfer: vault → user (rewards)
+        const connection = this.solana.getConnection();
+        const userPubkey = new PublicKey(walletAddress);
+        const vaultAta = await getAssociatedTokenAddress(
+          this.mintPubkey,
+          this.vaultKeypair.publicKey
+        );
+        const userAta = await getAssociatedTokenAddress(this.mintPubkey, userPubkey);
+
+        const solanaTx = new Transaction().add(
+          createTransferInstruction(vaultAta, userAta, this.vaultKeypair.publicKey, rawRewards)
+        );
+
+        const sig = await sendAndConfirmTransaction(connection, solanaTx, [this.vaultKeypair]);
+
+        // Record the claim for idempotency and audit
+        await tx.stakingClaim.create({
+          data: {
+            userId: user.id,
+            amount: rawRewards,
+            signature: sig,
+          },
+        });
+
+        // Update lastClaimedAt on all stakes
+        for (const stake of stakes) {
+          await tx.stake.update({
+            where: { id: stake.id },
+            data: { lastClaimedAt: new Date() },
+          });
+        }
+
+        // Pay referral bonus (non-blocking, outside transaction)
+        this.payReferralBonus(walletAddress, totalRewards);
+
+        return {
+          signature: sig,
+          rewards: totalRewards,
+        };
+      },
+      { maxWait: 10000, timeout: 60000 }
     );
-
-    const sig = await sendAndConfirmTransaction(connection, tx, [this.vaultKeypair]);
-
-    // Pay referral bonus (5% of claimed rewards to referrer, non-blocking)
-    this.payReferralBonus(walletAddress, position.earnedRewards);
-
-    return {
-      signature: sig,
-      rewards: position.earnedRewards,
-    };
   }
 
   /**
@@ -567,9 +651,15 @@ export class StakingService {
    */
   @Cron('0 */6 * * *')
   async executeAutoCompound() {
-    this.logger.log('Running auto-compound...');
+    const lockId = await this.cronLockService.acquireLock('auto-compound', 600_000);
+    if (!lockId) {
+      this.logger.debug('Auto-compound: another instance holds the lock, skipping');
+      return;
+    }
 
     try {
+      this.logger.log('Running auto-compound...');
+
       // Find all active stakes with autoCompound enabled
       const autoCompoundStakes = await this.prisma.stake.findMany({
         where: { status: 'ACTIVE', autoCompound: true },
@@ -590,52 +680,57 @@ export class StakingService {
       }
 
       let compoundCount = 0;
+      const info = await this.getStakingInfo();
+      const dynamicBase = info.dynamicApy;
 
       for (const [userId, stakes] of userStakesMap) {
         const walletAddress = stakes[0].user.walletAddress;
 
-        // Calculate total rewards for this user
         const totalStaked = stakes.reduce(
           (sum, s) => sum + Number(s.amount) / 10 ** MVGA_DECIMALS,
           0
         );
 
-        const info = await this.getStakingInfo();
-        const dynamicBase = info.dynamicApy;
-
+        // Calculate rewards from lastClaimedAt (or createdAt) for each stake
         let totalRewards = 0;
+        const rewardsPerStake: { stakeId: string; rewards: number }[] = [];
+
         for (const stake of stakes) {
           const amount = Number(stake.amount) / 10 ** MVGA_DECIMALS;
           const tier = this.getTierForAmount(totalStaked);
           const lockMult = this.lockPeriodMultipliers[stake.lockPeriod] || 1.0;
           const effectiveApy = dynamicBase * tier.multiplier * lockMult;
-          const daysSinceStake = (Date.now() - stake.createdAt.getTime()) / (1000 * 60 * 60 * 24);
-          totalRewards += amount * (effectiveApy / 100) * (daysSinceStake / 365);
+
+          const since = stake.lastClaimedAt || stake.createdAt;
+          const daysSince = (Date.now() - since.getTime()) / (1000 * 60 * 60 * 24);
+          const rewards = amount * (effectiveApy / 100) * (daysSince / 365);
+
+          totalRewards += rewards;
+          rewardsPerStake.push({ stakeId: stake.id, rewards });
         }
 
         if (totalRewards < AUTO_COMPOUND_MIN) continue;
 
-        // Create a new stake record from the rewards (no on-chain transfer needed,
-        // rewards are already in the vault)
+        // Instead of creating phantom stakes, UPDATE the primary stake's amount
+        // and reset lastClaimedAt to prevent double-counting
+        const primaryStake = stakes[0]; // Compound into the first stake
         const rewardRaw = BigInt(Math.round(totalRewards * 10 ** MVGA_DECIMALS));
 
-        await this.prisma.stake.create({
+        await this.prisma.stake.update({
+          where: { id: primaryStake.id },
           data: {
-            userId,
-            amount: rewardRaw,
-            lockPeriod: 0, // Compounded rewards are flexible
-            autoCompound: true,
-            status: 'ACTIVE',
+            amount: { increment: rewardRaw },
+            lastClaimedAt: new Date(),
           },
         });
 
-        await this.txLogger.log({
-          walletAddress,
-          type: 'STAKE',
-          signature: `auto-compound-${Date.now()}-${userId.slice(0, 8)}`,
-          amount: totalRewards,
-          token: 'MVGA',
-        });
+        // Reset lastClaimedAt on all other stakes too
+        for (const stake of stakes.slice(1)) {
+          await this.prisma.stake.update({
+            where: { id: stake.id },
+            data: { lastClaimedAt: new Date() },
+          });
+        }
 
         compoundCount++;
         this.logger.log(
@@ -646,6 +741,8 @@ export class StakingService {
       this.logger.log(`Auto-compound complete: ${compoundCount} users compounded`);
     } catch (error) {
       this.logger.error('Auto-compound failed:', error);
+    } finally {
+      await this.cronLockService.releaseLock(lockId);
     }
   }
 
@@ -694,6 +791,64 @@ export class StakingService {
     } catch (error) {
       this.logger.error(`Referral bonus failed for ${walletAddress}:`, error);
       // Non-critical — don't fail the claim
+    }
+  }
+
+  /**
+   * Daily vault reconciliation: compare on-chain balance vs DB sum
+   */
+  @Cron('0 0 * * *')
+  async reconcileVault() {
+    const lockId = await this.cronLockService.acquireLock('vault-reconciliation', 120_000);
+    if (!lockId) return;
+
+    try {
+      const vaultWallet = this.config.get(
+        'STAKING_VAULT_WALLET',
+        'GNhLCjqThNJAJAdDYvRTr2EfWyGXAFUymaPuKaL1duEh'
+      );
+
+      const vaultAta = await getAssociatedTokenAddress(this.mintPubkey, new PublicKey(vaultWallet));
+      const account = await getAccount(this.solana.getConnection(), vaultAta);
+      const onChainBalance = BigInt(account.amount.toString());
+
+      const agg = await this.prisma.stake.aggregate({
+        where: { status: 'ACTIVE' },
+        _sum: { amount: true },
+      });
+      const dbSum = agg._sum.amount ?? BigInt(0);
+
+      const discrepancy = onChainBalance - dbSum;
+      const discrepancyPercent =
+        Number(dbSum) > 0 ? (Number(discrepancy) / Number(dbSum)) * 100 : 0;
+
+      let status = 'OK';
+      if (Math.abs(discrepancyPercent) > 5) status = 'CRITICAL';
+      else if (Math.abs(discrepancyPercent) > 1) status = 'WARNING';
+
+      await this.prisma.vaultReconciliation.create({
+        data: {
+          vaultType: 'STAKING',
+          onChainBalance,
+          dbSum,
+          discrepancy,
+          discrepancyPercent,
+          status,
+        },
+      });
+
+      if (status !== 'OK') {
+        this.logger.warn(
+          `VAULT RECONCILIATION ${status}: on-chain=${Number(onChainBalance) / 10 ** MVGA_DECIMALS}, ` +
+            `db=${Number(dbSum) / 10 ** MVGA_DECIMALS}, diff=${discrepancyPercent.toFixed(2)}%`
+        );
+      } else {
+        this.logger.log('Vault reconciliation: OK');
+      }
+    } catch (error) {
+      this.logger.error('Vault reconciliation failed:', error);
+    } finally {
+      await this.cronLockService.releaseLock(lockId);
     }
   }
 

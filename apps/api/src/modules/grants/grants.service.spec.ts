@@ -53,7 +53,14 @@ describe('GrantsService', () => {
       getConnection: jest.fn(),
     };
 
-    service = new GrantsService(mockPrisma, mockConfig, mockTxLogger, mockSolana);
+    const mockCronLockService = { acquireLock: jest.fn(), releaseLock: jest.fn() };
+    service = new GrantsService(
+      mockPrisma,
+      mockCronLockService as any,
+      mockConfig,
+      mockTxLogger,
+      mockSolana
+    );
   });
 
   describe('getProposals', () => {

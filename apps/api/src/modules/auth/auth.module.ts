@@ -15,7 +15,7 @@ import { AdminGuard } from './admin.guard';
         if (!secret) {
           throw new Error('JWT_SECRET environment variable is required');
         }
-        return { secret, signOptions: { expiresIn: '7d' } };
+        return { secret, signOptions: { expiresIn: '24h' } };
       },
     }),
   ],
