@@ -16,7 +16,7 @@ pub struct FileDispute<'info> {
     pub escrow_state: Account<'info, EscrowState>,
 }
 
-pub fn handler(ctx: Context<FileDispute>) -> Result<()> {
+pub fn handle_dispute(ctx: Context<FileDispute>) -> Result<()> {
     let escrow = &mut ctx.accounts.escrow_state;
     let disputer = ctx.accounts.disputer.key();
 

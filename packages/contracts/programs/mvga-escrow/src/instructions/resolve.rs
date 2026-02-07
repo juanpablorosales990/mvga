@@ -9,7 +9,7 @@ use crate::errors::EscrowError;
 use crate::state::{EscrowState, EscrowStatus};
 
 /// Resolution: 0 = release to buyer, 1 = refund to seller
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq)]
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Resolution {
     ReleaseToBuyer,
     RefundToSeller,
@@ -70,7 +70,7 @@ pub struct ResolveDispute<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn handler(ctx: Context<ResolveDispute>, resolution: Resolution) -> Result<()> {
+pub fn handle_resolve(ctx: Context<ResolveDispute>, resolution: Resolution) -> Result<()> {
     let escrow = &ctx.accounts.escrow_state;
 
     // Can resolve from Disputed, Locked, or PaymentSent (admin override)

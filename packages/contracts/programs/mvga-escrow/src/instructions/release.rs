@@ -54,7 +54,7 @@ pub struct ReleaseEscrow<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn handler(ctx: Context<ReleaseEscrow>) -> Result<()> {
+pub fn handle_release(ctx: Context<ReleaseEscrow>) -> Result<()> {
     let escrow = &ctx.accounts.escrow_state;
     let amount = escrow.amount;
     let decimals = ctx.accounts.mint.decimals;

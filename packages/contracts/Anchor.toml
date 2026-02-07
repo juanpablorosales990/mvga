@@ -5,10 +5,10 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-mvga_escrow = "EscrowProgramIDPlaceholder1111111111111111111"
+mvga_escrow = "6GXdYCDckUVEFBaQSgfQGX95gZSNN7FWN19vRDSyTJ5E"
 
 [programs.devnet]
-mvga_escrow = "EscrowProgramIDPlaceholder1111111111111111111"
+mvga_escrow = "6GXdYCDckUVEFBaQSgfQGX95gZSNN7FWN19vRDSyTJ5E"
 
 [registry]
 url = "https://api.apr.dev"

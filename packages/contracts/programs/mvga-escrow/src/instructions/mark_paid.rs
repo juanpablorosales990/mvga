@@ -17,7 +17,7 @@ pub struct MarkPaid<'info> {
     pub escrow_state: Account<'info, EscrowState>,
 }
 
-pub fn handler(ctx: Context<MarkPaid>) -> Result<()> {
+pub fn handle_mark_paid(ctx: Context<MarkPaid>) -> Result<()> {
     let escrow = &mut ctx.accounts.escrow_state;
     escrow.status = EscrowStatus::PaymentSent;
 

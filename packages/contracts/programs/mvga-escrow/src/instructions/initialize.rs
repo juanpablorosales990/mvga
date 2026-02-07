@@ -57,7 +57,7 @@ pub struct InitializeEscrow<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn handler(
+pub fn handle_initialize(
     ctx: Context<InitializeEscrow>,
     trade_id: [u8; 16],
     amount: u64,

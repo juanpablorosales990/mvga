@@ -11,7 +11,7 @@ import BN from 'bn.js';
 // ---------------------------------------------------------------------------
 
 export const ESCROW_PROGRAM_ID = new PublicKey(
-  process.env.ESCROW_PROGRAM_ID || 'EscrowProgramIDPlaceholder1111111111111111111'
+  process.env.ESCROW_PROGRAM_ID || '6GXdYCDckUVEFBaQSgfQGX95gZSNN7FWN19vRDSyTJ5E'
 );
 
 // ---------------------------------------------------------------------------

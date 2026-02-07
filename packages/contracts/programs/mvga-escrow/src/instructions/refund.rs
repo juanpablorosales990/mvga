@@ -45,7 +45,7 @@ pub struct RefundEscrow<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn handler(ctx: Context<RefundEscrow>) -> Result<()> {
+pub fn handle_refund(ctx: Context<RefundEscrow>) -> Result<()> {
     let escrow = &ctx.accounts.escrow_state;
 
     // Seller can only self-refund if status is Locked AND timeout has elapsed
