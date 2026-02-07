@@ -48,7 +48,7 @@ export function findEscrowPDA(
   programId: PublicKey = ESCROW_PROGRAM_ID
 ): [PublicKey, number] {
   return PublicKey.findProgramAddressSync(
-    [Buffer.from('escrow'), Buffer.from(tradeId), seller.toBuffer()],
+    [new TextEncoder().encode('escrow'), new Uint8Array(tradeId), seller.toBytes()],
     programId
   );
 }
@@ -58,7 +58,7 @@ export function findVaultPDA(
   programId: PublicKey = ESCROW_PROGRAM_ID
 ): [PublicKey, number] {
   return PublicKey.findProgramAddressSync(
-    [Buffer.from('vault'), escrowState.toBuffer()],
+    [new TextEncoder().encode('vault'), escrowState.toBytes()],
     programId
   );
 }
@@ -97,13 +97,22 @@ export function tradeIdToUuid(tradeId: number[]): string {
 // These MUST match — if you change instruction names, rebuild with `anchor build` and
 // update these from the new IDL.
 const DISCRIMINATORS = {
-  initializeEscrow: Buffer.from([243, 160, 77, 153, 11, 92, 48, 209]),
-  markPaid: Buffer.from([51, 120, 9, 160, 70, 29, 18, 205]),
-  releaseEscrow: Buffer.from([146, 253, 129, 233, 20, 145, 181, 206]),
-  refundEscrow: Buffer.from([107, 186, 89, 99, 26, 194, 23, 204]),
-  fileDispute: Buffer.from([210, 63, 221, 114, 212, 97, 195, 156]),
-  resolveDispute: Buffer.from([231, 6, 202, 6, 96, 103, 12, 230]),
+  initializeEscrow: new Uint8Array([243, 160, 77, 153, 11, 92, 48, 209]),
+  markPaid: new Uint8Array([51, 120, 9, 160, 70, 29, 18, 205]),
+  releaseEscrow: new Uint8Array([146, 253, 129, 233, 20, 145, 181, 206]),
+  refundEscrow: new Uint8Array([107, 186, 89, 99, 26, 194, 23, 204]),
+  fileDispute: new Uint8Array([210, 63, 221, 114, 212, 97, 195, 156]),
+  resolveDispute: new Uint8Array([231, 6, 202, 6, 96, 103, 12, 230]),
 };
+
+// ---------------------------------------------------------------------------
+// Helper to write u64 LE into a Uint8Array at an offset
+// ---------------------------------------------------------------------------
+
+function writeU64LE(buf: Uint8Array, value: bigint, offset: number): void {
+  const view = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+  view.setBigUint64(offset, value, true);
+}
 
 // ---------------------------------------------------------------------------
 // Instruction builders
@@ -129,11 +138,11 @@ export function buildInitializeEscrowIx(params: {
   const sellerAta = getAssociatedTokenAddressSync(params.mint, params.seller);
 
   // Serialize instruction data: discriminator + trade_id[16] + amount(u64) + timeout(u64)
-  const data = Buffer.alloc(8 + 16 + 8 + 8);
-  DISCRIMINATORS.initializeEscrow.copy(data, 0);
-  Buffer.from(params.tradeId).copy(data, 8);
-  data.writeBigUInt64LE(BigInt(params.amount.toString()), 24);
-  data.writeBigUInt64LE(BigInt(params.timeoutSeconds.toString()), 32);
+  const data = new Uint8Array(8 + 16 + 8 + 8);
+  data.set(DISCRIMINATORS.initializeEscrow, 0);
+  data.set(new Uint8Array(params.tradeId), 8);
+  writeU64LE(data, BigInt(params.amount.toString()), 24);
+  writeU64LE(data, BigInt(params.timeoutSeconds.toString()), 32);
 
   return new TransactionInstruction({
     programId,
@@ -148,7 +157,7 @@ export function buildInitializeEscrowIx(params: {
       { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
       { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
     ],
-    data,
+    data: Buffer.from(data),
   });
 }
 
@@ -169,7 +178,7 @@ export function buildMarkPaidIx(params: {
       { pubkey: params.buyer, isSigner: true, isWritable: false },
       { pubkey: params.escrowState, isSigner: false, isWritable: true },
     ],
-    data: DISCRIMINATORS.markPaid,
+    data: Buffer.from(DISCRIMINATORS.markPaid),
   });
 }
 
@@ -201,7 +210,7 @@ export function buildReleaseEscrowIx(params: {
       { pubkey: ASSOCIATED_TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
       { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
     ],
-    data: DISCRIMINATORS.releaseEscrow,
+    data: Buffer.from(DISCRIMINATORS.releaseEscrow),
   });
 }
 
@@ -230,7 +239,7 @@ export function buildRefundEscrowIx(params: {
       { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
       { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
     ],
-    data: DISCRIMINATORS.refundEscrow,
+    data: Buffer.from(DISCRIMINATORS.refundEscrow),
   });
 }
 
@@ -251,7 +260,7 @@ export function buildFileDisputeIx(params: {
       { pubkey: params.disputer, isSigner: true, isWritable: false },
       { pubkey: params.escrowState, isSigner: false, isWritable: true },
     ],
-    data: DISCRIMINATORS.fileDispute,
+    data: Buffer.from(DISCRIMINATORS.fileDispute),
   });
 }
 
@@ -275,9 +284,9 @@ export function buildResolveDisputeIx(params: {
   const recipientAta = getAssociatedTokenAddressSync(params.mint, recipient);
 
   // Serialize: discriminator + resolution enum (1 byte)
-  const data = Buffer.alloc(8 + 1);
-  DISCRIMINATORS.resolveDispute.copy(data, 0);
-  data.writeUInt8(params.resolution, 8);
+  const data = new Uint8Array(8 + 1);
+  data.set(DISCRIMINATORS.resolveDispute, 0);
+  data[8] = params.resolution;
 
   return new TransactionInstruction({
     programId,
@@ -294,6 +303,6 @@ export function buildResolveDisputeIx(params: {
       { pubkey: ASSOCIATED_TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
       { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
     ],
-    data,
+    data: Buffer.from(data),
   });
 }

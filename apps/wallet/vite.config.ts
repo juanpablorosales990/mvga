@@ -1,3 +1,4 @@
+import path from 'path';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
@@ -12,7 +13,24 @@ const WORKBOX_MODE = NODE_MAJOR >= 25 ? 'development' : 'production';
 
 export default defineConfig({
   plugins: [
-    nodePolyfills({ include: ['buffer'], globals: { Buffer: true } }),
+    nodePolyfills({
+      include: [
+        'buffer',
+        'crypto',
+        'stream',
+        'util',
+        'events',
+        'http',
+        'https',
+        'os',
+        'url',
+        'zlib',
+        'path',
+        'assert',
+      ],
+      globals: { Buffer: true, process: true },
+      protocolImports: true,
+    }),
     react(),
     VitePWA({
       strategies: 'injectManifest',
@@ -53,6 +71,18 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': '/src',
+      'vite-plugin-node-polyfills/shims/buffer': path.resolve(
+        __dirname,
+        '../../node_modules/vite-plugin-node-polyfills/shims/buffer'
+      ),
+      'vite-plugin-node-polyfills/shims/global': path.resolve(
+        __dirname,
+        '../../node_modules/vite-plugin-node-polyfills/shims/global'
+      ),
+      'vite-plugin-node-polyfills/shims/process': path.resolve(
+        __dirname,
+        '../../node_modules/vite-plugin-node-polyfills/shims/process'
+      ),
     },
   },
   build: {
