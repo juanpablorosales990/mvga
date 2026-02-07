@@ -5,6 +5,7 @@ import { useSelfCustodyWallet } from '../contexts/WalletContext';
 import { usePrices } from '../hooks/usePrices';
 import { useWalletStore } from '../stores/walletStore';
 import { useCard } from '../hooks/useCard';
+import { useSavings } from '../hooks/useSavings';
 import { showToast } from '../hooks/useToast';
 import { SkeletonStatCard } from '../components/Skeleton';
 import { API_URL } from '../config';
@@ -17,12 +18,6 @@ interface RecentTx {
   createdAt: string;
 }
 
-const EARN_OPPORTUNITIES = [
-  { protocol: 'Kamino', apy: 5.2, token: 'USDC' },
-  { protocol: 'MarginFi', apy: 4.8, token: 'USDT' },
-  { protocol: 'Drift', apy: 6.1, token: 'USDC' },
-];
-
 export default function BankingPage() {
   const { t } = useTranslation();
   const { connected, publicKey } = useSelfCustodyWallet();
@@ -33,12 +28,14 @@ export default function BankingPage() {
   const [loading, setLoading] = useState(true);
 
   const { cardStatus, card, balance: cardBalance } = useCard();
+  const walletAddr = publicKey?.toBase58() ?? null;
+  const { rates, bestApy } = useSavings(walletAddr);
   const usdcBalance = balances.find((b) => b.symbol === 'USDC');
   const usdtBalance = balances.find((b) => b.symbol === 'USDT');
   const stablecoinUsd = (usdcBalance?.usdValue ?? 0) + (usdtBalance?.usdValue ?? 0);
 
-  const mockApy = 5.2;
-  const projectedMonthly = (stablecoinUsd * (mockApy / 100)) / 12;
+  const currentApy = bestApy || 5.2;
+  const projectedMonthly = (stablecoinUsd * (currentApy / 100)) / 12;
 
   useEffect(() => {
     if (!connected || !publicKey) {
@@ -176,7 +173,7 @@ export default function BankingPage() {
             <div className="flex items-baseline gap-3">
               <span className="text-2xl font-bold">{formatUsd(stablecoinUsd)}</span>
               <span className="text-xs text-green-400 font-medium">
-                {mockApy}% {t('banking.apy')}
+                {currentApy.toFixed(1)}% {t('banking.apy')}
               </span>
             </div>
             <p className="text-xs text-gray-400">
@@ -285,13 +282,18 @@ export default function BankingPage() {
           {/* Earn Section */}
           <div className="space-y-3">
             <h2 className="font-semibold">{t('banking.earnTitle')}</h2>
-            {EARN_OPPORTUNITIES.map((opp) => (
-              <div key={opp.protocol} className="card p-4 flex items-center justify-between">
+            {rates.map((rate) => (
+              <div
+                key={`${rate.protocol}-${rate.token}`}
+                className="card p-4 flex items-center justify-between"
+              >
                 <div>
-                  <p className="font-medium text-sm">{opp.protocol}</p>
-                  <p className="text-xs text-gray-400">{opp.token}</p>
+                  <p className="font-medium text-sm">{rate.protocol}</p>
+                  <p className="text-xs text-gray-400">{rate.token}</p>
                 </div>
-                <span className="text-green-400 font-semibold">{opp.apy}% APY</span>
+                <span className="text-green-400 font-semibold">
+                  {rate.supplyApy.toFixed(1)}% APY
+                </span>
               </div>
             ))}
           </div>
