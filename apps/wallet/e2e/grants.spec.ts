@@ -1,18 +1,14 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Grants Page', () => {
-  test('grants page loads and shows title', async ({ page }) => {
+  test('grants page shows onboarding when no wallet exists', async ({ page }) => {
     await page.goto('/grants');
-    await expect(page.locator('text=/grants|subvenciones/i')).toBeVisible();
+    // Without a wallet, onboarding screen is shown instead of grants page
+    await expect(page.locator('text=/create new wallet|crear nueva billetera/i')).toBeVisible();
   });
 
-  test('create proposal page shows connect prompt', async ({ page }) => {
+  test('create proposal page shows onboarding when not connected', async ({ page }) => {
     await page.goto('/grants/create');
-    await expect(page.locator('text=/connect.*wallet|conecta.*billetera/i')).toBeVisible();
-  });
-
-  test('grants page has propose button', async ({ page }) => {
-    await page.goto('/grants');
-    await expect(page.locator('text=/propose|proponer/i')).toBeVisible();
+    await expect(page.locator('text=/create new wallet|crear nueva billetera/i')).toBeVisible();
   });
 });

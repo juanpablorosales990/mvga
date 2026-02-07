@@ -32,13 +32,13 @@ interface HistoryItem {
   source: 'chain' | 'log';
 }
 
-const TYPE_LABELS: Record<string, string> = {
-  transfer: 'Transfer',
-  STAKE: 'Stake',
-  UNSTAKE: 'Unstake',
-  P2P_ESCROW_LOCK: 'Escrow Lock',
-  P2P_ESCROW_RELEASE: 'Escrow Release',
-  P2P_ESCROW_REFUND: 'Escrow Refund',
+const TYPE_LABEL_KEYS: Record<string, string> = {
+  transfer: 'history.transfer',
+  STAKE: 'history.stakeType',
+  UNSTAKE: 'history.unstakeType',
+  P2P_ESCROW_LOCK: 'history.escrowLock',
+  P2P_ESCROW_RELEASE: 'history.escrowRelease',
+  P2P_ESCROW_REFUND: 'history.escrowRefund',
 };
 
 const TYPE_COLORS: Record<string, string> = {
@@ -179,7 +179,7 @@ export default function HistoryPage() {
                       TYPE_COLORS[tx.type] || 'bg-gray-500/20 text-gray-400'
                     }`}
                   >
-                    {TYPE_LABELS[tx.type] || tx.type}
+                    {TYPE_LABEL_KEYS[tx.type] ? t(TYPE_LABEL_KEYS[tx.type]) : tx.type}
                   </span>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-mono text-gray-400 truncate">

@@ -1,13 +1,14 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('P2P Page', () => {
-  test('shows connect prompt when not connected', async ({ page }) => {
+  test('shows onboarding when not connected', async ({ page }) => {
     await page.goto('/p2p');
-    await expect(page.locator('text=/connect.*wallet|conecta.*billetera/i').first()).toBeVisible();
+    // Without a wallet, onboarding screen is shown
+    await expect(page.locator('text=/create new wallet|crear nueva billetera/i')).toBeVisible();
   });
 
-  test('displays P2P title', async ({ page }) => {
+  test('displays MVGA branding on onboarding', async ({ page }) => {
     await page.goto('/p2p');
-    await expect(page.locator('text=/P2P|intercambio/i').first()).toBeVisible();
+    await expect(page.getByText('MVGA', { exact: true })).toBeVisible();
   });
 });

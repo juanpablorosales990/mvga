@@ -503,7 +503,7 @@ export default function SwapPage() {
               rel="noopener noreferrer"
               className="underline"
             >
-              View on Solscan
+              {t('common.viewOnSolscan')}
             </a>
           </div>
         )}

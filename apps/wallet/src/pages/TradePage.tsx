@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useConnection } from '@solana/wallet-adapter-react';
 import { useSelfCustodyWallet } from '../contexts/WalletContext';
@@ -69,6 +69,7 @@ export default function TradePage() {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showDisputeModal, setShowDisputeModal] = useState(false);
   const [escrowLocking, setEscrowLocking] = useState(false);
+  const escrowLockingRef = useRef(false);
 
   const walletAddress = publicKey?.toBase58() || '';
 
@@ -103,7 +104,8 @@ export default function TradePage() {
   const isBuyer = trade?.buyerAddress === walletAddress;
 
   const handleLockEscrow = async () => {
-    if (!trade || !publicKey || !sendTransaction || escrowLocking) return;
+    if (!trade || !publicKey || !sendTransaction || escrowLockingRef.current) return;
+    escrowLockingRef.current = true;
     setEscrowLocking(true);
     setActionLoading(true);
     setError(null);
@@ -143,7 +145,10 @@ export default function TradePage() {
       tx.add(createTransferInstruction(senderAta, escrowAta, publicKey, rawAmount));
 
       const signature = await sendTransaction(tx, connection);
-      await connection.confirmTransaction(signature, 'confirmed');
+      const confirmation = await connection.confirmTransaction(signature, 'confirmed');
+      if (confirmation.value.err) {
+        throw new Error('Transaction failed on-chain');
+      }
 
       // 3. Confirm with API
       const confirmRes = await fetch(`${API_URL}/p2p/trades/${trade.id}/confirm-escrow`, {
@@ -163,6 +168,7 @@ export default function TradePage() {
     } finally {
       setActionLoading(false);
       setEscrowLocking(false);
+      escrowLockingRef.current = false;
     }
   };
 

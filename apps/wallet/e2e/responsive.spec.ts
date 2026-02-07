@@ -1,4 +1,5 @@
 import { test, expect, devices } from '@playwright/test';
+import { createWalletAndUnlock } from './helpers';
 
 const mobile = devices['Pixel 5'];
 
@@ -7,18 +8,21 @@ test.use({ ...mobile });
 
 test.describe('Responsive — Mobile', () => {
   test('bottom nav shows all 5 tabs on mobile', async ({ page }) => {
-    await page.goto('/');
+    await createWalletAndUnlock(page);
+
+    // Scope to bottom nav to avoid matching WalletPage quick action links
+    const nav = page.locator('nav[aria-label="Main navigation"]');
 
     // All 5 bottom nav tabs should be visible
-    await expect(page.getByRole('link', { name: /wallet|billetera/i })).toBeVisible();
-    await expect(page.getByRole('link', { name: /swap|cambiar/i })).toBeVisible();
-    await expect(page.getByRole('link', { name: /stake|staking/i })).toBeVisible();
-    await expect(page.getByRole('link', { name: /p2p/i })).toBeVisible();
-    await expect(page.getByRole('link', { name: /more|mas/i })).toBeVisible();
+    await expect(nav.getByRole('link', { name: /wallet|billetera/i })).toBeVisible();
+    await expect(nav.getByRole('link', { name: /swap|cambiar/i })).toBeVisible();
+    await expect(nav.getByRole('link', { name: /bank|banco/i })).toBeVisible();
+    await expect(nav.getByRole('link', { name: /p2p/i })).toBeVisible();
+    await expect(nav.getByRole('link', { name: /more|más/i })).toBeVisible();
   });
 
   test('header does not overflow on mobile', async ({ page }) => {
-    await page.goto('/');
+    await createWalletAndUnlock(page);
 
     const header = page.locator('header').first();
     const box = await header.boundingBox();
@@ -28,23 +32,33 @@ test.describe('Responsive — Mobile', () => {
   });
 
   test('more page renders correctly on mobile', async ({ page }) => {
-    await page.goto('/more');
+    await createWalletAndUnlock(page);
 
-    await expect(page.getByRole('link', { name: /send|enviar/i })).toBeVisible();
-    await expect(page.getByRole('link', { name: /receive|recibir/i })).toBeVisible();
-    await expect(page.getByRole('link', { name: /history|historial/i })).toBeVisible();
-    await expect(page.getByRole('link', { name: /grants|subvenciones/i })).toBeVisible();
+    // Navigate via bottom nav (page.goto would reload and lock the wallet)
+    const nav = page.locator('nav[aria-label="Main navigation"]');
+    await nav.getByRole('link', { name: /more|más/i }).click();
+    await expect(page).toHaveURL('/more');
+
+    await expect(page.getByRole('link', { name: /send|enviar/i }).first()).toBeVisible({
+      timeout: 10000,
+    });
+    await expect(page.getByRole('link', { name: /receive|recibir/i }).first()).toBeVisible();
+    await expect(page.getByRole('link', { name: /history|historial/i }).first()).toBeVisible();
+    await expect(page.getByRole('link', { name: /grants|subvenciones/i }).first()).toBeVisible();
   });
 
   test('navigation works on mobile', async ({ page }) => {
-    await page.goto('/');
+    await createWalletAndUnlock(page);
+
+    // Scope to bottom nav to avoid matching WalletPage quick action links
+    const nav = page.locator('nav[aria-label="Main navigation"]');
 
     // Tap Swap in bottom nav
-    await page.getByRole('link', { name: /swap|cambiar/i }).click();
+    await nav.getByRole('link', { name: /swap|cambiar/i }).click();
     await expect(page).toHaveURL('/swap');
 
     // Tap back to Wallet
-    await page.getByRole('link', { name: /wallet|billetera/i }).click();
+    await nav.getByRole('link', { name: /wallet|billetera/i }).click();
     await expect(page).toHaveURL('/');
   });
 });

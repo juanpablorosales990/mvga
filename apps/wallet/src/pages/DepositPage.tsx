@@ -1,14 +1,16 @@
 import { useSelfCustodyWallet } from '../contexts/WalletContext';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 export default function DepositPage() {
+  const { t } = useTranslation();
   const { publicKey, connected } = useSelfCustodyWallet();
   const walletAddress = publicKey?.toBase58() || '';
 
   if (!connected) {
     return (
       <div className="text-center py-16 text-white/40">
-        <p>Connect your wallet to deposit funds.</p>
+        <p>{t('deposit.connectPrompt')}</p>
       </div>
     );
   }
@@ -34,22 +36,19 @@ export default function DepositPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-bold uppercase tracking-tight">Deposit</h1>
+        <h1 className="text-lg font-bold uppercase tracking-tight">{t('deposit.title')}</h1>
         <Link to="/receive" className="text-xs text-gold-500 font-mono uppercase">
-          Receive Crypto &rarr;
+          {t('deposit.receiveCrypto')} &rarr;
         </Link>
       </div>
 
-      <p className="text-white/40 text-xs">
-        Buy SOL, USDC, or USDT with your credit card, debit card, or bank transfer. Funds are sent
-        directly to your wallet.
-      </p>
+      <p className="text-white/40 text-xs">{t('deposit.description')}</p>
 
       {/* Onramper iframe */}
       <div className="border border-white/10 overflow-hidden" style={{ height: '630px' }}>
         <iframe
           src={onramperUrl.toString()}
-          title="Buy Crypto"
+          title={t('deposit.buyCrypto')}
           height="630"
           width="100%"
           allow="accelerometer; autoplay; camera; gyroscope; payment"
@@ -58,10 +57,7 @@ export default function DepositPage() {
       </div>
 
       <div className="bg-white/5 border border-white/10 px-4 py-3">
-        <p className="text-white/30 text-xs font-mono">
-          Powered by Onramper. Payments processed by third-party providers. MVGA does not hold or
-          transmit fiat currency.
-        </p>
+        <p className="text-white/30 text-xs font-mono">{t('deposit.poweredBy')}</p>
       </div>
 
       {/* P2P alternative */}
@@ -70,8 +66,8 @@ export default function DepositPage() {
         className="card flex items-center justify-between hover:bg-white/5 transition"
       >
         <div>
-          <p className="text-sm font-medium">P2P Exchange</p>
-          <p className="text-xs text-white/30">Buy with PagoMóvil, Zelle, or bank transfer</p>
+          <p className="text-sm font-medium">{t('deposit.p2pExchange')}</p>
+          <p className="text-xs text-white/30">{t('deposit.p2pDescription')}</p>
         </div>
         <span className="text-gold-500 text-sm font-mono">&rarr;</span>
       </Link>

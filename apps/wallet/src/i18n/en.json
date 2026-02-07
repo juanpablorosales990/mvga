@@ -30,7 +30,8 @@
     "swap": "Swap",
     "stake": "Stake",
     "assets": "Assets",
-    "viewAll": "View All"
+    "viewAll": "View All",
+    "deposit": "Deposit"
   },
   "send": {
     "title": "Send",
@@ -430,6 +431,67 @@
     "autoCompoundDesc": "Automatically compound rewards for new stakes",
     "helpSupport": "Help & Support"
   },
+  "onboarding": {
+    "tagline": "Your keys, your coins. No extensions. No middlemen.",
+    "createNew": "Create New Wallet",
+    "importExisting": "Import Existing",
+    "securityNote": "Your recovery phrase and private key are encrypted and stored only on this device.",
+    "setPassword": "Set Password",
+    "passwordPlaceholder": "Password (min 6 characters)",
+    "confirmPasswordPlaceholder": "Confirm password",
+    "creating": "Creating...",
+    "createWallet": "Create Wallet",
+    "recoveryPhrase": "Recovery Phrase",
+    "mnemonicInstructions": "Write down these 12 words in order. This is the only way to recover your wallet. Never share them with anyone.",
+    "copiedClears": "Copied! (clears in 30s)",
+    "copyToClipboard": "Copy to Clipboard",
+    "noScreenshot": "Do NOT screenshot. Write these words on paper and store safely.",
+    "wroteItDown": "I Wrote It Down",
+    "verifyBackup": "Verify Backup",
+    "verifyInstructions": "Enter the words for the following positions to confirm your backup.",
+    "wordNumber": "Word #{{number}}",
+    "enterWord": "Enter word #{{number}}",
+    "confirmContinue": "Confirm & Continue",
+    "showWordsAgain": "Show Words Again",
+    "importWallet": "Import Wallet",
+    "recoveryPhrase12": "Recovery Phrase (12 words)",
+    "secretKeyBase58": "Secret Key (base58)",
+    "enterRecoveryPhrase": "Enter Recovery Phrase",
+    "setPasswordEncrypt": "Set a password to encrypt it",
+    "importing": "Importing...",
+    "importViaSecretKey": "Import via Secret Key",
+    "pasteSecretKeyPlaceholder": "Paste your base58 secret key",
+    "importEncrypt": "Import & Encrypt",
+    "passwordTooShort": "Password must be at least 6 characters",
+    "passwordsNoMatch": "Passwords do not match",
+    "createFailed": "Failed to create wallet",
+    "wordsIncorrect": "One or more words are incorrect. Please check your backup.",
+    "fill12Words": "Please fill in all 12 words",
+    "invalidPhrase": "Invalid recovery phrase",
+    "pasteKey": "Paste your secret key",
+    "invalidKey": "Invalid secret key"
+  },
+  "lockScreen": {
+    "walletLocked": "Wallet Locked",
+    "enterPassword": "Enter password",
+    "unlocking": "Unlocking...",
+    "unlock": "Unlock",
+    "forgotPassword": "Forgot password? Reset wallet",
+    "wrongPassword": "Wrong password",
+    "resetWallet": "Reset Wallet",
+    "resetWarning": "This will permanently delete your encrypted wallet from this device. You will need your secret key to recover your funds.",
+    "deleteWallet": "Delete Wallet"
+  },
+  "header": {
+    "settings": "Settings",
+    "exportKey": "Export Key",
+    "lockWallet": "Lock Wallet",
+    "disconnect": "Disconnect",
+    "exportSecretKey": "Export Secret Key",
+    "decryptShow": "Decrypt & Show",
+    "neverShareKey": "Never share this key. Anyone with it controls your funds.",
+    "copy": "Copy"
+  },
   "notifications": {
     "title": "Notifications",
     "markAllRead": "Mark All as Read",
@@ -582,5 +644,15 @@
     "onWaitlist": "On Waitlist",
     "waitlistedFeatures": "While you wait, here's what's coming:",
     "presetAmount": "${{amount}}"
+  },
+  "deposit": {
+    "title": "Deposit",
+    "connectPrompt": "Connect your wallet to deposit funds.",
+    "receiveCrypto": "Receive Crypto",
+    "description": "Buy SOL, USDC, or USDT with your credit card, debit card, or bank transfer. Funds are sent directly to your wallet.",
+    "buyCrypto": "Buy Crypto",
+    "poweredBy": "Powered by Onramper. Payments processed by third-party providers. MVGA does not hold or transmit fiat currency.",
+    "p2pExchange": "P2P Exchange",
+    "p2pDescription": "Buy with PagoMóvil, Zelle, or bank transfer"
   }
 }

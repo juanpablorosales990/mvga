@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
 
 export default function Header() {
   const { connected, publicKey, lock, deleteWallet, exportSecretKey } = useSelfCustodyWallet();
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const preferredCurrency = useWalletStore((s) => s.preferredCurrency);
   const setPreferredCurrency = useWalletStore((s) => s.setPreferredCurrency);
 
@@ -43,7 +43,7 @@ export default function Header() {
       const key = await exportSecretKey(exportPassword);
       setExportedKey(key);
     } catch {
-      setExportError('Wrong password');
+      setExportError(t('lockScreen.wrongPassword'));
     }
   };
 
@@ -93,7 +93,7 @@ export default function Header() {
                       onClick={() => setShowMenu(false)}
                       className="block w-full text-left px-4 py-2.5 text-xs font-mono text-white/60 hover:text-white hover:bg-white/5 transition uppercase tracking-wider"
                     >
-                      Settings
+                      {t('header.settings')}
                     </Link>
                     <button
                       onClick={() => {
@@ -102,7 +102,7 @@ export default function Header() {
                       }}
                       className="block w-full text-left px-4 py-2.5 text-xs font-mono text-white/60 hover:text-white hover:bg-white/5 transition uppercase tracking-wider"
                     >
-                      Export Key
+                      {t('header.exportKey')}
                     </button>
                     <button
                       onClick={() => {
@@ -111,7 +111,7 @@ export default function Header() {
                       }}
                       className="block w-full text-left px-4 py-2.5 text-xs font-mono text-white/60 hover:text-white hover:bg-white/5 transition uppercase tracking-wider border-t border-white/5"
                     >
-                      Lock Wallet
+                      {t('header.lockWallet')}
                     </button>
                     <button
                       onClick={() => {
@@ -120,7 +120,7 @@ export default function Header() {
                       }}
                       className="block w-full text-left px-4 py-2.5 text-xs font-mono text-red-400/60 hover:text-red-400 hover:bg-red-500/5 transition uppercase tracking-wider border-t border-white/5"
                     >
-                      Disconnect
+                      {t('header.disconnect')}
                     </button>
                   </div>
                 )}
@@ -136,7 +136,7 @@ export default function Header() {
           <div className="w-full max-w-sm bg-[#111] border border-white/10 p-6 space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-xs tracking-[0.3em] text-white/30 uppercase font-mono">
-                Export Secret Key
+                {t('header.exportSecretKey')}
               </h3>
               <button
                 onClick={() => {
@@ -155,7 +155,7 @@ export default function Header() {
               <>
                 <input
                   type="password"
-                  placeholder="Enter password"
+                  placeholder={t('lockScreen.enterPassword')}
                   value={exportPassword}
                   onChange={(e) => setExportPassword(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleExport()}
@@ -164,19 +164,17 @@ export default function Header() {
                 />
                 {exportError && <p className="text-red-400 text-xs font-mono">{exportError}</p>}
                 <button onClick={handleExport} className="w-full btn-primary">
-                  Decrypt & Show
+                  {t('header.decryptShow')}
                 </button>
               </>
             ) : (
               <>
-                <p className="text-red-400/60 text-xs font-mono">
-                  Never share this key. Anyone with it controls your funds.
-                </p>
+                <p className="text-red-400/60 text-xs font-mono">{t('header.neverShareKey')}</p>
                 <div className="bg-white/5 border border-gold-500/30 p-4 break-all font-mono text-xs text-white/70 leading-relaxed">
                   {exportedKey}
                 </div>
                 <button onClick={handleCopyKey} className="w-full btn-secondary">
-                  Copy
+                  {t('header.copy')}
                 </button>
               </>
             )}

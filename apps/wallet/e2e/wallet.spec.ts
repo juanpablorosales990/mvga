@@ -1,9 +1,10 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Wallet Page', () => {
-  test('shows connect wallet prompt when not connected', async ({ page }) => {
+  test('shows onboarding when no wallet exists', async ({ page }) => {
     await page.goto('/');
-    await expect(page.locator('text=/connect.*wallet|conecta.*billetera/i').first()).toBeVisible();
+    // With self-custody wallet, when no wallet exists, onboarding screen is shown
+    await expect(page.locator('text=/create new wallet|crear nueva billetera/i')).toBeVisible();
   });
 
   test('header displays MVGA branding', async ({ page }) => {
@@ -11,23 +12,18 @@ test.describe('Wallet Page', () => {
     await expect(page.getByText('MVGA', { exact: true })).toBeVisible();
   });
 
-  test('send page shows connect prompt', async ({ page }) => {
+  test('onboarding screen blocks page access without wallet', async ({ page }) => {
+    // Without a wallet, all routes redirect to onboarding
     await page.goto('/send');
-    await expect(page.locator('text=/connect.*wallet|conecta.*billetera/i').first()).toBeVisible();
-  });
+    await expect(page.locator('text=/create new wallet|crear nueva billetera/i')).toBeVisible();
 
-  test('receive page shows connect prompt', async ({ page }) => {
     await page.goto('/receive');
-    await expect(page.locator('text=/connect.*wallet|conecta.*billetera/i').first()).toBeVisible();
-  });
+    await expect(page.locator('text=/create new wallet|crear nueva billetera/i')).toBeVisible();
 
-  test('swap page shows connect prompt', async ({ page }) => {
     await page.goto('/swap');
-    await expect(page.locator('text=/connect.*wallet|conecta.*billetera/i').first()).toBeVisible();
-  });
+    await expect(page.locator('text=/create new wallet|crear nueva billetera/i')).toBeVisible();
 
-  test('stake page shows connect prompt', async ({ page }) => {
     await page.goto('/stake');
-    await expect(page.locator('text=/connect.*wallet|conecta.*billetera/i').first()).toBeVisible();
+    await expect(page.locator('text=/create new wallet|crear nueva billetera/i')).toBeVisible();
   });
 });

@@ -156,7 +156,10 @@ export default function SendPage() {
           })
         );
         const signature = await sendTransaction(transaction, connection);
-        await connection.confirmTransaction(signature, 'confirmed');
+        const solConfirm = await connection.confirmTransaction(signature, 'confirmed');
+        if (solConfirm.value.err) {
+          throw new Error('Transaction failed on-chain');
+        }
         setTxSignature(signature);
       } else {
         // SPL token transfer
@@ -185,16 +188,22 @@ export default function SendPage() {
           );
         }
 
-        const amountInSmallestUnit = BigInt(
-          Math.floor(amountNum * Math.pow(10, tokenConfig.decimals))
-        );
+        // Parse amount string directly to avoid floating-point precision loss
+        const [whole, fraction = ''] = amount.split('.');
+        const paddedFraction = fraction
+          .padEnd(tokenConfig.decimals, '0')
+          .slice(0, tokenConfig.decimals);
+        const amountInSmallestUnit = BigInt(whole + paddedFraction);
 
         transaction.add(
           createTransferInstruction(senderATA, recipientATA, publicKey, amountInSmallestUnit)
         );
 
         const signature = await sendTransaction(transaction, connection);
-        await connection.confirmTransaction(signature, 'confirmed');
+        const splConfirm = await connection.confirmTransaction(signature, 'confirmed');
+        if (splConfirm.value.err) {
+          throw new Error('Transaction failed on-chain');
+        }
         setTxSignature(signature);
       }
 

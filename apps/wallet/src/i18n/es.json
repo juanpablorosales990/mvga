@@ -30,7 +30,8 @@
     "swap": "Cambiar",
     "stake": "Staking",
     "assets": "Activos",
-    "viewAll": "Ver Todo"
+    "viewAll": "Ver Todo",
+    "deposit": "Depositar"
   },
   "send": {
     "title": "Enviar",
@@ -430,6 +431,67 @@
     "autoCompoundDesc": "Componer automáticamente las recompensas para nuevos stakes",
     "helpSupport": "Ayuda y Soporte"
   },
+  "onboarding": {
+    "tagline": "Tus llaves, tus monedas. Sin extensiones. Sin intermediarios.",
+    "createNew": "Crear Nueva Billetera",
+    "importExisting": "Importar Existente",
+    "securityNote": "Tu frase de recuperación y llave privada están encriptadas y almacenadas solo en este dispositivo.",
+    "setPassword": "Establecer Contraseña",
+    "passwordPlaceholder": "Contraseña (mín 6 caracteres)",
+    "confirmPasswordPlaceholder": "Confirmar contraseña",
+    "creating": "Creando...",
+    "createWallet": "Crear Billetera",
+    "recoveryPhrase": "Frase de Recuperación",
+    "mnemonicInstructions": "Escribe estas 12 palabras en orden. Esta es la única forma de recuperar tu billetera. Nunca las compartas con nadie.",
+    "copiedClears": "¡Copiado! (se borra en 30s)",
+    "copyToClipboard": "Copiar al Portapapeles",
+    "noScreenshot": "NO hagas captura de pantalla. Escribe estas palabras en papel y guárdalas de forma segura.",
+    "wroteItDown": "Ya Las Anoté",
+    "verifyBackup": "Verificar Respaldo",
+    "verifyInstructions": "Ingresa las palabras de las siguientes posiciones para confirmar tu respaldo.",
+    "wordNumber": "Palabra #{{number}}",
+    "enterWord": "Ingresa la palabra #{{number}}",
+    "confirmContinue": "Confirmar y Continuar",
+    "showWordsAgain": "Mostrar Palabras de Nuevo",
+    "importWallet": "Importar Billetera",
+    "recoveryPhrase12": "Frase de Recuperación (12 palabras)",
+    "secretKeyBase58": "Llave Secreta (base58)",
+    "enterRecoveryPhrase": "Ingresa Frase de Recuperación",
+    "setPasswordEncrypt": "Establece una contraseña para encriptar",
+    "importing": "Importando...",
+    "importViaSecretKey": "Importar con Llave Secreta",
+    "pasteSecretKeyPlaceholder": "Pega tu llave secreta base58",
+    "importEncrypt": "Importar y Encriptar",
+    "passwordTooShort": "La contraseña debe tener al menos 6 caracteres",
+    "passwordsNoMatch": "Las contraseñas no coinciden",
+    "createFailed": "Error al crear la billetera",
+    "wordsIncorrect": "Una o más palabras son incorrectas. Verifica tu respaldo.",
+    "fill12Words": "Por favor completa las 12 palabras",
+    "invalidPhrase": "Frase de recuperación inválida",
+    "pasteKey": "Pega tu llave secreta",
+    "invalidKey": "Llave secreta inválida"
+  },
+  "lockScreen": {
+    "walletLocked": "Billetera Bloqueada",
+    "enterPassword": "Ingresa tu contraseña",
+    "unlocking": "Desbloqueando...",
+    "unlock": "Desbloquear",
+    "forgotPassword": "¿Olvidaste tu contraseña? Resetear billetera",
+    "wrongPassword": "Contraseña incorrecta",
+    "resetWallet": "Resetear Billetera",
+    "resetWarning": "Esto eliminará permanentemente tu billetera encriptada de este dispositivo. Necesitarás tu llave secreta para recuperar tus fondos.",
+    "deleteWallet": "Eliminar Billetera"
+  },
+  "header": {
+    "settings": "Ajustes",
+    "exportKey": "Exportar Llave",
+    "lockWallet": "Bloquear Billetera",
+    "disconnect": "Desconectar",
+    "exportSecretKey": "Exportar Llave Secreta",
+    "decryptShow": "Descifrar y Mostrar",
+    "neverShareKey": "Nunca compartas esta llave. Cualquiera con ella controla tus fondos.",
+    "copy": "Copiar"
+  },
   "notifications": {
     "title": "Notificaciones",
     "markAllRead": "Marcar Todo como Leído",
@@ -582,5 +644,15 @@
     "onWaitlist": "En Lista",
     "waitlistedFeatures": "Mientras esperas, esto es lo que viene:",
     "presetAmount": "${{amount}}"
+  },
+  "deposit": {
+    "title": "Depositar",
+    "connectPrompt": "Conecta tu billetera para depositar fondos.",
+    "receiveCrypto": "Recibir Crypto",
+    "description": "Compra SOL, USDC o USDT con tu tarjeta de crédito, débito o transferencia bancaria. Los fondos se envían directamente a tu billetera.",
+    "buyCrypto": "Comprar Crypto",
+    "poweredBy": "Impulsado por Onramper. Pagos procesados por proveedores externos. MVGA no retiene ni transmite moneda fiat.",
+    "p2pExchange": "Intercambio P2P",
+    "p2pDescription": "Compra con PagoMóvil, Zelle o transferencia bancaria"
   }
 }

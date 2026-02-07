@@ -221,7 +221,10 @@ export default function StakePage() {
       setStatus(t('stake.waitingSignature'));
       const signature = await sendTransaction(tx, connection);
       setStatus(t('stake.confirming'));
-      await connection.confirmTransaction(signature, 'confirmed');
+      const confirmation = await connection.confirmTransaction(signature, 'confirmed');
+      if (confirmation.value.err) {
+        throw new Error('Transaction failed on-chain');
+      }
 
       setStatus(t('stake.recording'));
       const confirmRes = await fetch(`${API_URL}/staking/confirm-stake`, {
