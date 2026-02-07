@@ -11,10 +11,10 @@ import {
 // Kamino main market address (mainnet)
 const KAMINO_MAIN_MARKET = new PublicKey('7u3HeHxYDLhnCoErrtycNokbQYbWGzLs6JSDqGAv5PfF');
 
-// Reserve addresses for Kamino Lending on mainnet (used for APY fallback API)
-const KAMINO_RESERVES: Record<string, string> = {
-  USDC: 'D6q6wuQSrifJKDDYPbBQhFEJuSwV7F3FfFuFcbx2R1iH',
-  USDT: 'H3t6qZ1JkguCNTi9uzVKqQ7dvt2cum4XiXWom6Gn5e5S',
+// DefiLlama pool IDs for Kamino Lending (used for APY fetch)
+const DEFILLAMA_POOL_IDS: Record<string, string> = {
+  USDC: 'd2141a59-c199-4be7-8',
+  USDT: '546b3c0c-138d-4190-b',
 };
 
 const TOKEN_MINTS: Record<string, string> = {
@@ -40,6 +40,8 @@ export class KaminoAdapter {
   private readonly connection: Connection;
   private marketCache: KaminoMarket | null = null;
   private marketCacheExpiry = 0;
+  private apyCache: Array<{ project: string; symbol: string; apy: number }> | null = null;
+  private apyCacheExpiry = 0;
 
   constructor(private readonly config: ConfigService) {
     const rpcUrl =
@@ -70,26 +72,27 @@ export class KaminoAdapter {
 
   /**
    * Get current supply APY for a token from Kamino lending.
-   * Tries Hubble API first (fast), falls back to hardcoded values.
+   * Uses DefiLlama yields API, falls back to hardcoded values.
    */
   async getSupplyApy(token: 'USDC' | 'USDT'): Promise<number> {
     try {
-      const reserveAddr = KAMINO_RESERVES[token];
-      if (!reserveAddr) return 0;
-
-      const res = await fetch(
-        `https://api.hubbleprotocol.io/v2/kamino-market/MainnetBeta/reserves/${reserveAddr}/metrics`,
-        { signal: AbortSignal.timeout(10000) }
-      );
-
-      if (!res.ok) {
-        this.logger.warn(`Kamino API returned ${res.status} for ${token}`);
-        return this.getFallbackApy(token);
+      if (!this.apyCache || Date.now() > this.apyCacheExpiry) {
+        const res = await fetch('https://yields.llama.fi/pools', {
+          signal: AbortSignal.timeout(15000),
+        });
+        if (!res.ok) {
+          this.logger.warn(`DefiLlama API returned ${res.status}`);
+          return this.getFallbackApy(token);
+        }
+        const data = (await res.json()) as {
+          data: Array<{ project: string; symbol: string; apy: number }>;
+        };
+        this.apyCache = data.data.filter((p) => p.project === 'kamino-lend');
+        this.apyCacheExpiry = Date.now() + 30 * 60 * 1000; // 30 min cache
       }
 
-      const data = await res.json();
-      const supplyApy = data?.supplyInterestAPY ?? data?.metrics?.supplyInterestAPY;
-      return typeof supplyApy === 'number' ? supplyApy * 100 : this.getFallbackApy(token);
+      const pool = this.apyCache.find((p) => p.symbol === token);
+      return pool?.apy ?? this.getFallbackApy(token);
     } catch (err) {
       this.logger.warn(`Failed to fetch Kamino APY for ${token}: ${err}`);
       return this.getFallbackApy(token);

@@ -1,5 +1,6 @@
 import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
+import { PublicKey } from '@solana/web3.js';
 import { PrismaService } from '../../common/prisma.service';
 import { TransactionLoggerService } from '../../common/transaction-logger.service';
 import { CronLockService } from '../../common/cron-lock.service';
@@ -87,15 +88,25 @@ export class SavingsService {
       },
     });
 
-    // In production, build the actual Kamino deposit transaction
-    // const tx = await this.kamino.buildDepositTx(new PublicKey(walletAddress), rawAmount, token);
+    // Build the Kamino deposit transaction for the client to sign
+    let transaction: string | undefined;
+    try {
+      const tx = await this.kamino.buildDepositTx(new PublicKey(walletAddress), rawAmount, token);
+      if (tx.instructions.length > 0) {
+        transaction = tx
+          .serialize({ requireAllSignatures: false, verifySignatures: false })
+          .toString('base64');
+      }
+    } catch (err) {
+      this.logger.warn(`Failed to build deposit tx, proceeding without: ${err}`);
+    }
 
     return {
       positionId: position.id,
       protocol: 'KAMINO',
       token,
       amount,
-      // transaction: tx.serialize().toString('base64'), // unsigned tx for client to sign
+      transaction,
     };
   }
 
@@ -152,10 +163,28 @@ export class SavingsService {
       data: { status: 'WITHDRAWING' },
     });
 
+    // Build the Kamino withdraw transaction for the client to sign
+    let transaction: string | undefined;
+    try {
+      const tx = await this.kamino.buildWithdrawTx(
+        new PublicKey(walletAddress),
+        withdrawAmount,
+        position.token
+      );
+      if (tx.instructions.length > 0) {
+        transaction = tx
+          .serialize({ requireAllSignatures: false, verifySignatures: false })
+          .toString('base64');
+      }
+    } catch (err) {
+      this.logger.warn(`Failed to build withdraw tx, proceeding without: ${err}`);
+    }
+
     return {
       positionId,
       amount: Number(withdrawAmount) / 1e6,
       token: position.token,
+      transaction,
     };
   }
 

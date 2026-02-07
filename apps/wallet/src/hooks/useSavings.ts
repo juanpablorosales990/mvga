@@ -1,5 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useConnection } from '@solana/wallet-adapter-react';
+import { Transaction } from '@solana/web3.js';
 import { API_URL } from '../config';
+import { useSelfCustodyWallet } from '../contexts/WalletContext';
 
 interface YieldRate {
   protocol: string;
@@ -57,7 +60,24 @@ async function authFetch<T>(path: string, options?: RequestInit): Promise<T> {
   return res.json();
 }
 
+interface DepositResponse {
+  positionId: string;
+  amount: number;
+  token: string;
+  transaction?: string;
+}
+
+interface WithdrawResponse {
+  positionId: string;
+  amount: number;
+  token: string;
+  transaction?: string;
+}
+
 export function useSavings(walletAddress: string | null) {
+  const { connection } = useConnection();
+  const { sendTransaction, connected } = useSelfCustodyWallet();
+
   const [rates, setRates] = useState<YieldRate[]>(FALLBACK_RATES);
   const [positions, setPositions] = useState<SavingsData | null>(null);
   const [loadingRates, setLoadingRates] = useState(true);
@@ -110,35 +130,54 @@ export function useSavings(walletAddress: string | null) {
 
   const deposit = useCallback(
     async (amount: number, token = 'USDC') => {
-      const result = await authFetch<{ positionId: string; amount: number; token: string }>(
-        '/savings/deposit',
-        { method: 'POST', body: JSON.stringify({ amount, token }) }
-      );
-      // For now, confirm immediately (no on-chain tx yet — Kamino adapter returns empty tx)
+      const result = await authFetch<DepositResponse>('/savings/deposit', {
+        method: 'POST',
+        body: JSON.stringify({ amount, token }),
+      });
+
+      let signature: string;
+      if (result.transaction && connected) {
+        // Deserialize the unsigned transaction from the API and sign+send it
+        const tx = Transaction.from(Buffer.from(result.transaction, 'base64'));
+        signature = await sendTransaction(tx, connection);
+      } else {
+        // Fallback: mock signature when no transaction available
+        signature = `mock_${Date.now()}`;
+      }
+
       await authFetch('/savings/confirm-deposit', {
         method: 'POST',
-        body: JSON.stringify({ signature: `mock_${Date.now()}` }),
+        body: JSON.stringify({ signature }),
       });
       refresh();
       return result;
     },
-    [refresh]
+    [refresh, connected, sendTransaction, connection]
   );
 
   const withdraw = useCallback(
     async (positionId: string, amount?: number) => {
-      const result = await authFetch<{ positionId: string; amount: number; token: string }>(
-        '/savings/withdraw',
-        { method: 'POST', body: JSON.stringify({ positionId, amount }) }
-      );
+      const result = await authFetch<WithdrawResponse>('/savings/withdraw', {
+        method: 'POST',
+        body: JSON.stringify({ positionId, amount }),
+      });
+
+      let signature: string;
+      if (result.transaction && connected) {
+        const tx = Transaction.from(Buffer.from(result.transaction, 'base64'));
+        signature = await sendTransaction(tx, connection);
+      } else {
+        signature = `mock_${Date.now()}`;
+      }
+
       await authFetch('/savings/confirm-withdraw', {
         method: 'POST',
-        body: JSON.stringify({ positionId, signature: `mock_${Date.now()}` }),
+        body: JSON.stringify({ positionId, signature }),
       });
       refresh();
       return result;
     },
-    [refresh]
+    [refresh, connected, sendTransaction, connection]
   );
 
   return {
