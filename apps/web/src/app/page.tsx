@@ -107,8 +107,9 @@ export default function Home() {
               className="text-lg md:text-xl text-white/40 max-w-2xl mt-10 leading-relaxed"
             >
               Venezuela&apos;s free financial infrastructure. A bank account in your pocket with US
-              dollars you can spend anywhere in the world. Made by Venezuelans, for Venezuelans.
-              Zero middlemen. Zero founder fees.
+              dollars you can spend anywhere in the world. Send remittances, trade peer-to-peer,
+              stake tokens, earn rewards, and fund Venezuelan businesses. Made by Venezuelans, for
+              Venezuelans.
             </motion.p>
 
             <motion.div
@@ -158,17 +159,17 @@ export default function Home() {
                 {
                   num: '01',
                   title: 'Zero Fee Remittances',
-                  desc: 'Send money to Venezuela without losing 15% to middlemen. P2P exchange directly with other users. Keep every dollar.',
+                  desc: 'Send money to Venezuela without losing 15% to middlemen. P2P exchange directly with other users using Zelle, PayPal, Venmo, or bank transfer. Keep every dollar.',
                 },
                 {
                   num: '02',
                   title: 'Your Money, Stable',
-                  desc: 'Hold US dollars as USDC stablecoins in your pocket. No more watching your savings evaporate to inflation. Your money holds its value.',
+                  desc: 'Hold US dollars as USDC stablecoins in your pocket. No more watching your savings evaporate to inflation. View your balance in USD or Venezuelan bolivares.',
                 },
                 {
                   num: '03',
                   title: '100% Open Source',
-                  desc: 'Every line of code is public on GitHub. Every wallet is visible on-chain. Anyone can audit. No hidden agendas.',
+                  desc: 'Every line of code is public on GitHub. Every wallet is visible on-chain. The API, wallet, and this website are all open source. Anyone can audit.',
                 },
               ].map((card, i) => (
                 <motion.div
@@ -194,8 +195,8 @@ export default function Home() {
             </p>
             <h2 className="text-3xl md:text-5xl font-bold mb-4">A bank account in your pocket.</h2>
             <p className="text-white/40 mb-16 max-w-2xl">
-              Hold USDC stablecoins pegged 1:1 to the US dollar. Send, receive, and spend anywhere
-              in the world. No bank required. No minimums. No KYC to get started.
+              Hold USDC and USDT stablecoins pegged 1:1 to the US dollar. Send, receive, and spend
+              anywhere in the world. No bank required. No minimums. No KYC to get started.
             </p>
 
             <motion.div
@@ -209,32 +210,32 @@ export default function Home() {
                 {
                   num: '01',
                   title: 'Hold Stablecoins',
-                  desc: 'USDC pegged 1:1 to USD. Your balance stays stable while you sleep. No more watching the bolivar crash.',
+                  desc: 'USDC and USDT pegged 1:1 to USD. Your balance stays stable while you sleep. No more watching the bolivar crash.',
                 },
                 {
                   num: '02',
                   title: 'Send Anywhere',
-                  desc: 'Transfer to any wallet in seconds. Send to family in Venezuela or pay someone across the world. Near-zero fees on Solana.',
+                  desc: 'Transfer to any Solana wallet in seconds. Send to family in Venezuela or pay someone across the world. Near-zero fees on Solana.',
                 },
                 {
                   num: '03',
                   title: 'Multi-Currency',
-                  desc: 'Hold USDC, MVGA, and SOL all in one wallet. View your total balance in USD. Switch between assets instantly.',
+                  desc: 'Hold USDC, USDT, MVGA, and SOL all in one wallet. View your total balance in USD or Venezuelan bolivares. Switch currencies in settings.',
                 },
                 {
                   num: '04',
-                  title: 'Works on Any Phone',
-                  desc: 'Progressive Web App that works on any device with a browser. No app store needed. Install it like a native app.',
+                  title: 'Installable PWA',
+                  desc: 'Progressive Web App that works on any device with a browser. Install to your home screen like a native app. No app store needed. Works offline.',
                 },
                 {
                   num: '05',
                   title: 'Non-Custodial',
-                  desc: 'Your keys, your coins. We never hold your funds. Your wallet is secured by your private key on your device.',
+                  desc: 'Your keys, your coins. Connect your Phantom or Solflare wallet. We never hold your funds. Secured by your private key on your device.',
                 },
                 {
                   num: '06',
                   title: 'Real-Time Balances',
-                  desc: 'See your portfolio value update in real-time. Track every transaction. Full history always available on-chain.',
+                  desc: 'Portfolio updates every 30 seconds with live prices from CoinGecko and DexScreener. Full transaction history always on-chain.',
                 },
               ].map((item, i) => (
                 <motion.div
@@ -272,10 +273,14 @@ export default function Home() {
                   {[
                     'Visa card accepted at 80M+ merchants worldwide',
                     'Spend USDC directly — auto-converted at point of sale',
+                    'Apple Pay support for contactless payments',
                     'Real-time transaction notifications in the app',
                     'Freeze and unfreeze your card instantly from the wallet',
                     'Set daily spending limits and control online purchases',
-                    'No monthly fees. No hidden charges.',
+                    'Toggle international transactions on or off',
+                    'No monthly fees. No foreign exchange fees.',
+                    'Fund card instantly with USDC from your wallet',
+                    'Full KYC onboarding flow built into the app',
                   ].map((item) => (
                     <div key={item} className="flex items-start gap-3">
                       <span className="text-gold-500 mt-0.5 shrink-0 font-mono text-sm">/</span>
@@ -319,6 +324,10 @@ export default function Home() {
                     <span className="font-mono text-gold-500">$0</span>
                   </div>
                   <div className="flex justify-between text-sm">
+                    <span className="text-white/30">FX Fees</span>
+                    <span className="font-mono text-gold-500">$0</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
                     <span className="text-white/30">Status</span>
                     <span className="font-mono text-white/50">Waitlist Open</span>
                   </div>
@@ -334,51 +343,88 @@ export default function Home() {
             <p className="text-xs tracking-[0.3em] text-white/30 uppercase font-mono mb-4">
               Platform Features
             </p>
-            <h2 className="text-3xl md:text-5xl font-bold mb-16">
-              Everything you need in one app.
-            </h2>
+            <h2 className="text-3xl md:text-5xl font-bold mb-4">Everything you need in one app.</h2>
+            <p className="text-white/40 mb-16 max-w-2xl">
+              24 pages, 15+ features, 4 tokens, 2 languages, and zero middlemen. The most
+              comprehensive financial app for Venezuelans.
+            </p>
 
             <div className="divide-y divide-white/10">
               {[
                 {
                   num: '01',
-                  title: 'MVGA Wallet',
-                  desc: 'Hold USDC, MVGA, and SOL in a non-custodial wallet. View your total balance in USD. Send to anyone instantly with near-zero Solana fees. Works as a PWA on any phone — no app store required.',
+                  title: 'Non-Custodial Wallet',
+                  desc: 'Hold SOL, USDC, USDT, and MVGA in a wallet secured by your own keys. Connect with Phantom or Solflare. View your total balance in USD or Venezuelan bolivares (VES). Real-time price updates every 30 seconds from CoinGecko and DexScreener.',
                 },
                 {
                   num: '02',
                   title: 'P2P Exchange',
-                  desc: 'Trade crypto for Zelle, PayPal, Venmo, or bank transfer directly with other users. Smart contract escrow locks funds until both parties confirm. Built-in reputation system and dispute resolution.',
+                  desc: 'Trade crypto for fiat directly with other users. Pay or receive via Zelle, PayPal, Venmo, or bank transfer. Smart contract escrow locks funds until both parties confirm. Built-in reputation system tracks completed trades and ratings. Dispute resolution with admin arbitration.',
                 },
                 {
                   num: '03',
-                  title: 'Staking & Tier Rewards',
-                  desc: 'Stake MVGA tokens to earn a share of all protocol fees. Four tiers — Bronze, Silver, Gold, Diamond — each unlocking lower trading fees, cashback on swaps, and governance voting power. Diamond stakers pay zero fees.',
+                  title: 'Token Staking',
+                  desc: 'Stake MVGA tokens to earn a share of all protocol fees distributed weekly. Choose lock periods — Flexible (1x), 30 days (1.25x), 90 days (1.5x), or 180 days (2x rewards). Auto-compound option re-stakes your rewards every 6 hours automatically. Claim rewards anytime.',
                 },
                 {
                   num: '04',
-                  title: 'Business Grants',
-                  desc: 'Community-funded micro-grants for Venezuelan small businesses. Stakers vote on which businesses get funded. 20% of all protocol revenue goes to the grants pool. Every grant is on-chain and verifiable.',
+                  title: 'Tier Rewards System',
+                  desc: 'Four staking tiers — Bronze, Silver, Gold, Diamond — each unlocking fee discounts (up to 100% off), cashback on swaps (up to 2%), governance voting power, and priority support. Diamond stakers pay zero platform fees on all trades.',
                 },
                 {
                   num: '05',
-                  title: 'Debit Card',
-                  desc: 'Spend your USDC balance anywhere Visa is accepted. Real-time notifications, instant freeze/unfreeze, daily spending limits, and online purchase controls — all from the app. Coming soon.',
+                  title: 'Business Grants',
+                  desc: 'Community-funded micro-grants for Venezuelan small businesses. Stakers vote on which businesses get funded — vote weight equals staked MVGA. 20% of all protocol revenue goes to the grants pool. Every grant disbursement is on-chain in USDC. Funded businesses post progress updates.',
                 },
                 {
                   num: '06',
-                  title: 'Deflationary Token Burns',
-                  desc: '5% of all protocol fees are used to buy back and permanently burn MVGA tokens every week. Reducing supply forever. Every burn transaction is public and verifiable on Solscan.',
+                  title: 'Token Swaps',
+                  desc: 'Swap between SOL, USDC, USDT, and MVGA powered by Jupiter DEX aggregation. Real-time price quotes with configurable slippage (0.1% to 50%). Platform fee is 0.1% — with tier discounts. Diamond tier pays zero. Cashback rewards on every swap.',
                 },
                 {
                   num: '07',
-                  title: 'Referral Program',
-                  desc: 'Invite friends and earn a percentage of their trading fees. Track your referrals, earnings, and network growth directly in the app. The more people you bring, the more you earn.',
+                  title: 'Savings & Yield',
+                  desc: 'Earn interest on your USDC and USDT holdings. Track daily, monthly, and yearly interest projections. Set savings goals with progress tracking. Access DeFi yield opportunities from protocols like Kamino, MarginFi, and Drift — all from one dashboard.',
                 },
                 {
                   num: '08',
-                  title: 'Token Swaps',
-                  desc: 'Swap between USDC, MVGA, and SOL directly in the wallet. Real-time price quotes. Tier-based fee discounts — Bronze pays 3%, Diamond pays 0%. Cashback rewards on every swap.',
+                  title: 'Visa Debit Card',
+                  desc: 'Spend your USDC balance anywhere Visa is accepted. Apple Pay support. Real-time notifications. Freeze and unfreeze from the app. Daily spending limits and online purchase controls. Fund card instantly from your wallet. Full KYC onboarding built in. Coming soon.',
+                },
+                {
+                  num: '09',
+                  title: 'Portfolio Dashboard',
+                  desc: 'See your total wealth across wallet, staking, and referral earnings in one view. Asset allocation breakdown with pie chart. Staking summary with APY and tier. Referral summary with earnings. Recent activity feed showing your last 5 transactions.',
+                },
+                {
+                  num: '10',
+                  title: 'Price Charts',
+                  desc: 'Track SOL and MVGA price movements with interactive area charts. View 24-hour, 7-day, and 30-day timeframes. See current price, percentage change, period high, and period low. All price data sourced from CoinGecko with DexScreener fallback.',
+                },
+                {
+                  num: '11',
+                  title: 'Deflationary Burns',
+                  desc: '5% of all protocol fees are used to buy back and permanently burn MVGA tokens every week. Reducing supply forever. Mint authority is renounced — no new tokens can ever be created. Every burn transaction is public and verifiable on Solscan.',
+                },
+                {
+                  num: '12',
+                  title: 'Referral Program',
+                  desc: 'Share your unique referral link and earn 100 MVGA for every new user who joins. Your referral also receives 100 MVGA as a welcome bonus. Track referrals, earnings, and bonus status directly in the app. Share via native sharing or copy link.',
+                },
+                {
+                  num: '13',
+                  title: 'Transaction History',
+                  desc: 'View all your transactions in one place — transfers, stakes, unstakes, P2P escrow locks, escrow releases, and refunds. Merged on-chain and app data grouped by date. Click any transaction to verify on Solscan.',
+                },
+                {
+                  num: '14',
+                  title: 'Protocol Metrics',
+                  desc: 'Live dashboard showing Total Value Locked, 24h trading volume, 24h revenue, total tokens burned, total users, active users, and total stakers. Historical charts for TVL and volume over 24h, 7d, or 30d. Hourly snapshots for accuracy.',
+                },
+                {
+                  num: '15',
+                  title: 'Transparency Dashboard',
+                  desc: 'See exactly where every dollar goes. Revenue distribution breakdown — 40% liquidity, 40% staking, 20% grants. Live treasury wallet balances. Token burn history with transaction links. Verify all treasury wallets on Solscan. Zero founder fees — always.',
                 },
               ].map((feat, i) => (
                 <motion.div
@@ -386,20 +432,87 @@ export default function Home() {
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
-                  transition={{ delay: i * 0.05 }}
-                  className="flex items-start gap-6 md:gap-12 py-10"
+                  transition={{ delay: i * 0.03 }}
+                  className="flex items-start gap-6 md:gap-12 py-8"
                 >
-                  <span className="text-[6rem] md:text-[8rem] font-mono text-white/[0.03] font-black leading-none shrink-0 hidden md:block">
+                  <span className="text-[5rem] md:text-[6rem] font-mono text-white/[0.03] font-black leading-none shrink-0 hidden md:block">
                     {feat.num}
                   </span>
-                  <div className="pt-4">
+                  <div className="pt-2">
                     <span className="font-mono text-sm text-gold-500 md:hidden">{feat.num}</span>
-                    <h3 className="text-2xl font-bold mb-3">{feat.title}</h3>
-                    <p className="text-white/40 leading-relaxed max-w-xl">{feat.desc}</p>
+                    <h3 className="text-xl font-bold mb-3">{feat.title}</h3>
+                    <p className="text-white/40 leading-relaxed max-w-xl text-sm">{feat.desc}</p>
                   </div>
                 </motion.div>
               ))}
             </div>
+          </div>
+        </section>
+
+        {/* ── ADDITIONAL CAPABILITIES ──────────────────────────── */}
+        <section className="py-24 md:py-32 px-6 border-t border-white/10">
+          <div className="max-w-7xl mx-auto">
+            <p className="text-xs tracking-[0.3em] text-white/30 uppercase font-mono mb-4">
+              Built for Venezuelans
+            </p>
+            <h2 className="text-3xl md:text-5xl font-bold mb-4">Every detail considered.</h2>
+            <p className="text-white/40 mb-16 max-w-2xl">
+              From language support to currency display, every feature is designed for the
+              Venezuelan community and the diaspora.
+            </p>
+
+            <motion.div
+              className="grid md:grid-cols-2 lg:grid-cols-4 gap-px bg-white/10"
+              variants={stagger}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+            >
+              {[
+                {
+                  title: 'English & Spanish',
+                  desc: 'Full app localization in both English and Spanish. Over 400 translated strings. Switch languages anytime in settings.',
+                },
+                {
+                  title: 'USD & Bolivar Display',
+                  desc: 'View all balances in US dollars or Venezuelan bolivares (VES). Live exchange rate from Open Exchange Rates API.',
+                },
+                {
+                  title: 'Address Book',
+                  desc: 'Save frequently used wallet addresses with custom labels. Quick select when sending tokens. Never copy-paste wrong addresses again.',
+                },
+                {
+                  title: 'Notifications',
+                  desc: 'Real-time activity log for transfers, stakes, unstakes, P2P escrow operations, and referral bonuses. Mark all as read. Never miss a transaction.',
+                },
+                {
+                  title: 'QR Code Receive',
+                  desc: 'Generate a scannable QR code for your wallet address. Share with anyone to receive funds instantly. One-tap copy to clipboard.',
+                },
+                {
+                  title: 'Transaction Previews',
+                  desc: 'Every send, stake, and escrow action shows a preview modal before signing. See exact amounts, fees, and recipient before confirming.',
+                },
+                {
+                  title: 'Wallet-Based Auth',
+                  desc: 'No passwords. No email sign-ups. Connect your Solana wallet and sign a message. JWT token issued automatically. Secure by design.',
+                },
+                {
+                  title: 'On-Chain Verification',
+                  desc: 'Every transaction links to Solscan for independent verification. Treasury wallets, burns, grants, escrow — all publicly verifiable.',
+                },
+              ].map((item, i) => (
+                <motion.div
+                  key={item.title}
+                  custom={i}
+                  variants={fadeUp}
+                  className="bg-black p-6 hover:bg-white/[0.02] transition"
+                >
+                  <h3 className="text-sm font-bold uppercase tracking-wide mb-3">{item.title}</h3>
+                  <p className="text-white/40 leading-relaxed text-sm">{item.desc}</p>
+                </motion.div>
+              ))}
+            </motion.div>
           </div>
         </section>
 
@@ -414,8 +527,8 @@ export default function Home() {
             </h2>
             <p className="text-white/40 mb-16 max-w-2xl">
               The more you stake, the more you earn. Higher tiers unlock lower fees, cashback
-              rewards, and governance voting power. All staking rewards come from real protocol
-              revenue — not inflation.
+              rewards, governance voting, and priority support. All rewards come from real protocol
+              revenue — not inflation. Choose a lock period for bonus multipliers up to 2x.
             </p>
 
             <motion.div
@@ -428,9 +541,10 @@ export default function Home() {
               {[
                 {
                   tier: 'Bronze',
-                  stake: '1,000+',
+                  stake: 'Any amount',
                   feeDiscount: '0%',
                   cashback: '0%',
+                  benefits: ['Basic wallet access', 'Community membership', 'Fee sharing'],
                   color: 'text-white/50',
                 },
                 {
@@ -438,6 +552,7 @@ export default function Home() {
                   stake: '10,000+',
                   feeDiscount: '10%',
                   cashback: '0.5%',
+                  benefits: ['Cashback on swaps', 'Priority support', 'Fee sharing'],
                   color: 'text-white/70',
                 },
                 {
@@ -445,13 +560,15 @@ export default function Home() {
                   stake: '50,000+',
                   feeDiscount: '25%',
                   cashback: '1%',
+                  benefits: ['Governance voting', 'Early feature access', 'Fee sharing'],
                   color: 'text-gold-500',
                 },
                 {
                   tier: 'Diamond',
-                  stake: '250,000+',
+                  stake: '200,000+',
                   feeDiscount: '100%',
                   cashback: '2%',
+                  benefits: ['Zero fees', 'VIP support', 'Exclusive events'],
                   color: 'text-white',
                 },
               ].map((t, i) => (
@@ -480,10 +597,39 @@ export default function Home() {
                       <span className="text-white/30">Fee Sharing</span>
                       <span className="font-mono">Yes</span>
                     </div>
+                    <div className="pt-3 border-t border-white/5 space-y-1">
+                      {t.benefits.map((b) => (
+                        <p key={b} className="text-white/30 text-xs">
+                          {b}
+                        </p>
+                      ))}
+                    </div>
                   </div>
                 </motion.div>
               ))}
             </motion.div>
+
+            <div className="mt-12 border border-white/10 p-8">
+              <h3 className="text-xs tracking-[0.3em] uppercase text-white/30 font-mono mb-6">
+                Lock Period Multipliers
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-white/10">
+                {[
+                  { period: 'Flexible', multiplier: '1.0x', desc: 'No lock' },
+                  { period: '30 Days', multiplier: '1.25x', desc: 'Short term' },
+                  { period: '90 Days', multiplier: '1.5x', desc: 'Medium term' },
+                  { period: '180 Days', multiplier: '2.0x', desc: 'Maximum rewards' },
+                ].map((lp) => (
+                  <div key={lp.period} className="bg-black p-5 text-center">
+                    <p className="text-2xl font-mono font-bold">{lp.multiplier}</p>
+                    <p className="text-xs tracking-[0.2em] uppercase text-white/30 mt-2">
+                      {lp.period}
+                    </p>
+                    <p className="text-xs text-white/15 mt-1">{lp.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </section>
 
@@ -496,7 +642,9 @@ export default function Home() {
             <h2 className="text-3xl md:text-5xl font-bold mb-4">
               Every fee flows back to the community.
             </h2>
-            <p className="text-white/40 mb-16">Zero goes to founders.</p>
+            <p className="text-white/40 mb-16">
+              Zero goes to founders. Automated weekly distributions every Monday at 00:00 UTC.
+            </p>
 
             <motion.div
               initial={{ opacity: 0 }}
@@ -506,7 +654,7 @@ export default function Home() {
             >
               <div className="w-full border border-white/10 p-6 text-center">
                 <p className="text-xs tracking-[0.3em] uppercase text-white/30 mb-1">
-                  Swap &amp; Trade Fees (3%)
+                  Platform Fee (0.1% on swaps)
                 </p>
                 <p className="text-xl font-bold">Protocol Revenue</p>
               </div>
@@ -614,17 +762,17 @@ export default function Home() {
                 {
                   num: '01',
                   title: 'API (NestJS)',
-                  desc: 'Backend API handling staking, P2P escrow, grants, burns, metrics, and wallet operations. TypeScript, PostgreSQL, Solana RPC.',
+                  desc: 'Backend API with 13 modules: auth, staking, swap, P2P, grants, referrals, tiers, burns, treasury, banking, metrics, wallet, and health. TypeScript, PostgreSQL via Prisma, Solana RPC, Jupiter integration, automated cron jobs.',
                 },
                 {
                   num: '02',
                   title: 'Wallet App (React)',
-                  desc: 'Progressive Web App built with React and Vite. Non-custodial wallet, P2P trading, staking dashboard, grant voting, and card management.',
+                  desc: 'Progressive Web App with 24 pages: wallet dashboard, send, receive, swap, stake, P2P trading, banking, savings, card management, grants, referrals, portfolio, charts, metrics, transparency, history, notifications, settings, help, and more. Full i18n in English and Spanish.',
                 },
                 {
                   num: '03',
                   title: 'Marketing Site (Next.js)',
-                  desc: 'This website. Built with Next.js 14, Framer Motion, and Tailwind CSS. Server-rendered with live data from the Solana blockchain.',
+                  desc: 'This website. Built with Next.js 14, Framer Motion, and Tailwind CSS. Server-rendered with live data from the Solana blockchain and the MVGA API. Brutalist design with zero dependencies on UI libraries.',
                 },
               ].map((repo, i) => (
                 <motion.div
@@ -639,6 +787,29 @@ export default function Home() {
                 </motion.div>
               ))}
             </motion.div>
+
+            <div className="mt-12 border border-white/10 p-8">
+              <h3 className="text-xs tracking-[0.3em] uppercase text-white/30 font-mono mb-6">
+                Tech Stack
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-white/10">
+                {[
+                  { name: 'Solana', desc: 'Blockchain' },
+                  { name: 'TypeScript', desc: 'Language' },
+                  { name: 'NestJS', desc: 'API Framework' },
+                  { name: 'React + Vite', desc: 'Wallet App' },
+                  { name: 'Next.js 14', desc: 'Marketing Site' },
+                  { name: 'PostgreSQL', desc: 'Database' },
+                  { name: 'Jupiter', desc: 'DEX Aggregator' },
+                  { name: 'Prisma', desc: 'ORM' },
+                ].map((tech) => (
+                  <div key={tech.name} className="bg-black p-4 text-center">
+                    <p className="font-mono font-bold text-sm">{tech.name}</p>
+                    <p className="text-xs text-white/30 mt-1">{tech.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
 
             <div className="mt-10 flex flex-wrap gap-6">
               <a
@@ -678,7 +849,7 @@ export default function Home() {
                   { label: 'Humanitarian Fund', pct: 15, gold: false },
                   { label: 'Startup Ecosystem', pct: 10, gold: false },
                   { label: 'Marketing', pct: 10, gold: false },
-                  { label: 'Advisors', pct: 5, gold: false },
+                  { label: 'Advisors (1yr vest)', pct: 5, gold: false },
                 ].map((item) => (
                   <div key={item.label}>
                     <div className="flex justify-between mb-2 text-sm">
@@ -707,8 +878,9 @@ export default function Home() {
                     { k: 'Name', v: 'Make Venezuela Great Again' },
                     { k: 'Symbol', v: 'MVGA' },
                     { k: 'Network', v: 'Solana' },
+                    { k: 'Decimals', v: '9' },
                     { k: 'Total Supply', v: '1,000,000,000' },
-                    { k: 'Buy/Sell Tax', v: '3% each' },
+                    { k: 'Platform Fee', v: '0.1% on swaps' },
                     { k: 'Weekly Burn', v: '5% of fees', gold: true },
                     { k: 'Founder Fees', v: '0%', gold: true },
                     { k: 'LP Lock', v: '3 years' },
@@ -750,7 +922,7 @@ export default function Home() {
                   name: 'Foundation',
                   items: [
                     'Non-Custodial Wallet',
-                    'P2P Exchange',
+                    'P2P Exchange with Escrow',
                     'Token Staking',
                     'Weekly Burns',
                     'Referral System',
@@ -762,22 +934,22 @@ export default function Home() {
                   name: 'Growth',
                   items: [
                     'Business Grants',
-                    'Staking Tiers',
-                    'Token Swaps',
+                    'Staking Tiers & Lock Periods',
+                    'Token Swaps (Jupiter)',
                     'Mobile PWA',
-                    'Fiat On-Ramp',
+                    'Savings & Yield',
                   ],
-                  live: false,
+                  live: true,
                 },
                 {
                   phase: '03',
                   name: 'Expansion',
                   items: [
                     'Visa Debit Card',
-                    'Multi-chain Support',
+                    'Fiat On-Ramp',
                     'DAO Governance',
                     'Insurance Fund',
-                    'Card Spending Controls',
+                    'Multi-chain Support',
                   ],
                   live: false,
                 },
