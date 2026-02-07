@@ -15,10 +15,13 @@ export default defineConfig({
     nodePolyfills({ include: ['buffer'], globals: { Buffer: true } }),
     react(),
     VitePWA({
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.ts',
       registerType: 'autoUpdate',
       devOptions: { enabled: true },
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
-      workbox: { mode: WORKBOX_MODE },
+      injectManifest: { globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'] },
       manifest: {
         name: 'MVGA Wallet',
         short_name: 'MVGA',
