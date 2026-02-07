@@ -7,7 +7,7 @@ export default function Footer() {
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
           <div>
             <span className="text-xl font-black tracking-tighter uppercase">MVGA</span>
-            <p className="text-white/30 text-sm mt-1 font-mono">Patria y Vida</p>
+            <p className="text-white/30 text-sm mt-1 font-mono">By Venezuelans, for Venezuelans</p>
           </div>
 
           <div className="flex flex-wrap items-center gap-6 text-sm text-white/30">
@@ -45,7 +45,8 @@ export default function Footer() {
         </div>
 
         <div className="mt-8 pt-8 border-t border-white/5 text-xs text-white/20 font-mono">
-          100% Open Source. Built with love for Venezuela.
+          100% Open Source. Venezuela&apos;s free financial infrastructure. Made by Venezuelans, for
+          Venezuelans.
         </div>
       </div>
     </footer>
