@@ -991,6 +991,77 @@ export default function Home() {
           </div>
         </section>
 
+        {/* ── FAQ ──────────────────────────────────────────────── */}
+        <section id="faq" className="py-24 md:py-32 px-6 border-t border-white/10">
+          <div className="max-w-4xl mx-auto">
+            <motion.h2
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-3xl md:text-5xl font-black uppercase tracking-tight mb-16 text-center"
+            >
+              Frequently Asked Questions
+            </motion.h2>
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              variants={stagger}
+              className="space-y-0"
+            >
+              {[
+                {
+                  q: 'Is MVGA safe to use?',
+                  a: 'MVGA is non-custodial — you hold your own private keys. P2P trades use on-chain escrow secured by a Solana smart contract, not a server wallet. All code is open source and auditable on GitHub.',
+                },
+                {
+                  q: 'What fees does MVGA charge?',
+                  a: 'Zero founder fees. A small protocol fee (0.5%) applies to P2P trades and is distributed to stakers, the humanitarian fund, and token burns. On-chain transaction fees (~$0.01) go to the Solana network.',
+                },
+                {
+                  q: 'Do I need KYC to use the wallet?',
+                  a: 'No. The non-custodial wallet, P2P trading, staking, and grants are all permissionless. KYC is only required if you apply for the optional Visa debit card.',
+                },
+                {
+                  q: 'Which tokens does MVGA support?',
+                  a: 'SOL, USDC, USDT, and the MVGA token. Swaps are powered by Jupiter aggregator, giving you access to the full Solana token ecosystem.',
+                },
+                {
+                  q: 'How does P2P escrow work?',
+                  a: 'The seller locks crypto in an on-chain escrow vault. The buyer sends fiat (Zelle, PayPal, bank transfer). Once the seller confirms receipt, the smart contract releases tokens to the buyer automatically.',
+                },
+                {
+                  q: 'Can I withdraw my staked tokens anytime?',
+                  a: 'Depends on your tier. Bronze has no lock period. Silver, Gold, and Diamond tiers offer higher APY in exchange for lock periods of 30, 90, and 180 days respectively.',
+                },
+                {
+                  q: 'Is MVGA available outside Venezuela?',
+                  a: 'The wallet and staking features work globally. P2P trading is optimized for Venezuelan payment methods but supports international options. The platform is designed for Venezuelans and the diaspora.',
+                },
+                {
+                  q: 'Where can I report a security issue?',
+                  a: 'See our Security Policy (SECURITY.md on GitHub) for responsible disclosure. Critical vulnerabilities can be reported privately to the team.',
+                },
+              ].map((faq, i) => (
+                <motion.details
+                  key={i}
+                  custom={i}
+                  variants={fadeUp}
+                  className="group border-b border-white/10"
+                >
+                  <summary className="flex items-center justify-between cursor-pointer py-6 text-lg font-bold uppercase tracking-wide hover:text-gold-500 transition-colors">
+                    {faq.q}
+                    <span className="text-white/20 group-open:rotate-45 transition-transform text-2xl ml-4">
+                      +
+                    </span>
+                  </summary>
+                  <p className="pb-6 text-white/40 leading-relaxed">{faq.a}</p>
+                </motion.details>
+              ))}
+            </motion.div>
+          </div>
+        </section>
+
         {/* ── CTA ──────────────────────────────────────────────── */}
         <section className="py-24 md:py-32 px-6 border-t border-white/10">
           <div className="max-w-4xl mx-auto text-center">

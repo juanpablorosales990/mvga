@@ -24,7 +24,20 @@ export const metadata: Metadata = {
   title: 'MVGA - Make Venezuela Great Again',
   description:
     "Venezuela's open-source financial infrastructure. Send money, hold stable value, support small businesses. By Venezuelans, for Venezuelans.",
-  keywords: ['Venezuela', 'crypto', 'remittances', 'wallet', 'USDC', 'Solana', 'humanitarian'],
+  keywords: [
+    'Venezuela',
+    'crypto',
+    'remittances',
+    'wallet',
+    'USDC',
+    'Solana',
+    'humanitarian',
+    'DeFi',
+    'cryptocurrency exchange',
+    'staking rewards',
+    'Solana blockchain',
+    'P2P trading',
+  ],
   openGraph: {
     title: 'MVGA - Make Venezuela Great Again',
     description: "Venezuela's open-source financial infrastructure",
@@ -45,7 +58,26 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es" className={`${archivo.variable} ${jetbrains.variable}`}>
+    <html lang="en" className={`${archivo.variable} ${jetbrains.variable}`}>
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'Organization',
+              name: 'MVGA',
+              url: 'https://mvga.io',
+              logo: 'https://mvga.io/og-image.png',
+              description:
+                "Venezuela's open-source financial infrastructure. Send money, hold stable value, support small businesses.",
+              sameAs: ['https://twitter.com/mvga', 'https://github.com/juanpablorosales990/mvga'],
+              foundingDate: '2026',
+              areaServed: 'Venezuela',
+            }),
+          }}
+        />
+      </head>
       <body className="antialiased bg-black text-white grain">
         <a
           href="#main-content"
