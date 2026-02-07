@@ -66,11 +66,8 @@ export class P2PTimeoutService {
         // Attempt automatic escrow refund
         if (trade.escrowTx) {
           try {
+            // refundEscrow already sets status to REFUNDED atomically
             await this.p2pService.refundEscrow(trade.id);
-            await this.prisma.p2PTrade.update({
-              where: { id: trade.id },
-              data: { status: 'REFUNDED' },
-            });
             this.logger.log(`Auto-refunded stale ESCROW_LOCKED trade ${trade.id}`);
             continue;
           } catch (refundErr) {

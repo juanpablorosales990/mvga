@@ -171,11 +171,14 @@ describe('P2PService', () => {
   });
 
   describe('updateTradeStatus authorization', () => {
-    const mockTrade = {
+    // $queryRaw returns flat rows with joined wallet addresses
+    const mockTradeRow = {
       id: 'trade-1',
-      buyer: { walletAddress: 'buyer-addr' },
-      seller: { walletAddress: 'seller-addr' },
-      offer: { cryptoCurrency: 'USDC' },
+      buyerId: 'buyer-id',
+      sellerId: 'seller-id',
+      buyerAddress: 'buyer-addr',
+      sellerAddress: 'seller-addr',
+      cryptoCurrency: 'USDC',
       status: 'ESCROW_LOCKED',
       escrowTx: null,
       amount: toBigInt(20),
@@ -183,9 +186,12 @@ describe('P2PService', () => {
     };
 
     beforeEach(() => {
-      mockPrisma.p2PTrade.findUnique.mockResolvedValue(mockTrade);
+      mockPrisma.$queryRaw.mockResolvedValue([mockTradeRow]);
       mockPrisma.p2PTrade.update.mockResolvedValue({
-        ...mockTrade,
+        ...mockTradeRow,
+        buyer: { walletAddress: 'buyer-addr' },
+        seller: { walletAddress: 'seller-addr' },
+        offer: { cryptoCurrency: 'USDC' },
         status: 'PAID',
         paidAt: new Date(),
       });
@@ -204,7 +210,7 @@ describe('P2PService', () => {
     });
 
     it('throws NotFoundException for unknown trade', async () => {
-      mockPrisma.p2PTrade.findUnique.mockResolvedValue(null);
+      mockPrisma.$queryRaw.mockResolvedValue([]);
 
       await expect(
         service.updateTradeStatus('unknown', 'buyer-addr', { status: 'PAID' })

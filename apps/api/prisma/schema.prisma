@@ -531,6 +531,11 @@ model StakingClaim {
   @@index([claimedAt])
 }
 
+/// NOTE: A partial unique index exists in the database (managed by SQL migration):
+/// CREATE UNIQUE INDEX "CronLock_jobName_active_idx" ON "CronLock"("jobName")
+///     WHERE "completedAt" IS NULL;
+/// This ensures only one active (non-completed) lock per job. Prisma cannot express
+/// partial indexes, so do NOT use `prisma db push` — use `supabase db push` only.
 model CronLock {
   id          String    @id @default(uuid())
   jobName     String
@@ -539,6 +544,7 @@ model CronLock {
   expiresAt   DateTime
   completedAt DateTime?
 
+  @@index([jobName])
   @@index([expiresAt])
 }
 

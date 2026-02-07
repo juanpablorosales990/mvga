@@ -237,16 +237,21 @@ export class P2PService {
   };
 
   async updateTradeStatus(tradeId: string, walletAddress: string, dto: UpdateTradeStatusDto) {
-    const trade = await this.prisma.p2PTrade.findUnique({
-      where: { id: tradeId },
-      include: { buyer: true, seller: true, offer: true },
-    });
+    // Lock the trade row FIRST to prevent concurrent status transitions
+    const [trade] = await this.prisma.$queryRaw<any[]>`
+      SELECT t.*, b."walletAddress" as "buyerAddress", s."walletAddress" as "sellerAddress"
+      FROM "P2PTrade" t
+      JOIN "User" b ON t."buyerId" = b."id"
+      JOIN "User" s ON t."sellerId" = s."id"
+      WHERE t."id" = ${tradeId}
+      FOR UPDATE
+    `;
     if (!trade) throw new NotFoundException('Trade not found');
 
-    if (dto.status === 'PAID' && trade.buyer.walletAddress !== walletAddress) {
+    if (dto.status === 'PAID' && trade.buyerAddress !== walletAddress) {
       throw new BadRequestException('Only buyer can mark as paid');
     }
-    if (dto.status === 'CONFIRMED' && trade.seller.walletAddress !== walletAddress) {
+    if (dto.status === 'CONFIRMED' && trade.sellerAddress !== walletAddress) {
       throw new BadRequestException('Only seller can confirm receipt');
     }
 
@@ -256,10 +261,12 @@ export class P2PService {
       throw new BadRequestException(`Cannot transition from ${trade.status} to ${requestedStatus}`);
     }
 
-    // On trade completion, release escrow FIRST (before status update)
+    // Escrow operations: delegate to releaseEscrow/refundEscrow which have their own
+    // row-level locking and idempotency. The FOR UPDATE above prevents two concurrent
+    // callers from both passing the status guard; the escrow methods provide a second
+    // layer of protection via their own SELECT ... FOR UPDATE.
     if (dto.status === 'CONFIRMED' && trade.escrowTx) {
       await this.releaseEscrow(tradeId);
-      // releaseEscrow already sets status to COMPLETED, so just return the updated trade
       const updated = await this.prisma.p2PTrade.findUnique({
         where: { id: tradeId },
         include: { buyer: true, seller: true, offer: true },
@@ -267,7 +274,6 @@ export class P2PService {
       return this.formatTrade(updated!);
     }
 
-    // On cancellation after escrow lock, refund FIRST
     if (dto.status === 'CANCELLED' && trade.escrowTx && trade.status === 'ESCROW_LOCKED') {
       await this.refundEscrow(tradeId);
       const updated = await this.prisma.p2PTrade.findUnique({
@@ -277,7 +283,7 @@ export class P2PService {
       return this.formatTrade(updated!);
     }
 
-    // For non-escrow status updates
+    // Non-escrow status updates
     const newStatus: P2PTradeStatus = requestedStatus as P2PTradeStatus;
     const updateData: Record<string, unknown> = { status: newStatus };
     if (dto.status === 'PAID') updateData.paidAt = new Date();
@@ -292,8 +298,8 @@ export class P2PService {
 
     // No escrow, just update reputations on completion
     if (dto.status === 'CONFIRMED') {
-      await this.updateReputation(trade.buyer.walletAddress, true);
-      await this.updateReputation(trade.seller.walletAddress, true);
+      await this.updateReputation(trade.buyerAddress, true);
+      await this.updateReputation(trade.sellerAddress, true);
     }
 
     return this.formatTrade(updated);
@@ -400,64 +406,117 @@ export class P2PService {
    * Server verifies on-chain, updates trade status.
    */
   async confirmEscrowLock(tradeId: string, signature: string) {
-    const trade = await this.prisma.p2PTrade.findUnique({
-      where: { id: tradeId },
-      include: { offer: true, seller: true },
-    });
-    if (!trade) throw new NotFoundException('Trade not found');
+    return this.prisma.$transaction(
+      async (tx) => {
+        // Lock the trade row to prevent concurrent confirmations
+        const [trade] = await tx.$queryRaw<any[]>`
+          SELECT t.*, o."cryptoCurrency", o."cryptoAmount" as "offerCryptoAmount",
+                 s."walletAddress" as "sellerAddress"
+          FROM "P2PTrade" t
+          JOIN "P2POffer" o ON t."offerId" = o."id"
+          JOIN "User" s ON t."sellerId" = s."id"
+          WHERE t."id" = ${tradeId}
+          FOR UPDATE
+        `;
+        if (!trade) throw new NotFoundException('Trade not found');
 
-    if (trade.status !== 'PENDING') {
-      // Idempotent: if already locked with this signature, return success
-      if (trade.escrowTx === signature) {
+        if (trade.status !== 'PENDING') {
+          // Idempotent: if already locked with this signature, return success
+          if (trade.escrowTx === signature) {
+            return { success: true, tradeId, signature };
+          }
+          throw new BadRequestException(
+            `Trade is not in PENDING status (current: ${trade.status})`
+          );
+        }
+
+        // Check if this signature is already used for another trade
+        const existingTrade = await tx.p2PTrade.findFirst({
+          where: { escrowTx: signature },
+        });
+        if (existingTrade && existingTrade.id !== tradeId) {
+          throw new BadRequestException(
+            'This transaction signature is already used for another trade'
+          );
+        }
+
+        // Verify on-chain
+        const connection = this.solana.getConnection();
+        const parsedTx = await connection.getParsedTransaction(signature, {
+          commitment: 'confirmed',
+          maxSupportedTransactionVersion: 0,
+        });
+
+        if (!parsedTx || parsedTx.meta?.err) {
+          throw new BadRequestException('Transaction not found or failed');
+        }
+
+        // Verify signer matches the seller
+        const signers = parsedTx.transaction.message.accountKeys
+          .filter((k: any) => k.signer)
+          .map((k: any) => k.pubkey.toBase58());
+
+        if (!signers.includes(trade.sellerAddress)) {
+          throw new BadRequestException('Transaction was not signed by the seller');
+        }
+
+        // Verify on-chain transfer amount matches expected escrow amount
+        const currency = trade.cryptoCurrency;
+        const expectedMint = TOKEN_MINTS[currency];
+        const decimals = TOKEN_DECIMALS[currency] || 9;
+        const expectedAmount = Number(trade.cryptoAmount) / AMOUNT_SCALE;
+        const expectedRaw = Math.round(expectedAmount * 10 ** decimals);
+
+        // Check parsed inner instructions for SPL token transfers
+        const innerInstructions = parsedTx.meta?.innerInstructions ?? [];
+        const allInstructions = [
+          ...parsedTx.transaction.message.instructions,
+          ...innerInstructions.flatMap((ix: any) => ix.instructions),
+        ];
+
+        let transferFound = false;
+        for (const ix of allInstructions) {
+          const parsed = (ix as any).parsed;
+          if (!parsed) continue;
+          if ((parsed.type === 'transfer' || parsed.type === 'transferChecked') && parsed.info) {
+            const transferAmount = Number(
+              parsed.info.amount || parsed.info.tokenAmount?.amount || 0
+            );
+            // Allow 1% tolerance for rounding
+            if (Math.abs(transferAmount - expectedRaw) / expectedRaw < 0.01) {
+              transferFound = true;
+              break;
+            }
+          }
+        }
+
+        if (!transferFound) {
+          throw new BadRequestException(
+            'On-chain transfer amount does not match expected escrow amount'
+          );
+        }
+
+        await tx.p2PTrade.update({
+          where: { id: tradeId },
+          data: { status: 'ESCROW_LOCKED', escrowTx: signature },
+        });
+
+        // Log the escrow lock (non-blocking, outside critical path)
+        this.txLogger
+          .log({
+            walletAddress: trade.sellerAddress,
+            type: 'P2P_ESCROW_LOCK',
+            signature,
+            amount: expectedAmount,
+            token: currency,
+          })
+          .then(() => this.txLogger.confirm(signature))
+          .catch((e) => this.logger.error('Failed to log escrow lock:', e));
+
         return { success: true, tradeId, signature };
-      }
-      throw new BadRequestException(`Trade is not in PENDING status (current: ${trade.status})`);
-    }
-
-    // Check if this signature is already used for another trade
-    const existingTrade = await this.prisma.p2PTrade.findFirst({
-      where: { escrowTx: signature },
-    });
-    if (existingTrade && existingTrade.id !== tradeId) {
-      throw new BadRequestException('This transaction signature is already used for another trade');
-    }
-
-    // Verify on-chain
-    const connection = this.solana.getConnection();
-    const parsedTx = await connection.getParsedTransaction(signature, {
-      commitment: 'confirmed',
-      maxSupportedTransactionVersion: 0,
-    });
-
-    if (!parsedTx || parsedTx.meta?.err) {
-      throw new BadRequestException('Transaction not found or failed');
-    }
-
-    // Verify signer matches the seller
-    const signers = parsedTx.transaction.message.accountKeys
-      .filter((k: any) => k.signer)
-      .map((k: any) => k.pubkey.toBase58());
-
-    if (!signers.includes(trade.seller.walletAddress)) {
-      throw new BadRequestException('Transaction was not signed by the seller');
-    }
-
-    await this.prisma.p2PTrade.update({
-      where: { id: tradeId },
-      data: { status: 'ESCROW_LOCKED', escrowTx: signature },
-    });
-
-    // Log the escrow lock
-    await this.txLogger.log({
-      walletAddress: trade.seller.walletAddress,
-      type: 'P2P_ESCROW_LOCK',
-      signature,
-      amount: toNumber(trade.cryptoAmount),
-      token: trade.offer.cryptoCurrency,
-    });
-    await this.txLogger.confirm(signature);
-
-    return { success: true, tradeId, signature };
+      },
+      { maxWait: 5000, timeout: 30000 }
+    );
   }
 
   /**

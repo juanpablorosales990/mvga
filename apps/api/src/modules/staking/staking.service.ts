@@ -712,25 +712,28 @@ export class StakingService {
         if (totalRewards < AUTO_COMPOUND_MIN) continue;
 
         // Instead of creating phantom stakes, UPDATE the primary stake's amount
-        // and reset lastClaimedAt to prevent double-counting
+        // and reset lastClaimedAt to prevent double-counting.
+        // Wrap in a transaction so all updates succeed or fail together.
         const primaryStake = stakes[0]; // Compound into the first stake
         const rewardRaw = BigInt(Math.round(totalRewards * 10 ** MVGA_DECIMALS));
 
-        await this.prisma.stake.update({
-          where: { id: primaryStake.id },
-          data: {
-            amount: { increment: rewardRaw },
-            lastClaimedAt: new Date(),
-          },
-        });
-
-        // Reset lastClaimedAt on all other stakes too
-        for (const stake of stakes.slice(1)) {
-          await this.prisma.stake.update({
-            where: { id: stake.id },
-            data: { lastClaimedAt: new Date() },
+        await this.prisma.$transaction(async (tx) => {
+          await tx.stake.update({
+            where: { id: primaryStake.id },
+            data: {
+              amount: { increment: rewardRaw },
+              lastClaimedAt: new Date(),
+            },
           });
-        }
+
+          // Reset lastClaimedAt on all other stakes too
+          for (const stake of stakes.slice(1)) {
+            await tx.stake.update({
+              where: { id: stake.id },
+              data: { lastClaimedAt: new Date() },
+            });
+          }
+        });
 
         compoundCount++;
         this.logger.log(
@@ -768,6 +771,21 @@ export class StakingService {
         this.mintPubkey,
         this.vaultKeypair.publicKey
       );
+
+      // Pre-check vault balance to avoid unnecessary failed transactions
+      try {
+        const vaultAccount = await getAccount(connection, vaultAta);
+        if (BigInt(vaultAccount.amount.toString()) < rawBonus) {
+          this.logger.warn(
+            `Vault balance insufficient for referral bonus (need ${bonusAmount} MVGA)`
+          );
+          return;
+        }
+      } catch {
+        this.logger.warn('Could not check vault balance for referral bonus');
+        return;
+      }
+
       const referrerAta = await getAssociatedTokenAddress(this.mintPubkey, referrerPubkey);
 
       const tx = new Transaction().add(
