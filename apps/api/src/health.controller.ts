@@ -30,13 +30,16 @@ export class HealthController {
 
     // Solana RPC check
     let rpcStatus = 'ok';
+    let rpcLatency = 0;
     try {
       const rpcUrl = this.config.get<string>(
         'SOLANA_RPC_URL',
         'https://api.mainnet-beta.solana.com'
       );
       const connection = new Connection(rpcUrl);
+      const rpcStart = Date.now();
       await connection.getSlot();
+      rpcLatency = Date.now() - rpcStart;
     } catch {
       rpcStatus = 'degraded';
     }
@@ -50,7 +53,7 @@ export class HealthController {
       service: 'mvga-api',
       uptime: Math.floor(process.uptime()),
       database: { status: dbStatus, latency: `${dbLatency}ms` },
-      rpc: { status: rpcStatus },
+      rpc: { status: rpcStatus, latency: `${rpcLatency}ms` },
       latency: `${totalLatency}ms`,
     };
   }
