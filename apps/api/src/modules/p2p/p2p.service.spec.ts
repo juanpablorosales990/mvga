@@ -1,4 +1,5 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { NotFoundException } from '@nestjs/common';
 import { P2PService } from './p2p.service';
 
 // Scale helpers matching the service

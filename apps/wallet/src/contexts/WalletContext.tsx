@@ -72,7 +72,9 @@ interface EncryptedWalletV2 {
 }
 
 function isV2(data: unknown): data is EncryptedWalletV2 {
-  return typeof data === 'object' && data !== null && (data as any).version === 2;
+  return (
+    typeof data === 'object' && data !== null && (data as Record<string, unknown>).version === 2
+  );
 }
 
 export function SelfCustodyWalletProvider({ children }: { children: ReactNode }) {

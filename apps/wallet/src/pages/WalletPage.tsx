@@ -2,7 +2,7 @@ import { useConnection } from '@solana/wallet-adapter-react';
 import { useSelfCustodyWallet } from '../contexts/WalletContext';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
+import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { useTranslation } from 'react-i18next';
 import TokenCard from '../components/TokenCard';
@@ -44,7 +44,7 @@ export default function WalletPage() {
   const [balances, setBalances] = useState<TokenBalance[]>([]);
   const [totalValue, setTotalValue] = useState(0);
   const [loading, setLoading] = useState(false);
-  const { prices, formatUsdValue } = usePrices();
+  const { formatUsdValue } = usePrices();
   const preferredCurrency = useWalletStore((s) => s.preferredCurrency);
   const storeSetBalances = useWalletStore((s) => s.setBalances);
   const balanceVersion = useWalletStore((s) => s.balanceVersion);
@@ -87,8 +87,8 @@ export default function WalletPage() {
               if (mint) tokenPrices[mint] = entry.price;
             }
           }
-        } catch (err: any) {
-          if (err?.name === 'AbortError') return;
+        } catch (err: unknown) {
+          if (err instanceof Error && err.name === 'AbortError') return;
           tokenPrices['So11111111111111111111111111111111111111112'] = 150;
         }
 
@@ -145,8 +145,9 @@ export default function WalletPage() {
         setBalances(newBalances);
         setTotalValue(newBalances.reduce((sum, b) => sum + b.usdValue, 0));
         storeSetBalances(newBalances);
-      } catch (err: any) {
-        if (err?.name !== 'AbortError') showToast('error', t('common.somethingWrong'));
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name !== 'AbortError')
+          showToast('error', t('common.somethingWrong'));
       } finally {
         setLoading(false);
       }

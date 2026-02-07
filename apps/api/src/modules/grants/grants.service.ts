@@ -52,7 +52,7 @@ export class GrantsService {
   }
 
   async getProposals(status?: string) {
-    const where = status ? { status: status as any } : {};
+    const where: Record<string, unknown> = status ? { status } : {};
     const proposals = await this.prisma.grantProposal.findMany({
       where,
       orderBy: { createdAt: 'desc' },

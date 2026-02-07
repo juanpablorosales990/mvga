@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from './prisma.service';
-import { TransactionType, TransactionLogStatus } from '@prisma/client';
+import { TransactionType } from '@prisma/client';
 
 @Injectable()
 export class TransactionLoggerService {

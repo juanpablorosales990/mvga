@@ -15,8 +15,6 @@ import TransactionPreviewModal from '../components/TransactionPreviewModal';
 import ConfirmModal from '../components/ConfirmModal';
 import { API_URL } from '../config';
 
-const TOKEN_DECIMALS: Record<string, number> = { USDC: 6, MVGA: 9 };
-
 interface Trade {
   id: string;
   offerId: string;
@@ -68,7 +66,7 @@ export default function TradePage() {
   const [showEscrowPreview, setShowEscrowPreview] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showDisputeModal, setShowDisputeModal] = useState(false);
-  const [escrowLocking, setEscrowLocking] = useState(false);
+  const [, setEscrowLocking] = useState(false);
   const escrowLockingRef = useRef(false);
 
   const walletAddress = publicKey?.toBase58() || '';
@@ -81,8 +79,8 @@ export default function TradePage() {
         if (res.ok) {
           setTrade(await res.json());
         }
-      } catch (err: any) {
-        if (err?.name !== 'AbortError') setError(t('trade.loadFailed'));
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name !== 'AbortError') setError(t('trade.loadFailed'));
       } finally {
         setLoading(false);
       }

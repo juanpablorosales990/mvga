@@ -40,8 +40,8 @@ export default function ReferralPage() {
         if (statsRes.ok) {
           setStats(await statsRes.json());
         }
-      } catch (err: any) {
-        if (err?.name === 'AbortError') return;
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name === 'AbortError') return;
       } finally {
         setLoading(false);
       }

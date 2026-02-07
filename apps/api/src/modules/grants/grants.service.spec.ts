@@ -1,4 +1,5 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { NotFoundException } from '@nestjs/common';
 import { GrantsService } from './grants.service';
 
 const AMOUNT_SCALE = 1_000_000;

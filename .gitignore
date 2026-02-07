@@ -59,3 +59,7 @@ dev-dist/
 supabase/.temp/
 **/supabase/.temp/
 .supabase/
+
+# Build artifacts
+output/
+*.tsbuildinfo

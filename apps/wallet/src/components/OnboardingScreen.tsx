@@ -108,8 +108,8 @@ export default function OnboardingScreen() {
     setLoading(true);
     try {
       await importFromMnemonic(words, importPassword);
-    } catch (err: any) {
-      setError(err?.message || t('onboarding.invalidPhrase'));
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : t('onboarding.invalidPhrase'));
     } finally {
       setLoading(false);
     }

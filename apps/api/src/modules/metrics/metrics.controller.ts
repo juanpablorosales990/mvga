@@ -17,7 +17,9 @@ export class MetricsController {
   @ApiOperation({ summary: 'Get metrics history for charts' })
   getMetricsHistory(@Query('period') period?: string) {
     const validPeriods = ['24h', '7d', '30d'] as const;
-    const p = validPeriods.includes(period as any) ? (period as '24h' | '7d' | '30d') : '7d';
+    const p = validPeriods.includes(period as (typeof validPeriods)[number])
+      ? (period as '24h' | '7d' | '30d')
+      : '7d';
     return this.metricsService.getMetricsHistory(p);
   }
 }

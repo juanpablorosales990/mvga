@@ -1,4 +1,4 @@
-import { BadRequestException } from '@nestjs/common';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { ReferralsService } from './referrals.service';
 
 describe('ReferralsService', () => {

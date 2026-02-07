@@ -28,7 +28,7 @@ export default function BankingPage() {
   const { connected, publicKey } = useSelfCustodyWallet();
   const balances = useWalletStore((s) => s.balances);
   const preferredCurrency = useWalletStore((s) => s.preferredCurrency);
-  const { prices, formatUsdValue } = usePrices();
+  const { formatUsdValue } = usePrices();
   const [recentTxs, setRecentTxs] = useState<RecentTx[]>([]);
   const [loading, setLoading] = useState(true);
 

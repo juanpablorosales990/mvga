@@ -120,7 +120,7 @@ export default function SwapPage() {
 
       const data = await response.json();
       setQuote(data);
-    } catch (err) {
+    } catch {
       setError('Failed to get quote. Try again.');
       setQuote(null);
     } finally {
@@ -176,7 +176,7 @@ export default function SwapPage() {
       let signedTransaction: VersionedTransaction;
       try {
         signedTransaction = await signTransaction(transaction);
-      } catch (signErr) {
+      } catch {
         // User rejected or wallet is locked
         setSwapping(false);
         return;

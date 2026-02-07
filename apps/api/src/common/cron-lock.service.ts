@@ -48,9 +48,13 @@ export class CronLockService {
       });
       this.logger.debug(`Lock acquired for ${jobName} (id: ${lock.id})`);
       return lock.id;
-    } catch (error: any) {
+    } catch (error: unknown) {
       // P2002 = unique constraint violation → lock already held
-      if (error.code === 'P2002') {
+      if (
+        error instanceof Error &&
+        'code' in error &&
+        (error as Record<string, unknown>).code === 'P2002'
+      ) {
         this.logger.debug(`Lock for ${jobName} already held by another instance`);
         return null;
       }

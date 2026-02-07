@@ -1,4 +1,4 @@
-import { BadRequestException } from '@nestjs/common';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { SwapService } from './swap.service';
 import { TiersService } from '../tiers/tiers.service';
 

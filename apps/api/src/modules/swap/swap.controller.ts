@@ -1,6 +1,6 @@
 import { Controller, Post, Body, Get, Query, UseGuards, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
-import { SwapService, SwapQuoteRequest, SwapExecuteRequest } from './swap.service';
+import { SwapService } from './swap.service';
 import { QuoteDto, SwapDto, RecordSwapDto } from './swap.dto';
 import { AuthGuard } from '../auth/auth.guard';
 import { CurrentUser } from '../auth/auth.decorator';

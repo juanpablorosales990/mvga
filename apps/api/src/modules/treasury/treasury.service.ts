@@ -10,7 +10,6 @@ import {
   createTransferInstruction,
   getAccount,
   createAssociatedTokenAccountInstruction,
-  TOKEN_PROGRAM_ID,
 } from '@solana/spl-token';
 import { RecordFeeDto } from './treasury.dto';
 import { BurnService } from '../burn/burn.service';
@@ -26,7 +25,6 @@ const GRANTS_PERCENT = 20;
 const BURN_PERCENT = 5; // 5% burned before distribution
 
 const MVGA_DECIMALS = 9;
-const USDC_DECIMALS = 6;
 
 @Injectable()
 export class TreasuryService {
@@ -133,20 +131,19 @@ export class TreasuryService {
 
         try {
           await this.executeDistributionStep(distribution, step);
-        } catch (error: any) {
+        } catch (error: unknown) {
+          const errMsg = error instanceof Error ? error.message : String(error);
           await this.prisma.distributionStep.update({
             where: { id: step.id },
-            data: { status: 'FAILED', error: error.message, completedAt: new Date() },
+            data: { status: 'FAILED', error: errMsg, completedAt: new Date() },
           });
 
           // Burn and FEE_SNAPSHOT failures are non-critical, continue
           if (stepName !== 'BURN' && stepName !== 'FEE_SNAPSHOT') {
-            this.logger.error(
-              `Critical step ${stepName} failed, halting distribution: ${error.message}`
-            );
+            this.logger.error(`Critical step ${stepName} failed, halting distribution: ${errMsg}`);
             break;
           }
-          this.logger.warn(`Non-critical step ${stepName} failed, continuing: ${error.message}`);
+          this.logger.warn(`Non-critical step ${stepName} failed, continuing: ${errMsg}`);
         }
       }
 
@@ -255,7 +252,17 @@ export class TreasuryService {
     return distribution;
   }
 
-  private async executeDistributionStep(distribution: any, step: any): Promise<void> {
+  private async executeDistributionStep(
+    distribution: {
+      id: string;
+      burnAmount: bigint;
+      liquidityAmount: bigint;
+      stakingAmount: bigint;
+      grantsAmount: bigint;
+      periodEnd: Date;
+    },
+    step: { id: string; stepName: string; status: string; signature?: string | null }
+  ): Promise<void> {
     await this.prisma.distributionStep.update({
       where: { id: step.id },
       data: { status: 'IN_PROGRESS', startedAt: new Date() },

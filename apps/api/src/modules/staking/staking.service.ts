@@ -25,6 +25,21 @@ const MVGA_DECIMALS = 9;
 const TOTAL_SUPPLY = 1_000_000_000; // 1B MVGA total supply
 const AUTO_COMPOUND_MIN = 100; // Minimum 100 MVGA to auto-compound
 const REFERRAL_BONUS_RATE = 0.05; // 5% of claimed rewards go to referrer
+// Raw query result type for SELECT ... FOR UPDATE queries
+interface RawStakeRow {
+  id: string;
+  userId: string;
+  amount: bigint;
+  lockPeriod: number;
+  lockedUntil: Date | null;
+  createdAt: Date;
+  lastClaimedAt: Date | null;
+  status: string;
+  autoCompound: boolean;
+  stakeTx: string | null;
+  unstakeTx: string | null;
+  unstakedAt: Date | null;
+}
 
 // Dynamic APY multipliers based on staking participation rate
 const DYNAMIC_APY_TIERS: { maxRate: number; multiplier: number }[] = [
@@ -328,7 +343,7 @@ export class StakingService {
         if (!user) throw new NotFoundException('No staking position found');
 
         // Lock the stake row to prevent concurrent unstake
-        const [stake] = await tx.$queryRaw<any[]>`
+        const [stake] = await tx.$queryRaw<RawStakeRow[]>`
         SELECT * FROM "Stake"
         WHERE "userId" = ${user.id} AND "status" = 'ACTIVE'
         ORDER BY "createdAt" ASC
@@ -409,7 +424,7 @@ export class StakingService {
         if (!user) throw new NotFoundException('No staking position found');
 
         // Lock user's active stakes to prevent concurrent claims
-        const stakes = await tx.$queryRaw<any[]>`
+        const stakes = await tx.$queryRaw<RawStakeRow[]>`
         SELECT * FROM "Stake"
         WHERE "userId" = ${user.id} AND "status" = 'ACTIVE'
         FOR UPDATE
@@ -434,7 +449,7 @@ export class StakingService {
         const dynamicBase = info.dynamicApy;
 
         const totalStaked = stakes.reduce(
-          (sum: number, s: any) => sum + Number(s.amount) / 10 ** MVGA_DECIMALS,
+          (sum: number, s: RawStakeRow) => sum + Number(s.amount) / 10 ** MVGA_DECIMALS,
           0
         );
 
@@ -683,7 +698,7 @@ export class StakingService {
       const info = await this.getStakingInfo();
       const dynamicBase = info.dynamicApy;
 
-      for (const [userId, stakes] of userStakesMap) {
+      for (const [_userId, stakes] of userStakesMap) {
         const walletAddress = stakes[0].user.walletAddress;
 
         const totalStaked = stakes.reduce(

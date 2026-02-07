@@ -80,8 +80,8 @@ export default function P2PPage() {
       const response = await fetch(url, { signal });
       const data = await response.json();
       setOffers(data);
-    } catch (err: any) {
-      if (err?.name === 'AbortError') return;
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'AbortError') return;
     } finally {
       setLoading(false);
     }
@@ -416,7 +416,10 @@ export default function P2PPage() {
                 <select
                   value={newOffer.cryptoCurrency}
                   onChange={(e) =>
-                    setNewOffer({ ...newOffer, cryptoCurrency: e.target.value as any })
+                    setNewOffer({
+                      ...newOffer,
+                      cryptoCurrency: e.target.value as P2POffer['cryptoCurrency'],
+                    })
                   }
                   className="w-full bg-white/10 px-3 py-2"
                 >
@@ -432,7 +435,10 @@ export default function P2PPage() {
                 <select
                   value={newOffer.paymentMethod}
                   onChange={(e) =>
-                    setNewOffer({ ...newOffer, paymentMethod: e.target.value as any })
+                    setNewOffer({
+                      ...newOffer,
+                      paymentMethod: e.target.value as P2POffer['paymentMethod'],
+                    })
                   }
                   className="w-full bg-white/10 px-3 py-2"
                 >

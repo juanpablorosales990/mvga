@@ -144,8 +144,9 @@ export default function StakePage() {
         ]);
         if (infoRes.ok) setStakingInfo(await infoRes.json());
         if (posRes?.ok) setPosition(await posRes.json());
-      } catch (err: any) {
-        if (err?.name !== 'AbortError') showToast('error', t('common.somethingWrong'));
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name !== 'AbortError')
+          showToast('error', t('common.somethingWrong'));
       }
     },
     [publicKey]
@@ -245,8 +246,10 @@ export default function StakePage() {
       setAmount('');
       fetchData();
       invalidateBalances();
-    } catch (err: any) {
-      setStatus(t('stake.errorPrefix', { message: err.message }));
+    } catch (err: unknown) {
+      setStatus(
+        t('stake.errorPrefix', { message: err instanceof Error ? err.message : String(err) })
+      );
     } finally {
       setLoading(false);
     }
@@ -277,8 +280,10 @@ export default function StakePage() {
       setAmount('');
       fetchData();
       invalidateBalances();
-    } catch (err: any) {
-      setStatus(t('stake.errorPrefix', { message: err.message }));
+    } catch (err: unknown) {
+      setStatus(
+        t('stake.errorPrefix', { message: err instanceof Error ? err.message : String(err) })
+      );
     } finally {
       setLoading(false);
     }
@@ -309,8 +314,10 @@ export default function StakePage() {
       );
       fetchData();
       invalidateBalances();
-    } catch (err: any) {
-      setStatus(t('stake.errorPrefix', { message: err.message }));
+    } catch (err: unknown) {
+      setStatus(
+        t('stake.errorPrefix', { message: err instanceof Error ? err.message : String(err) })
+      );
     } finally {
       setLoading(false);
     }

@@ -1,4 +1,5 @@
 import { IsString, IsNumber, IsPositive, IsOptional, IsObject } from 'class-validator';
+import { JupiterQuote } from './swap.service';
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 
@@ -27,7 +28,7 @@ export class QuoteDto {
 export class SwapDto {
   @ApiProperty({ description: 'Quote response from Jupiter' })
   @IsObject()
-  quoteResponse: any;
+  quoteResponse: JupiterQuote;
 
   @ApiProperty({ description: 'User wallet public key' })
   @IsString()

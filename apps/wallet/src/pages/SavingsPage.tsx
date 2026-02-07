@@ -21,7 +21,7 @@ export default function SavingsPage() {
   const preferredCurrency = useWalletStore((s) => s.preferredCurrency);
   const savingsGoal = useWalletStore((s) => s.savingsGoal);
   const setSavingsGoal = useWalletStore((s) => s.setSavingsGoal);
-  const { prices, formatUsdValue } = usePrices();
+  const { formatUsdValue } = usePrices();
 
   const [showGoalForm, setShowGoalForm] = useState(false);
   const [goalLabel, setGoalLabel] = useState(savingsGoal?.label ?? '');

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { TiersService } from './tiers.service';
 
 describe('TiersService', () => {

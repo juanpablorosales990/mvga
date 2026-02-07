@@ -81,8 +81,8 @@ export default function TransparencyPage() {
         if (distRes.ok) setDistributions(await distRes.json());
         if (burnStatsRes.ok) setBurnStats(await burnStatsRes.json());
         if (burnHistRes.ok) setBurnHistory(await burnHistRes.json());
-      } catch (err: any) {
-        if (err?.name === 'AbortError') return;
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name === 'AbortError') return;
       } finally {
         setLoading(false);
       }

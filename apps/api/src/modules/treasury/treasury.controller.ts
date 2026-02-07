@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Query, UseGuards, Body } from '@nestjs/common';
+import { Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
 import { TreasuryService } from './treasury.service';
 import { TreasuryStatsResponseDto, DistributionHistoryDto } from './treasury.dto';

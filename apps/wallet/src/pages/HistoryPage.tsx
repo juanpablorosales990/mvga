@@ -126,8 +126,9 @@ export default function HistoryPage() {
         // Sort by timestamp descending
         merged.sort((a, b) => b.timestamp - a.timestamp);
         setItems(merged);
-      } catch (err: any) {
-        if (err?.name !== 'AbortError') showToast('error', t('common.somethingWrong'));
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name !== 'AbortError')
+          showToast('error', t('common.somethingWrong'));
       } finally {
         setLoading(false);
       }

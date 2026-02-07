@@ -36,9 +36,8 @@ export default function PortfolioPage() {
   const { connected, publicKey } = useSelfCustodyWallet();
   const authToken = useWalletStore((s) => s.authToken);
   const preferredCurrency = useWalletStore((s) => s.preferredCurrency);
-  const balances = useWalletStore((s) => s.balances);
   const totalUsdValue = useWalletStore((s) => s.totalUsdValue);
-  const { prices, formatFiat, formatUsdValue } = usePrices();
+  const { prices, formatUsdValue } = usePrices();
 
   const [staking, setStaking] = useState<StakingData | null>(null);
   const [referrals, setReferrals] = useState<ReferralStats | null>(null);

@@ -29,6 +29,41 @@ const TOKEN_MINTS: Record<string, string> = {
   USDC: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
   MVGA: 'DRX65kM2n5CLTpdjJCemZvkUwE98ou4RpHrd8Z3GH5Qh',
 };
+// Raw query result types for SELECT ... FOR UPDATE queries
+interface RawOfferRow {
+  id: string;
+  sellerId: string;
+  sellerAddress: string;
+  type: string;
+  cryptoAmount: bigint;
+  availableAmount: bigint;
+  cryptoCurrency: string;
+  paymentMethod: string;
+  rate: number;
+  minAmount: bigint;
+  maxAmount: bigint;
+  status: string;
+}
+
+interface RawTradeRow {
+  id: string;
+  offerId: string;
+  buyerId: string;
+  sellerId: string;
+  buyerAddress: string;
+  sellerAddress: string;
+  cryptoCurrency: string;
+  cryptoAmount: bigint;
+  amount: bigint;
+  status: string;
+  escrowTx: string | null;
+  releaseTx: string | null;
+  processingAt: Date | null;
+  paidAt: Date | null;
+  completedAt: Date | null;
+  offerCryptoAmount?: bigint;
+  disputeReason?: string | null;
+}
 
 @Injectable()
 export class P2PService {
@@ -148,7 +183,7 @@ export class P2PService {
     const trade = await this.prisma.$transaction(
       async (tx) => {
         // Lock the offer row to prevent concurrent acceptance
-        const [offer] = await tx.$queryRaw<any[]>`
+        const [offer] = await tx.$queryRaw<RawOfferRow[]>`
         SELECT o.*, u."walletAddress" as "sellerAddress"
         FROM "P2POffer" o
         JOIN "User" u ON o."sellerId" = u."id"
@@ -238,7 +273,7 @@ export class P2PService {
 
   async updateTradeStatus(tradeId: string, walletAddress: string, dto: UpdateTradeStatusDto) {
     // Lock the trade row FIRST to prevent concurrent status transitions
-    const [trade] = await this.prisma.$queryRaw<any[]>`
+    const [trade] = await this.prisma.$queryRaw<RawTradeRow[]>`
       SELECT t.*, b."walletAddress" as "buyerAddress", s."walletAddress" as "sellerAddress"
       FROM "P2PTrade" t
       JOIN "User" b ON t."buyerId" = b."id"
@@ -409,7 +444,7 @@ export class P2PService {
     return this.prisma.$transaction(
       async (tx) => {
         // Lock the trade row to prevent concurrent confirmations
-        const [trade] = await tx.$queryRaw<any[]>`
+        const [trade] = await tx.$queryRaw<RawTradeRow[]>`
           SELECT t.*, o."cryptoCurrency", o."cryptoAmount" as "offerCryptoAmount",
                  s."walletAddress" as "sellerAddress"
           FROM "P2PTrade" t
@@ -453,8 +488,8 @@ export class P2PService {
 
         // Verify signer matches the seller
         const signers = parsedTx.transaction.message.accountKeys
-          .filter((k: any) => k.signer)
-          .map((k: any) => k.pubkey.toBase58());
+          .filter((k: { signer: boolean }) => k.signer)
+          .map((k: { pubkey: { toBase58(): string } }) => k.pubkey.toBase58());
 
         if (!signers.includes(trade.sellerAddress)) {
           throw new BadRequestException('Transaction was not signed by the seller');
@@ -462,7 +497,6 @@ export class P2PService {
 
         // Verify on-chain transfer amount matches expected escrow amount
         const currency = trade.cryptoCurrency;
-        const expectedMint = TOKEN_MINTS[currency];
         const decimals = TOKEN_DECIMALS[currency] || 9;
         const expectedAmount = Number(trade.cryptoAmount) / AMOUNT_SCALE;
         const expectedRaw = Math.round(expectedAmount * 10 ** decimals);
@@ -471,17 +505,19 @@ export class P2PService {
         const innerInstructions = parsedTx.meta?.innerInstructions ?? [];
         const allInstructions = [
           ...parsedTx.transaction.message.instructions,
-          ...innerInstructions.flatMap((ix: any) => ix.instructions),
+          ...innerInstructions.flatMap((ix: { instructions: unknown[] }) => ix.instructions),
         ];
 
         let transferFound = false;
         for (const ix of allInstructions) {
-          const parsed = (ix as any).parsed;
+          const parsed = (ix as Record<string, unknown>).parsed as
+            | Record<string, unknown>
+            | undefined;
           if (!parsed) continue;
           if ((parsed.type === 'transfer' || parsed.type === 'transferChecked') && parsed.info) {
-            const transferAmount = Number(
-              parsed.info.amount || parsed.info.tokenAmount?.amount || 0
-            );
+            const info = parsed.info as Record<string, unknown>;
+            const tokenAmount = info.tokenAmount as Record<string, unknown> | undefined;
+            const transferAmount = Number(info.amount || tokenAmount?.amount || 0);
             // Allow 1% tolerance for rounding
             if (Math.abs(transferAmount - expectedRaw) / expectedRaw < 0.01) {
               transferFound = true;
@@ -527,7 +563,7 @@ export class P2PService {
     return this.prisma.$transaction(
       async (tx) => {
         // Lock the trade row to prevent concurrent release/refund
-        const [trade] = await tx.$queryRaw<any[]>`
+        const [trade] = await tx.$queryRaw<RawTradeRow[]>`
         SELECT t.*, o."cryptoCurrency",
                b."walletAddress" as "buyerAddress",
                s."walletAddress" as "sellerAddress"
@@ -625,7 +661,7 @@ export class P2PService {
     return this.prisma.$transaction(
       async (tx) => {
         // Lock the trade row to prevent concurrent release/refund
-        const [trade] = await tx.$queryRaw<any[]>`
+        const [trade] = await tx.$queryRaw<RawTradeRow[]>`
         SELECT t.*, o."cryptoCurrency",
                s."walletAddress" as "sellerAddress"
         FROM "P2PTrade" t
@@ -770,7 +806,22 @@ export class P2PService {
   // ============ FORMAT HELPERS ============
   // Convert Prisma BigInt fields → plain numbers for JSON serialization
 
-  private formatOffer(offer: any) {
+  private formatOffer(offer: {
+    id: string;
+    seller?: { walletAddress: string };
+    sellerId: string;
+    type: string;
+    cryptoAmount: bigint;
+    cryptoCurrency: string;
+    paymentMethod: string;
+    rate: number;
+    minAmount: bigint;
+    maxAmount: bigint;
+    paymentInstructions: string | null;
+    status: string;
+    createdAt: Date;
+    availableAmount: bigint;
+  }) {
     return {
       id: offer.id,
       sellerAddress: offer.seller?.walletAddress ?? offer.sellerId,
@@ -788,7 +839,22 @@ export class P2PService {
     };
   }
 
-  private formatTrade(trade: any) {
+  private formatTrade(trade: {
+    id: string;
+    offerId: string;
+    buyer?: { walletAddress: string };
+    buyerId: string;
+    seller?: { walletAddress: string };
+    sellerId: string;
+    amount: bigint;
+    cryptoAmount: bigint;
+    offer?: { cryptoCurrency: string; paymentMethod: string };
+    status: string;
+    escrowTx: string | null;
+    createdAt: Date;
+    paidAt: Date | null;
+    completedAt: Date | null;
+  }) {
     return {
       id: trade.id,
       offerId: trade.offerId,
