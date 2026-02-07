@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useWallet } from '@solana/wallet-adapter-react';
+import { useSelfCustodyWallet } from '../contexts/WalletContext';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
@@ -31,7 +31,7 @@ const CRYPTO_OPTIONS = ['USDC', 'MVGA'] as const;
 
 export default function P2PPage() {
   const { t } = useTranslation();
-  const { connected, publicKey } = useWallet();
+  const { connected, publicKey } = useSelfCustodyWallet();
   const { authToken } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'buy' | 'sell' | 'my'>('buy');
@@ -231,20 +231,20 @@ export default function P2PPage() {
         <h1 className="text-2xl font-bold">{t('p2p.title')}</h1>
         <button
           onClick={() => setShowCreateModal(true)}
-          className="bg-primary-500 text-black px-4 py-2 rounded-lg font-medium text-sm"
+          className="bg-gold-500 text-black px-4 py-2 font-medium text-sm"
         >
           {t('p2p.createOffer')}
         </button>
       </div>
 
       {/* Tabs */}
-      <div className="flex bg-white/5 rounded-xl p-1">
+      <div className="flex bg-white/5 p-1">
         {(['buy', 'sell', 'my'] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`flex-1 py-2 rounded-lg font-medium text-sm transition ${
-              activeTab === tab ? 'bg-primary-500 text-black' : 'text-gray-400'
+            className={`flex-1 py-2 font-medium text-sm transition ${
+              activeTab === tab ? 'bg-gold-500 text-black' : 'text-gray-400'
             }`}
           >
             {tab === 'buy'
@@ -280,7 +280,7 @@ export default function P2PPage() {
                     ? 'bg-green-500/20 text-green-400'
                     : t.status === 'CANCELLED' || t.status === 'DISPUTED'
                       ? 'bg-red-500/20 text-red-400'
-                      : 'bg-primary-500/20 text-primary-400'
+                      : 'bg-gold-500/20 text-gold-400'
                 }`}
               >
                 {t.status}
@@ -362,10 +362,10 @@ export default function P2PPage() {
 
               <button
                 onClick={() => setSelectedOffer(offer)}
-                className={`w-full py-2 rounded-lg font-medium text-sm transition ${
+                className={`w-full py-2 font-medium text-sm transition ${
                   offer.sellerAddress === publicKey?.toString()
                     ? 'bg-gray-500/20 text-gray-400 cursor-not-allowed'
-                    : 'bg-primary-500 text-black hover:bg-primary-600'
+                    : 'bg-gold-500 text-black hover:bg-gold-600'
                 }`}
                 disabled={offer.sellerAddress === publicKey?.toString()}
               >
@@ -383,7 +383,7 @@ export default function P2PPage() {
       {/* Create Offer Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/80 flex items-end justify-center z-50">
-          <div className="bg-[#1a1a1a] rounded-t-3xl w-full max-w-lg p-6 space-y-4">
+          <div className="bg-[#1a1a1a]  w-full max-w-lg p-6 space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold">{t('p2p.createOfferTitle')}</h2>
               <button onClick={() => setShowCreateModal(false)} className="text-gray-400 text-2xl">
@@ -394,7 +394,7 @@ export default function P2PPage() {
             <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={() => setNewOffer({ ...newOffer, type: 'SELL' })}
-                className={`py-3 rounded-xl font-medium ${
+                className={`py-3 font-medium ${
                   newOffer.type === 'SELL' ? 'bg-green-500 text-black' : 'bg-white/10'
                 }`}
               >
@@ -402,7 +402,7 @@ export default function P2PPage() {
               </button>
               <button
                 onClick={() => setNewOffer({ ...newOffer, type: 'BUY' })}
-                className={`py-3 rounded-xl font-medium ${
+                className={`py-3 font-medium ${
                   newOffer.type === 'BUY' ? 'bg-blue-500 text-white' : 'bg-white/10'
                 }`}
               >
@@ -418,7 +418,7 @@ export default function P2PPage() {
                   onChange={(e) =>
                     setNewOffer({ ...newOffer, cryptoCurrency: e.target.value as any })
                   }
-                  className="w-full bg-white/10 rounded-lg px-3 py-2"
+                  className="w-full bg-white/10 px-3 py-2"
                 >
                   {CRYPTO_OPTIONS.map((c) => (
                     <option key={c} value={c} className="bg-gray-900">
@@ -434,7 +434,7 @@ export default function P2PPage() {
                   onChange={(e) =>
                     setNewOffer({ ...newOffer, paymentMethod: e.target.value as any })
                   }
-                  className="w-full bg-white/10 rounded-lg px-3 py-2"
+                  className="w-full bg-white/10 px-3 py-2"
                 >
                   {PAYMENT_METHODS.map((m) => (
                     <option key={m} value={m} className="bg-gray-900">
@@ -452,7 +452,7 @@ export default function P2PPage() {
                 value={newOffer.cryptoAmount}
                 onChange={(e) => setNewOffer({ ...newOffer, cryptoAmount: e.target.value })}
                 placeholder="100"
-                className="w-full bg-white/10 rounded-lg px-3 py-2"
+                className="w-full bg-white/10 px-3 py-2"
               />
             </div>
 
@@ -463,7 +463,7 @@ export default function P2PPage() {
                   type="number"
                   value={newOffer.minAmount}
                   onChange={(e) => setNewOffer({ ...newOffer, minAmount: e.target.value })}
-                  className="w-full bg-white/10 rounded-lg px-3 py-2"
+                  className="w-full bg-white/10 px-3 py-2"
                 />
               </div>
               <div>
@@ -472,7 +472,7 @@ export default function P2PPage() {
                   type="number"
                   value={newOffer.maxAmount}
                   onChange={(e) => setNewOffer({ ...newOffer, maxAmount: e.target.value })}
-                  className="w-full bg-white/10 rounded-lg px-3 py-2"
+                  className="w-full bg-white/10 px-3 py-2"
                 />
               </div>
             </div>
@@ -491,7 +491,7 @@ export default function P2PPage() {
       {/* Trade Modal */}
       {selectedOffer && (
         <div className="fixed inset-0 bg-black/80 flex items-end justify-center z-50">
-          <div className="bg-[#1a1a1a] rounded-t-3xl w-full max-w-lg p-6 space-y-4">
+          <div className="bg-[#1a1a1a]  w-full max-w-lg p-6 space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold">
                 {selectedOffer.type === 'SELL' ? t('p2p.buyCrypto') : t('p2p.sellCrypto')}
@@ -501,7 +501,7 @@ export default function P2PPage() {
               </button>
             </div>
 
-            <div className="bg-white/5 rounded-xl p-4 space-y-2">
+            <div className="bg-white/5 p-4 space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-400">{t('trade.seller')}</span>
                 <span>{shortenAddress(selectedOffer.sellerAddress)}</span>
@@ -531,7 +531,7 @@ export default function P2PPage() {
                 value={tradeAmount}
                 onChange={(e) => setTradeAmount(e.target.value)}
                 placeholder={`${selectedOffer.minAmount} - ${selectedOffer.maxAmount}`}
-                className="w-full bg-white/10 rounded-lg px-3 py-3 text-lg"
+                className="w-full bg-white/10 px-3 py-3 text-lg"
               />
               {tradeAmount && (
                 <p className="text-sm text-gray-400 mt-2">

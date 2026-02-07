@@ -7,7 +7,7 @@ const navItems = [
     path: '/',
     labelKey: 'nav.wallet',
     icon: (
-      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -21,7 +21,7 @@ const navItems = [
     path: '/swap',
     labelKey: 'nav.swap',
     icon: (
-      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -35,7 +35,7 @@ const navItems = [
     path: '/banking',
     labelKey: 'nav.bank',
     icon: (
-      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -49,7 +49,7 @@ const navItems = [
     path: '/p2p',
     labelKey: 'nav.p2p',
     icon: (
-      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -63,7 +63,7 @@ const navItems = [
     path: '/more',
     labelKey: 'nav.more',
     icon: (
-      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -81,7 +81,7 @@ export default function BottomNav() {
   return (
     <nav
       aria-label="Main navigation"
-      className="fixed bottom-0 left-0 right-0 bg-[#0a0a0a]/95 backdrop-blur-lg border-t border-white/10 safe-bottom"
+      className="fixed bottom-0 left-0 right-0 bg-black border-t border-white/20 safe-bottom"
     >
       <div className="max-w-lg mx-auto flex justify-around py-2">
         {navItems.map((item) => (
@@ -91,13 +91,15 @@ export default function BottomNav() {
             aria-label={t(item.labelKey)}
             className={({ isActive }) =>
               clsx(
-                'flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-colors',
-                isActive ? 'text-primary-500' : 'text-gray-500 hover:text-gray-300'
+                'flex flex-col items-center gap-0.5 px-3 py-1.5 transition-colors',
+                isActive ? 'text-gold-500' : 'text-white/30 hover:text-white/60'
               )
             }
           >
             <span aria-hidden="true">{item.icon}</span>
-            <span className="text-xs">{t(item.labelKey)}</span>
+            <span className="text-[10px] font-mono uppercase tracking-wider">
+              {t(item.labelKey)}
+            </span>
           </NavLink>
         ))}
       </div>

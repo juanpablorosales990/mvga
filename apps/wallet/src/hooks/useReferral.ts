@@ -1,12 +1,12 @@
 import { useEffect } from 'react';
-import { useWallet } from '@solana/wallet-adapter-react';
+import { useSelfCustodyWallet } from '../contexts/WalletContext';
 import { useAuth } from './useAuth';
 import { API_URL } from '../config';
 
 const REF_STORAGE_KEY = 'mvga_ref_code';
 
 export function useReferral() {
-  const { connected } = useWallet();
+  const { connected } = useSelfCustodyWallet();
   const { authToken } = useAuth();
 
   // Capture ?ref= param on first load

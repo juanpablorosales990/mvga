@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useWallet } from '@solana/wallet-adapter-react';
+import { useSelfCustodyWallet } from '../contexts/WalletContext';
 import { usePrices } from '../hooks/usePrices';
 import { useWalletStore } from '../stores/walletStore';
 import { useCard } from '../hooks/useCard';
@@ -25,7 +25,7 @@ const EARN_OPPORTUNITIES = [
 
 export default function BankingPage() {
   const { t } = useTranslation();
-  const { connected, publicKey } = useWallet();
+  const { connected, publicKey } = useSelfCustodyWallet();
   const balances = useWalletStore((s) => s.balances);
   const preferredCurrency = useWalletStore((s) => s.preferredCurrency);
   const { prices, formatUsdValue } = usePrices();
@@ -171,7 +171,7 @@ export default function BankingPage() {
           >
             <div className="flex items-center justify-between">
               <h2 className="font-semibold">{t('banking.savingsPreview')}</h2>
-              <span className="text-xs text-primary-400">{t('banking.viewSavings')}</span>
+              <span className="text-xs text-gold-400">{t('banking.viewSavings')}</span>
             </div>
             <div className="flex items-baseline gap-3">
               <span className="text-2xl font-bold">{formatUsd(stablecoinUsd)}</span>
@@ -225,7 +225,7 @@ export default function BankingPage() {
                     ${cardBalance?.available.toFixed(2) ?? '0.00'}
                   </p>
                 </div>
-                <span className="text-xs text-primary-400">{t('card.manage')}</span>
+                <span className="text-xs text-gold-400">{t('card.manage')}</span>
               </div>
             </Link>
           ) : (
@@ -254,7 +254,7 @@ export default function BankingPage() {
                 <p className="text-xs text-gray-400 mt-1">{t('banking.cardFeatures')}</p>
                 <Link
                   to="/banking/card"
-                  className="mt-3 block w-full text-center py-2.5 rounded-xl bg-primary-500 text-black font-medium text-sm hover:bg-primary-400 transition"
+                  className="mt-3 block w-full text-center py-2.5 bg-gold-500 text-black font-medium text-sm hover:bg-gold-400 transition"
                 >
                   {t('banking.joinWaitlist')}
                 </Link>

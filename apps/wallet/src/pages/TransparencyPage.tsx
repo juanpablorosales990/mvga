@@ -107,7 +107,7 @@ export default function TransparencyPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-gold-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -129,11 +129,11 @@ export default function TransparencyPage() {
       </div>
 
       {/* Mission Statement */}
-      <div className="card bg-gradient-to-br from-primary-500/20 to-transparent border border-primary-500/30">
+      <div className="card bg-gradient-to-br from-primary-500/20 to-transparent border border-gold-500/30">
         <div className="flex items-start gap-3">
-          <div className="w-10 h-10 bg-primary-500/20 rounded-full flex items-center justify-center flex-shrink-0">
+          <div className="w-10 h-10 bg-gold-500/20 rounded-full flex items-center justify-center flex-shrink-0">
             <svg
-              className="w-5 h-5 text-primary-500"
+              className="w-5 h-5 text-gold-500"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -159,7 +159,7 @@ export default function TransparencyPage() {
         <div className="space-y-4">
           {/* Liquidity */}
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center">
+            <div className="w-12 h-12 bg-blue-500/20 flex items-center justify-center">
               <svg
                 className="w-6 h-6 text-blue-400"
                 fill="none"
@@ -188,7 +188,7 @@ export default function TransparencyPage() {
 
           {/* Staking */}
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center">
+            <div className="w-12 h-12 bg-green-500/20 flex items-center justify-center">
               <svg
                 className="w-6 h-6 text-green-400"
                 fill="none"
@@ -217,7 +217,7 @@ export default function TransparencyPage() {
 
           {/* Grants */}
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-yellow-500/20 rounded-lg flex items-center justify-center">
+            <div className="w-12 h-12 bg-yellow-500/20 flex items-center justify-center">
               <svg
                 className="w-6 h-6 text-yellow-400"
                 fill="none"
@@ -259,14 +259,14 @@ export default function TransparencyPage() {
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <div className="bg-white/5 rounded-lg p-3 text-center">
+            <div className="bg-white/5 p-3 text-center">
               <p className="text-xs text-gray-400">{t('transparency.totalBurned')}</p>
               <p className="font-bold text-lg text-red-400">
                 {formatNumber(burnStats.totalBurned)}
               </p>
               <p className="text-xs text-gray-500">MVGA</p>
             </div>
-            <div className="bg-white/5 rounded-lg p-3 text-center">
+            <div className="bg-white/5 p-3 text-center">
               <p className="text-xs text-gray-400">{t('transparency.supplyReduced')}</p>
               <p className="font-bold text-lg text-red-400">
                 {burnStats.supplyReduction.toFixed(4)}%
@@ -288,7 +288,7 @@ export default function TransparencyPage() {
                       href={`https://solscan.io/tx/${burn.signature}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-xs text-primary-500 hover:text-primary-400"
+                      className="text-xs text-gold-500 hover:text-gold-400"
                     >
                       {formatDate(burn.createdAt)} →
                     </a>
@@ -305,22 +305,22 @@ export default function TransparencyPage() {
         <div className="card">
           <h2 className="font-semibold mb-4">{t('transparency.treasuryBalances')}</h2>
           <div className="grid grid-cols-2 gap-3">
-            <div className="bg-white/5 rounded-lg p-3 text-center">
+            <div className="bg-white/5 p-3 text-center">
               <p className="text-xs text-gray-400">{t('transparency.liquidity')}</p>
               <p className="font-bold text-lg">{formatNumber(stats.liquidityBalance)}</p>
               <p className="text-xs text-gray-500">MVGA</p>
             </div>
-            <div className="bg-white/5 rounded-lg p-3 text-center">
+            <div className="bg-white/5 p-3 text-center">
               <p className="text-xs text-gray-400">{t('transparency.stakingRewards')}</p>
               <p className="font-bold text-lg">{formatNumber(stats.stakingBalance)}</p>
               <p className="text-xs text-gray-500">MVGA</p>
             </div>
-            <div className="bg-white/5 rounded-lg p-3 text-center">
+            <div className="bg-white/5 p-3 text-center">
               <p className="text-xs text-gray-400">{t('transparency.grants')}</p>
               <p className="font-bold text-lg">{formatNumber(stats.grantsBalance)}</p>
               <p className="text-xs text-gray-500">MVGA</p>
             </div>
-            <div className="bg-white/5 rounded-lg p-3 text-center">
+            <div className="bg-white/5 p-3 text-center">
               <p className="text-xs text-gray-400">{t('transparency.pending')}</p>
               <p className="font-bold text-lg">{formatNumber(stats.pendingDistribution)}</p>
               <p className="text-xs text-gray-500">MVGA</p>
@@ -346,7 +346,7 @@ export default function TransparencyPage() {
           <h2 className="font-semibold mb-4">{t('transparency.recentDistributions')}</h2>
           <div className="space-y-3">
             {distributions.map((dist) => (
-              <div key={dist.id} className="bg-white/5 rounded-lg p-3">
+              <div key={dist.id} className="bg-white/5 p-3">
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-sm font-medium">{formatDate(dist.periodEnd)}</span>
                   <span
@@ -370,7 +370,7 @@ export default function TransparencyPage() {
                     href={`https://solscan.io/tx/${dist.transactions.liquidity}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-xs text-primary-500 hover:text-primary-400 mt-2 block"
+                    className="text-xs text-gold-500 hover:text-gold-400 mt-2 block"
                   >
                     {t('common.viewOnSolscan')} →
                   </a>
@@ -392,7 +392,7 @@ export default function TransparencyPage() {
               href="https://solscan.io/account/HWRFGiMDWNvPHo5ZLV1MJEDjDNFVDJ8KJMDXcJjLVGa8"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-primary-500 break-all hover:underline"
+              className="text-gold-500 break-all hover:underline"
             >
               HWRFGiM...LVGa8
             </a>
@@ -403,7 +403,7 @@ export default function TransparencyPage() {
               href="https://solscan.io/account/GNhLCjqThNJAJAdDYvRTr2EfWyGXAFUymaPuKaL1duEh"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-primary-500 break-all hover:underline"
+              className="text-gold-500 break-all hover:underline"
             >
               GNhLCjq...duEh
             </a>
@@ -414,7 +414,7 @@ export default function TransparencyPage() {
               href="https://solscan.io/account/9oeQpF87vYz1LmHDBqx1xvGsFxbRVJXmgNvRFYg3e8AQ"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-primary-500 break-all hover:underline"
+              className="text-gold-500 break-all hover:underline"
             >
               9oeQpF8...e8AQ
             </a>

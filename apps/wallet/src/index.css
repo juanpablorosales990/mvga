@@ -3,9 +3,9 @@
 @tailwind utilities;
 
 :root {
-  --bg-primary: #0a0a0a;
-  --bg-secondary: #141414;
-  --bg-card: #1a1a1a;
+  --bg-primary: #000000;
+  --bg-secondary: #0a0a0a;
+  --bg-card: #111111;
   --text-primary: #ffffff;
   --text-secondary: #a1a1a1;
   --accent: #f59e0b;
@@ -19,7 +19,7 @@ html,
 body {
   margin: 0;
   padding: 0;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: 'Archivo', system-ui, sans-serif;
   background-color: var(--bg-primary);
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
@@ -38,39 +38,48 @@ textarea {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
-/* Custom scrollbar */
+/* Custom scrollbar — brutalist */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 4px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--bg-secondary);
+  background: #000;
 }
 
 ::-webkit-scrollbar-thumb {
   background: #333;
-  border-radius: 3px;
 }
 
-/* Glass effect */
-.glass {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+/* Selection */
+::selection {
+  background: rgba(245, 158, 11, 0.3);
+  color: #fff;
 }
 
-/* Button styles */
+/* Grain overlay */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.015;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+}
+
+/* Brutalist button styles */
 .btn-primary {
-  @apply bg-primary-500 hover:bg-primary-600 text-black font-semibold px-6 py-3 rounded-xl transition-all active:scale-95;
+  @apply bg-gold-500 hover:bg-gold-600 text-black font-bold px-6 py-3 border border-gold-500 transition-all active:scale-95 uppercase tracking-wider text-sm;
 }
 
 .btn-secondary {
-  @apply bg-white/10 hover:bg-white/20 text-white font-medium px-6 py-3 rounded-xl transition-all active:scale-95;
+  @apply bg-transparent hover:bg-white/10 text-white font-medium px-6 py-3 border border-white/20 hover:border-white/40 transition-all active:scale-95 uppercase tracking-wider text-sm;
 }
 
-/* Card styles */
+/* Card styles — sharp, brutalist */
 .card {
-  @apply bg-white/5 rounded-2xl border border-white/10 p-4;
+  @apply bg-white/[0.03] border border-white/10 p-4;
 }
 
 /* Focus rings for keyboard navigation */

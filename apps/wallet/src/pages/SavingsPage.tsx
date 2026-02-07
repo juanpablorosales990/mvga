@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useWallet } from '@solana/wallet-adapter-react';
+import { useSelfCustodyWallet } from '../contexts/WalletContext';
 import { usePrices } from '../hooks/usePrices';
 import { useWalletStore } from '../stores/walletStore';
 
@@ -16,7 +16,7 @@ const MOCK_INTEREST_HISTORY = [
 
 export default function SavingsPage() {
   const { t } = useTranslation();
-  const { connected } = useWallet();
+  const { connected } = useSelfCustodyWallet();
   const balances = useWalletStore((s) => s.balances);
   const preferredCurrency = useWalletStore((s) => s.preferredCurrency);
   const savingsGoal = useWalletStore((s) => s.savingsGoal);
@@ -115,7 +115,7 @@ export default function SavingsPage() {
                   setGoalAmount(savingsGoal.targetAmount.toString());
                   setShowGoalForm(true);
                 }}
-                className="text-xs text-primary-400 hover:text-primary-300"
+                className="text-xs text-gold-400 hover:text-gold-300"
               >
                 {t('banking.editGoal')}
               </button>
@@ -129,7 +129,7 @@ export default function SavingsPage() {
           ) : (
             <button
               onClick={() => setShowGoalForm(true)}
-              className="text-xs text-primary-400 hover:text-primary-300"
+              className="text-xs text-gold-400 hover:text-gold-300"
             >
               {t('banking.setGoal')}
             </button>
@@ -145,7 +145,7 @@ export default function SavingsPage() {
                 value={goalLabel}
                 onChange={(e) => setGoalLabel(e.target.value)}
                 placeholder={t('banking.goalLabelPlaceholder')}
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary-500"
+                className="w-full bg-white/5 border border-white/10 px-4 py-2.5 text-sm focus:outline-none focus:border-gold-500"
               />
             </div>
             <div>
@@ -157,19 +157,19 @@ export default function SavingsPage() {
                 value={goalAmount}
                 onChange={(e) => setGoalAmount(e.target.value)}
                 placeholder="1000"
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary-500"
+                className="w-full bg-white/5 border border-white/10 px-4 py-2.5 text-sm focus:outline-none focus:border-gold-500"
               />
             </div>
             <div className="flex gap-2">
               <button
                 onClick={handleSaveGoal}
-                className="flex-1 py-2.5 rounded-xl bg-primary-500 text-black font-medium text-sm hover:bg-primary-400 transition"
+                className="flex-1 py-2.5 bg-gold-500 text-black font-medium text-sm hover:bg-gold-400 transition"
               >
                 {t('banking.saveGoal')}
               </button>
               <button
                 onClick={() => setShowGoalForm(false)}
-                className="flex-1 py-2.5 rounded-xl bg-white/10 text-gray-300 text-sm hover:bg-white/20 transition"
+                className="flex-1 py-2.5 bg-white/10 text-gray-300 text-sm hover:bg-white/20 transition"
               >
                 {t('common.cancel')}
               </button>

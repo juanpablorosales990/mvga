@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useWallet } from '@solana/wallet-adapter-react';
+import { useSelfCustodyWallet } from '../contexts/WalletContext';
 import { useWalletStore } from '../stores/walletStore';
 import { useCard } from '../hooks/useCard';
 import { showToast } from '../hooks/useToast';
@@ -131,7 +131,7 @@ function CardVisual({
 
   return (
     <div
-      className="rounded-2xl p-6 relative overflow-hidden"
+      className=" p-6 relative overflow-hidden"
       style={{ background: gradients[status], aspectRatio: '1.586' }}
     >
       {badgeText && (
@@ -201,7 +201,7 @@ function FundCardModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4" onClick={onClose}>
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
       <div
-        className="relative bg-[#141414] border border-white/10 rounded-2xl p-6 w-full max-w-sm space-y-4"
+        className="relative bg-[#141414] border border-white/10 p-6 w-full max-w-sm space-y-4"
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="text-lg font-semibold">{t('card.fundCard')}</h2>
@@ -212,7 +212,7 @@ function FundCardModal({
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             placeholder="0.00"
-            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-lg font-semibold focus:outline-none focus:border-primary-500"
+            className="w-full bg-white/5 border border-white/10 px-4 py-3 text-lg font-semibold focus:outline-none focus:border-gold-500"
           />
         </div>
         <div className="flex gap-2">
@@ -220,7 +220,7 @@ function FundCardModal({
             <button
               key={p}
               onClick={() => setAmount(String(p))}
-              className="flex-1 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-sm font-medium transition"
+              className="flex-1 py-2 bg-white/5 hover:bg-white/10 text-sm font-medium transition"
             >
               ${p}
             </button>
@@ -229,7 +229,7 @@ function FundCardModal({
         <button
           onClick={handleFund}
           disabled={funding || !amount || parseFloat(amount) <= 0}
-          className="w-full py-3 rounded-xl bg-primary-500 text-black font-semibold hover:bg-primary-400 transition disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full py-3 bg-gold-500 text-black font-semibold hover:bg-gold-400 transition disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {funding ? t('card.funding') : t('card.fundButton')}
         </button>
@@ -324,7 +324,7 @@ function WaitlistView() {
         <div className="space-y-3">
           {[1, 2, 3].map((step) => (
             <div key={step} className="flex items-start gap-3">
-              <span className="w-6 h-6 rounded-full bg-primary-500/20 text-primary-400 text-xs flex items-center justify-center flex-shrink-0 font-bold">
+              <span className="w-6 h-6 rounded-full bg-gold-500/20 text-gold-400 text-xs flex items-center justify-center flex-shrink-0 font-bold">
                 {step}
               </span>
               <p className="text-sm text-gray-300">{t(`banking.cardStep${step}`)}</p>
@@ -342,13 +342,13 @@ function WaitlistView() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder={t('banking.waitlistEmailPlaceholder')}
-            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary-500"
+            className="w-full bg-white/5 border border-white/10 px-4 py-2.5 text-sm focus:outline-none focus:border-gold-500"
           />
         </div>
         <button
           onClick={handleJoinWaitlist}
           disabled={joining || !authToken}
-          className="w-full py-2.5 rounded-xl bg-primary-500 text-black font-medium text-sm hover:bg-primary-400 transition disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full py-2.5 bg-gold-500 text-black font-medium text-sm hover:bg-gold-400 transition disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {joining ? t('banking.joining') : t('banking.joinWaitlist')}
         </button>
@@ -448,7 +448,7 @@ function WaitlistedView() {
 
       <button
         onClick={() => setCardStatus('kyc_pending')}
-        className="w-full py-3 rounded-xl bg-primary-500 text-black font-semibold hover:bg-primary-400 transition active:scale-95"
+        className="w-full py-3 bg-gold-500 text-black font-semibold hover:bg-gold-400 transition active:scale-95"
       >
         {t('card.startApplication')}
       </button>
@@ -463,7 +463,7 @@ function WaitlistedView() {
 function KycView() {
   const { t } = useTranslation();
   const { submitKyc } = useCard();
-  const { publicKey } = useWallet();
+  const { publicKey } = useSelfCustodyWallet();
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
     firstName: '',
@@ -506,14 +506,14 @@ function KycView() {
   };
 
   const inputCls =
-    'w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary-500';
+    'w-full bg-white/5 border border-white/10 px-4 py-3 text-sm focus:outline-none focus:border-gold-500';
 
   return (
     <>
       <div className="card p-5 space-y-1 text-center">
-        <div className="w-14 h-14 bg-primary-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
+        <div className="w-14 h-14 bg-gold-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
           <svg
-            className="w-7 h-7 text-primary-400"
+            className="w-7 h-7 text-gold-400"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -615,7 +615,7 @@ function KycView() {
           disabled={
             submitting || !form.firstName || !form.lastName || !form.dateOfBirth || !form.nationalId
           }
-          className="w-full py-3 rounded-xl bg-primary-500 text-black font-semibold hover:bg-primary-400 transition disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
+          className="w-full py-3 bg-gold-500 text-black font-semibold hover:bg-gold-400 transition disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
         >
           {submitting ? t('card.submittingKyc') : t('card.submitKyc')}
         </button>
@@ -881,7 +881,7 @@ function CardDashboardView() {
               <span className="text-sm">{t('card.onlineTransactions')}</span>
               <button
                 onClick={() => updateControls({ onlineTransactions: !controls.onlineTransactions })}
-                className={`w-11 h-6 rounded-full transition-colors ${controls.onlineTransactions ? 'bg-primary-500' : 'bg-white/10'}`}
+                className={`w-11 h-6 rounded-full transition-colors ${controls.onlineTransactions ? 'bg-gold-500' : 'bg-white/10'}`}
               >
                 <div
                   className={`w-5 h-5 bg-white rounded-full transition-transform mx-0.5 ${controls.onlineTransactions ? 'translate-x-5' : ''}`}
@@ -896,7 +896,7 @@ function CardDashboardView() {
                 onClick={() =>
                   updateControls({ internationalTransactions: !controls.internationalTransactions })
                 }
-                className={`w-11 h-6 rounded-full transition-colors ${controls.internationalTransactions ? 'bg-primary-500' : 'bg-white/10'}`}
+                className={`w-11 h-6 rounded-full transition-colors ${controls.internationalTransactions ? 'bg-gold-500' : 'bg-white/10'}`}
               >
                 <div
                   className={`w-5 h-5 bg-white rounded-full transition-transform mx-0.5 ${controls.internationalTransactions ? 'translate-x-5' : ''}`}
@@ -922,7 +922,7 @@ function CardDashboardView() {
 
 export default function CardPage() {
   const { t } = useTranslation();
-  const { connected } = useWallet();
+  const { connected } = useSelfCustodyWallet();
   const cardStatus = useWalletStore((s) => s.cardStatus);
 
   if (!connected) {

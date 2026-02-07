@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useWallet } from '@solana/wallet-adapter-react';
+import { useSelfCustodyWallet } from '../contexts/WalletContext';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { usePrices } from '../hooks/usePrices';
 import { useWalletStore } from '../stores/walletStore';
@@ -33,7 +33,7 @@ const PIE_COLORS = ['#3b82f6', '#22c55e', '#ec4899'];
 
 export default function PortfolioPage() {
   const { t } = useTranslation();
-  const { connected, publicKey } = useWallet();
+  const { connected, publicKey } = useSelfCustodyWallet();
   const authToken = useWalletStore((s) => s.authToken);
   const preferredCurrency = useWalletStore((s) => s.preferredCurrency);
   const balances = useWalletStore((s) => s.balances);
@@ -145,7 +145,7 @@ export default function PortfolioPage() {
       ) : (
         <>
           {/* Total Portfolio Value */}
-          <div className="card p-5 bg-gradient-to-br from-primary-500/10 to-primary-600/5 border-primary-500/20">
+          <div className="card p-5 bg-gradient-to-br from-primary-500/10 to-primary-600/5 border-gold-500/20">
             <p className="text-sm text-gray-400">{t('portfolio.totalValue')}</p>
             <p className="text-3xl font-bold mt-1">{formatTotal(totalPortfolio)}</p>
           </div>
@@ -197,7 +197,7 @@ export default function PortfolioPage() {
             <div className="card p-4 space-y-2">
               <div className="flex items-center justify-between">
                 <h2 className="font-semibold">{t('portfolio.stakingSummary')}</h2>
-                <Link to="/stake" className="text-xs text-primary-400 hover:text-primary-300">
+                <Link to="/stake" className="text-xs text-gold-400 hover:text-gold-300">
                   {t('portfolio.viewStaking')}
                 </Link>
               </div>
@@ -227,7 +227,7 @@ export default function PortfolioPage() {
             <div className="card p-4 space-y-2">
               <div className="flex items-center justify-between">
                 <h2 className="font-semibold">{t('portfolio.referralSummary')}</h2>
-                <Link to="/referral" className="text-xs text-primary-400 hover:text-primary-300">
+                <Link to="/referral" className="text-xs text-gold-400 hover:text-gold-300">
                   {t('portfolio.viewReferrals')}
                 </Link>
               </div>
@@ -249,7 +249,7 @@ export default function PortfolioPage() {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <h2 className="font-semibold">{t('portfolio.recentActivity')}</h2>
-                <Link to="/history" className="text-xs text-primary-400 hover:text-primary-300">
+                <Link to="/history" className="text-xs text-gold-400 hover:text-gold-300">
                   {t('wallet.viewAll')}
                 </Link>
               </div>

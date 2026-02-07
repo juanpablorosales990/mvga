@@ -37,16 +37,16 @@ export default function TransactionPreviewModal({
 
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-      <div className="bg-[#1a1a1a] rounded-2xl w-full max-w-md p-6 space-y-4">
+      <div className="bg-[#1a1a1a] w-full max-w-md p-6 space-y-4">
         <h2 className="text-xl font-bold text-center">{t('txPreview.title')}</h2>
 
         {/* Warning */}
-        <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl px-4 py-3 text-yellow-400 text-sm">
+        <div className="bg-yellow-500/10 border border-yellow-500/30 px-4 py-3 text-yellow-400 text-sm">
           {t('txPreview.warning')}
         </div>
 
         {/* Details */}
-        <div className="bg-white/5 rounded-xl p-4 space-y-3">
+        <div className="bg-white/5 p-4 space-y-3">
           <div className="flex justify-between text-sm">
             <span className="text-gray-400">{t('txPreview.type')}</span>
             <span className="font-medium">{typeLabels[tx.type] || tx.type}</span>
@@ -85,7 +85,7 @@ export default function TransactionPreviewModal({
           <button
             onClick={onClose}
             disabled={loading}
-            className="flex-1 py-3 rounded-xl font-medium bg-white/10 text-gray-300 hover:bg-white/20 transition disabled:opacity-50"
+            className="flex-1 py-3 font-medium bg-white/10 text-gray-300 hover:bg-white/20 transition disabled:opacity-50"
           >
             {t('common.cancel')}
           </button>

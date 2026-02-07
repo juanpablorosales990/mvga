@@ -160,9 +160,9 @@ export default function MetricsPage() {
           <button
             key={p}
             onClick={() => setPeriod(p)}
-            className={`flex-1 py-2 rounded-xl text-sm font-medium transition ${
+            className={`flex-1 py-2 text-sm font-medium transition ${
               period === p
-                ? 'bg-primary-500/20 text-primary-400 border border-primary-500/30'
+                ? 'bg-gold-500/20 text-gold-400 border border-gold-500/30'
                 : 'bg-white/5 text-gray-400'
             }`}
           >
@@ -176,7 +176,7 @@ export default function MetricsPage() {
         <h2 className="font-semibold mb-3">{t('metrics.tvlOverTime')}</h2>
         {loading ? (
           <div className="h-[200px] flex items-center justify-center">
-            <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-gold-500 border-t-transparent rounded-full animate-spin" />
           </div>
         ) : chartData.length === 0 ? (
           <div className="h-[200px] flex items-center justify-center text-gray-400">

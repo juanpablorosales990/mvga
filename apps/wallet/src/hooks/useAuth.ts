@@ -1,12 +1,12 @@
 import { useEffect, useCallback } from 'react';
-import { useWallet } from '@solana/wallet-adapter-react';
+import { useSelfCustodyWallet } from '../contexts/WalletContext';
 import { useWalletStore } from '../stores/walletStore';
 import { showToast } from './useToast';
 import bs58 from 'bs58';
 import { API_URL } from '../config';
 
 export function useAuth() {
-  const { connected, publicKey, signMessage } = useWallet();
+  const { connected, publicKey, signMessage } = useSelfCustodyWallet();
   const { authToken, setAuthToken } = useWalletStore();
 
   const authenticate = useCallback(async () => {
@@ -25,7 +25,7 @@ export function useAuth() {
       if (!nonceRes.ok) return;
       const { message } = await nonceRes.json();
 
-      // 2. Sign the message with wallet
+      // 2. Sign the message with our keypair
       const encodedMessage = new TextEncoder().encode(message);
       const signatureBytes = await signMessage(encodedMessage);
       const signature = bs58.encode(signatureBytes);
@@ -46,7 +46,7 @@ export function useAuth() {
     }
   }, [connected, publicKey, signMessage, setAuthToken]);
 
-  // Auto-authenticate when wallet connects and no token exists
+  // Auto-authenticate when wallet unlocks and no token exists
   useEffect(() => {
     if (connected && publicKey && !authToken) {
       authenticate();

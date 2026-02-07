@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useWallet } from '@solana/wallet-adapter-react';
+import { useSelfCustodyWallet } from '../contexts/WalletContext';
 import { useTranslation } from 'react-i18next';
 import { API_URL } from '../config';
 
@@ -24,13 +24,13 @@ const STATUS_COLORS: Record<string, string> = {
   VOTING: 'bg-blue-500/20 text-blue-400',
   APPROVED: 'bg-green-500/20 text-green-400',
   REJECTED: 'bg-red-500/20 text-red-400',
-  FUNDED: 'bg-primary-500/20 text-primary-400',
+  FUNDED: 'bg-gold-500/20 text-gold-400',
   COMPLETED: 'bg-gray-500/20 text-gray-400',
 };
 
 export default function GrantsPage() {
   const { t } = useTranslation();
-  const { publicKey } = useWallet();
+  const { publicKey } = useSelfCustodyWallet();
 
   const STATUS_LABELS: Record<string, string> = {
     VOTING: t('grants.statusVoting'),
@@ -70,10 +70,7 @@ export default function GrantsPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">{t('grants.title')}</h1>
-        <Link
-          to="/grants/create"
-          className="bg-primary-500 text-black px-4 py-2 rounded-lg font-medium text-sm"
-        >
+        <Link to="/grants/create" className="bg-gold-500 text-black px-4 py-2 font-medium text-sm">
           {t('grants.propose')}
         </Link>
       </div>
@@ -81,13 +78,13 @@ export default function GrantsPage() {
       <p className="text-sm text-gray-400">{t('grants.subtitle')}</p>
 
       {/* Tabs */}
-      <div className="flex bg-white/5 rounded-xl p-1">
+      <div className="flex bg-white/5 p-1">
         {(['active', 'funded', 'mine'] as const).map((tabKey) => (
           <button
             key={tabKey}
             onClick={() => setTab(tabKey)}
-            className={`flex-1 py-2 rounded-lg font-medium text-sm transition ${
-              tab === tabKey ? 'bg-primary-500 text-black' : 'text-gray-400'
+            className={`flex-1 py-2 font-medium text-sm transition ${
+              tab === tabKey ? 'bg-gold-500 text-black' : 'text-gray-400'
             }`}
           >
             {tabKey === 'active'
@@ -140,7 +137,7 @@ export default function GrantsPage() {
                 <div className="mt-2">
                   <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-primary-500 rounded-full"
+                      className="h-full bg-gold-500 rounded-full"
                       style={{
                         width: `${
                           p.votesFor + p.votesAgainst > 0

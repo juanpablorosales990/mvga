@@ -47,7 +47,7 @@ export default function ConfirmModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={handleClose} />
-      <div className="relative bg-[#141414] border border-white/10 rounded-2xl p-6 max-w-sm w-full space-y-4 shadow-2xl">
+      <div className="relative bg-[#141414] border border-white/10 p-6 max-w-sm w-full space-y-4 shadow-2xl">
         <h3 className="text-lg font-bold text-white">{title}</h3>
         <p className="text-sm text-gray-400">{message}</p>
 
@@ -59,7 +59,7 @@ export default function ConfirmModal({
               onChange={(e) => setInputValue(e.target.value)}
               placeholder={inputPlaceholder}
               rows={3}
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-primary-500 resize-none"
+              className="w-full bg-white/5 border border-white/10 px-4 py-3 text-white text-sm focus:outline-none focus:border-gold-500 resize-none"
               autoFocus
             />
           </div>
@@ -68,17 +68,17 @@ export default function ConfirmModal({
         <div className="flex gap-3 pt-2">
           <button
             onClick={handleClose}
-            className="flex-1 py-2.5 rounded-xl text-sm font-medium bg-white/10 text-gray-300 hover:bg-white/20 transition"
+            className="flex-1 py-2.5 text-sm font-medium bg-white/10 text-gray-300 hover:bg-white/20 transition"
           >
             {t('common.cancel')}
           </button>
           <button
             onClick={handleConfirm}
             disabled={requireInput && !inputValue.trim()}
-            className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition disabled:opacity-40 ${
+            className={`flex-1 py-2.5 text-sm font-semibold transition disabled:opacity-40 ${
               isDanger
                 ? 'bg-red-500 text-white hover:bg-red-600'
-                : 'bg-primary-500 text-black hover:bg-primary-600'
+                : 'bg-gold-500 text-black hover:bg-gold-600'
             }`}
           >
             {confirmLabel || t('common.confirm')}

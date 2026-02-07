@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useWallet } from '@solana/wallet-adapter-react';
+import { useSelfCustodyWallet } from '../contexts/WalletContext';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
 import { API_URL } from '../config';
@@ -13,7 +13,7 @@ interface ReferralStats {
 
 export default function ReferralPage() {
   const { t } = useTranslation();
-  const { connected } = useWallet();
+  const { connected } = useSelfCustodyWallet();
   const { authToken } = useAuth();
   const [stats, setStats] = useState<ReferralStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -96,9 +96,7 @@ export default function ReferralPage() {
           {/* Referral Link */}
           <div className="card space-y-3">
             <p className="text-gray-400 text-sm">{t('referral.yourLink')}</p>
-            <div className="bg-white/5 rounded-xl px-4 py-3 font-mono text-sm break-all">
-              {referralLink}
-            </div>
+            <div className="bg-white/5 px-4 py-3 font-mono text-sm break-all">{referralLink}</div>
             <div className="flex gap-3">
               <button onClick={handleCopy} className="flex-1 btn-primary text-sm">
                 {copied ? t('referral.copied') : t('referral.copy')}
@@ -106,7 +104,7 @@ export default function ReferralPage() {
               {typeof navigator.share === 'function' && (
                 <button
                   onClick={handleShare}
-                  className="flex-1 bg-white/10 text-white py-3 rounded-xl font-medium text-sm hover:bg-white/20 transition"
+                  className="flex-1 bg-white/10 text-white py-3 font-medium text-sm hover:bg-white/20 transition"
                 >
                   {t('referral.share')}
                 </button>
@@ -127,8 +125,8 @@ export default function ReferralPage() {
           </div>
 
           {/* Reward Info */}
-          <div className="card bg-primary-500/10 border border-primary-500/20">
-            <p className="text-sm text-primary-400 font-medium mb-1">{t('referral.howItWorks')}</p>
+          <div className="card bg-gold-500/10 border border-gold-500/20">
+            <p className="text-sm text-gold-400 font-medium mb-1">{t('referral.howItWorks')}</p>
             <p className="text-sm text-gray-400">{t('referral.howItWorksDesc')}</p>
           </div>
 

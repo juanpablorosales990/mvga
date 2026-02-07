@@ -2,18 +2,30 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 
-// Mock wallet adapter to prevent Solana dependency issues
+// Mock wallet adapter (still used for ConnectionProvider + useConnection)
 vi.mock('@solana/wallet-adapter-react', () => ({
-  useWallet: () => ({
+  useConnection: () => ({ connection: {} }),
+  ConnectionProvider: ({ children }: { children: React.ReactNode }) => children,
+}));
+
+// Mock self-custody wallet context
+vi.mock('../contexts/WalletContext', () => ({
+  useSelfCustodyWallet: () => ({
+    walletState: 'NO_WALLET',
     connected: false,
     publicKey: null,
-    connecting: false,
-    disconnect: vi.fn(),
-    connect: vi.fn(),
-    wallet: null,
-    wallets: [],
+    keypair: null,
+    createWallet: vi.fn(),
+    importWallet: vi.fn(),
+    unlock: vi.fn(),
+    lock: vi.fn(),
+    deleteWallet: vi.fn(),
+    exportSecretKey: vi.fn(),
+    signMessage: vi.fn(),
+    signTransaction: vi.fn(),
+    sendTransaction: vi.fn(),
   }),
-  useConnection: () => ({ connection: {} }),
+  SelfCustodyWalletProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 
 vi.mock('../hooks/useAuth', () => ({
@@ -33,7 +45,7 @@ describe('BottomNav', () => {
 
     expect(screen.getByText('Wallet')).toBeTruthy();
     expect(screen.getByText('Swap')).toBeTruthy();
-    expect(screen.getByText('Stake')).toBeTruthy();
+    expect(screen.getByText('Bank')).toBeTruthy();
     expect(screen.getByText('P2P')).toBeTruthy();
     expect(screen.getByText('More')).toBeTruthy();
   });

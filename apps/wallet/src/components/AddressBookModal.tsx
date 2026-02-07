@@ -44,7 +44,7 @@ export default function AddressBookModal({ open, onClose, onSelect }: AddressBoo
 
   return (
     <div className="fixed inset-0 bg-black/80 flex items-end justify-center z-50">
-      <div className="bg-[#1a1a1a] rounded-t-3xl w-full max-w-lg p-6 max-h-[80vh] overflow-y-auto">
+      <div className="bg-[#1a1a1a]  w-full max-w-lg p-6 max-h-[80vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold">{t('addressBook.title')}</h2>
           <button onClick={onClose} className="text-gray-400 text-2xl">
@@ -60,14 +60,14 @@ export default function AddressBookModal({ open, onClose, onSelect }: AddressBoo
               value={newLabel}
               onChange={(e) => setNewLabel(e.target.value)}
               placeholder={t('addressBook.labelPlaceholder')}
-              className="w-full bg-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-primary-500"
+              className="w-full bg-white/10 px-4 py-3 focus:outline-none focus:border-gold-500"
             />
             <input
               type="text"
               value={newAddress}
               onChange={(e) => setNewAddress(e.target.value)}
               placeholder={t('addressBook.addressPlaceholder')}
-              className="w-full bg-white/10 rounded-xl px-4 py-3 font-mono text-sm focus:outline-none focus:border-primary-500"
+              className="w-full bg-white/10 px-4 py-3 font-mono text-sm focus:outline-none focus:border-gold-500"
             />
             {error && <p className="text-red-400 text-sm">{error}</p>}
             <div className="flex gap-2">
@@ -76,7 +76,7 @@ export default function AddressBookModal({ open, onClose, onSelect }: AddressBoo
                   setShowAdd(false);
                   setError('');
                 }}
-                className="flex-1 py-2 rounded-xl bg-white/10 text-gray-300"
+                className="flex-1 py-2 bg-white/10 text-gray-300"
               >
                 {t('common.cancel')}
               </button>
@@ -88,7 +88,7 @@ export default function AddressBookModal({ open, onClose, onSelect }: AddressBoo
         ) : (
           <button
             onClick={() => setShowAdd(true)}
-            className="w-full mb-4 py-3 rounded-xl border border-dashed border-white/20 text-gray-400 text-sm hover:bg-white/5 transition"
+            className="w-full mb-4 py-3 border border-dashed border-white/20 text-gray-400 text-sm hover:bg-white/5 transition"
           >
             + {t('addressBook.addNew')}
           </button>

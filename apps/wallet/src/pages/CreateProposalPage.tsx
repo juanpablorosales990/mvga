@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useWallet } from '@solana/wallet-adapter-react';
+import { useSelfCustodyWallet } from '../contexts/WalletContext';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
 import { API_URL } from '../config';
@@ -8,7 +8,7 @@ import { API_URL } from '../config';
 export default function CreateProposalPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { connected, publicKey } = useWallet();
+  const { connected, publicKey } = useSelfCustodyWallet();
   const { authToken } = useAuth();
 
   const [form, setForm] = useState({
@@ -86,7 +86,7 @@ export default function CreateProposalPage() {
             value={form.businessName}
             onChange={(e) => setForm({ ...form, businessName: e.target.value })}
             placeholder="Mi Tienda"
-            className="w-full bg-white/10 rounded-lg px-3 py-2"
+            className="w-full bg-white/10 px-3 py-2"
           />
         </div>
 
@@ -97,7 +97,7 @@ export default function CreateProposalPage() {
             value={form.businessLocation}
             onChange={(e) => setForm({ ...form, businessLocation: e.target.value })}
             placeholder="Caracas, Venezuela"
-            className="w-full bg-white/10 rounded-lg px-3 py-2"
+            className="w-full bg-white/10 px-3 py-2"
           />
         </div>
 
@@ -110,7 +110,7 @@ export default function CreateProposalPage() {
             onChange={(e) => setForm({ ...form, description: e.target.value })}
             placeholder="Describe your business, how the funds will be used, and your plan for growth..."
             rows={5}
-            className="w-full bg-white/10 rounded-lg px-3 py-2 resize-none"
+            className="w-full bg-white/10 px-3 py-2 resize-none"
           />
           <p className="text-xs text-gray-500 mt-1">{form.description.length}/5000</p>
         </div>
@@ -125,7 +125,7 @@ export default function CreateProposalPage() {
               value={form.requestedAmount}
               onChange={(e) => setForm({ ...form, requestedAmount: e.target.value })}
               placeholder="500"
-              className="w-full bg-white/10 rounded-lg px-3 py-2"
+              className="w-full bg-white/10 px-3 py-2"
             />
           </div>
           <div>
@@ -136,7 +136,7 @@ export default function CreateProposalPage() {
               type="number"
               value={form.votingDays}
               onChange={(e) => setForm({ ...form, votingDays: e.target.value })}
-              className="w-full bg-white/10 rounded-lg px-3 py-2"
+              className="w-full bg-white/10 px-3 py-2"
             />
           </div>
         </div>
@@ -148,12 +148,12 @@ export default function CreateProposalPage() {
             value={form.videoUrl}
             onChange={(e) => setForm({ ...form, videoUrl: e.target.value })}
             placeholder="https://youtube.com/watch?v=..."
-            className="w-full bg-white/10 rounded-lg px-3 py-2"
+            className="w-full bg-white/10 px-3 py-2"
           />
         </div>
 
         {error && (
-          <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 text-red-400 text-sm">
+          <div className="bg-red-500/10 border border-red-500/30 px-4 py-3 text-red-400 text-sm">
             {error}
           </div>
         )}

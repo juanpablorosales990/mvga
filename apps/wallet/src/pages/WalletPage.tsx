@@ -1,4 +1,5 @@
-import { useWallet, useConnection } from '@solana/wallet-adapter-react';
+import { useConnection } from '@solana/wallet-adapter-react';
+import { useSelfCustodyWallet } from '../contexts/WalletContext';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
@@ -38,7 +39,7 @@ const KNOWN_TOKENS: Record<
 
 export default function WalletPage() {
   const { t } = useTranslation();
-  const { connected, publicKey } = useWallet();
+  const { connected, publicKey } = useSelfCustodyWallet();
   const { connection } = useConnection();
   const [balances, setBalances] = useState<TokenBalance[]>([]);
   const [totalValue, setTotalValue] = useState(0);
@@ -162,9 +163,9 @@ export default function WalletPage() {
   if (!connected) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-        <div className="w-20 h-20 bg-primary-500/20 rounded-full flex items-center justify-center mb-6">
+        <div className="w-16 h-16 border border-gold-500/30 flex items-center justify-center mb-6">
           <svg
-            className="w-10 h-10 text-primary-500"
+            className="w-8 h-8 text-gold-500"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -177,9 +178,9 @@ export default function WalletPage() {
             />
           </svg>
         </div>
-        <h2 className="text-2xl font-bold mb-2">{t('wallet.title')}</h2>
-        <p className="text-gray-400 mb-6 max-w-sm">{t('wallet.connectPrompt')}</p>
-        <p className="text-sm text-gray-500">{t('wallet.clickConnect')}</p>
+        <h2 className="text-2xl font-bold mb-2 uppercase tracking-tight">{t('wallet.title')}</h2>
+        <p className="text-white/40 mb-6 max-w-sm text-sm">{t('wallet.connectPrompt')}</p>
+        <p className="text-xs text-white/20 font-mono">{t('wallet.clickConnect')}</p>
       </div>
     );
   }
@@ -188,32 +189,34 @@ export default function WalletPage() {
     <div className="space-y-6">
       {/* Total Balance Card */}
       <div className="card text-center py-8">
-        <p className="text-gray-400 text-sm mb-1">{t('wallet.totalBalance')}</p>
-        <h1 className="text-4xl font-bold mb-1">{formatUsdValue(totalValue, preferredCurrency)}</h1>
-        <p className="text-gray-500 text-sm">
+        <p className="text-xs text-white/40 font-mono uppercase tracking-wider mb-2">
+          {t('wallet.totalBalance')}
+        </p>
+        <h1 className="text-4xl font-black tracking-tight mb-2 font-mono">
+          {formatUsdValue(totalValue, preferredCurrency)}
+        </h1>
+        <p className="text-xs text-white/20 font-mono">
           {publicKey?.toBase58().slice(0, 8)}...{publicKey?.toBase58().slice(-8)}
         </p>
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-4 gap-2">
         {[
-          { label: t('wallet.send'), icon: '↑', href: '/send', color: 'bg-blue-500' },
-          { label: t('wallet.receive'), icon: '↓', href: '/receive', color: 'bg-green-500' },
-          { label: t('wallet.swap'), icon: '⇄', href: '/swap', color: 'bg-purple-500' },
-          { label: t('wallet.stake'), icon: '◎', href: '/stake', color: 'bg-primary-500' },
+          { label: t('wallet.send'), icon: '↑', href: '/send' },
+          { label: t('wallet.receive'), icon: '↓', href: '/receive' },
+          { label: t('wallet.swap'), icon: '⇄', href: '/swap' },
+          { label: t('wallet.stake'), icon: '◎', href: '/stake' },
         ].map((action) => (
           <Link
             key={action.label}
             to={action.href}
-            className="flex flex-col items-center gap-2 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition"
+            className="flex flex-col items-center gap-1.5 p-3 border border-white/10 hover:border-gold-500/30 hover:bg-gold-500/5 transition"
           >
-            <div
-              className={`w-10 h-10 ${action.color} rounded-full flex items-center justify-center text-white font-bold`}
-            >
-              {action.icon}
-            </div>
-            <span className="text-xs text-gray-400">{action.label}</span>
+            <span className="text-lg text-gold-500 font-bold">{action.icon}</span>
+            <span className="text-[10px] text-white/50 font-mono uppercase tracking-wider">
+              {action.label}
+            </span>
           </Link>
         ))}
       </div>
@@ -221,36 +224,36 @@ export default function WalletPage() {
       {/* Charts Link */}
       <Link
         to="/charts"
-        className="card flex items-center justify-between hover:bg-white/10 transition"
+        className="card flex items-center justify-between hover:bg-white/5 transition"
       >
         <span className="text-sm font-medium">{t('charts.viewChart')}</span>
-        <span className="text-primary-500 text-sm">→</span>
+        <span className="text-gold-500 text-sm font-mono">→</span>
       </Link>
 
       {/* Token List */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-semibold">{t('wallet.assets')}</h2>
-          <Link to="/history" className="text-sm text-primary-500">
+          <h2 className="text-sm font-bold uppercase tracking-wider">{t('wallet.assets')}</h2>
+          <Link to="/history" className="text-xs text-gold-500 font-mono uppercase tracking-wider">
             {t('wallet.viewAll')}
           </Link>
         </div>
         {loading ? (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {[1, 2, 3].map((i) => (
               <div key={i} className="card animate-pulse">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gray-700 rounded-full" />
+                  <div className="w-10 h-10 bg-white/5" />
                   <div className="flex-1">
-                    <div className="h-4 bg-gray-700 rounded w-20 mb-2" />
-                    <div className="h-3 bg-gray-700 rounded w-16" />
+                    <div className="h-4 bg-white/5 w-20 mb-2" />
+                    <div className="h-3 bg-white/5 w-16" />
                   </div>
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {balances.map((token) => (
               <TokenCard key={token.symbol} token={token} />
             ))}

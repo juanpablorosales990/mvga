@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useWallet } from '@solana/wallet-adapter-react';
+import { useSelfCustodyWallet } from '../contexts/WalletContext';
 import { useTranslation } from 'react-i18next';
 import { showToast } from '../hooks/useToast';
 import { API_URL } from '../config';
@@ -43,7 +43,7 @@ const TYPE_LABELS: Record<string, string> = {
 
 const TYPE_COLORS: Record<string, string> = {
   transfer: 'bg-blue-500/20 text-blue-400',
-  STAKE: 'bg-primary-500/20 text-primary-400',
+  STAKE: 'bg-gold-500/20 text-gold-400',
   UNSTAKE: 'bg-orange-500/20 text-orange-400',
   P2P_ESCROW_LOCK: 'bg-purple-500/20 text-purple-400',
   P2P_ESCROW_RELEASE: 'bg-green-500/20 text-green-400',
@@ -70,7 +70,7 @@ function groupByDate(items: HistoryItem[]) {
 
 export default function HistoryPage() {
   const { t } = useTranslation();
-  const { connected, publicKey } = useWallet();
+  const { connected, publicKey } = useSelfCustodyWallet();
   const [items, setItems] = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(false);
 

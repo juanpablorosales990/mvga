@@ -42,13 +42,13 @@ export default function ChartsPage() {
       <h1 className="text-2xl font-bold">{t('charts.title')}</h1>
 
       {/* Token Selector */}
-      <div className="flex bg-white/5 rounded-xl p-1">
+      <div className="flex bg-white/5 p-1">
         {TOKENS.map((tok) => (
           <button
             key={tok.symbol}
             onClick={() => setSelectedToken(tok.symbol as 'SOL' | 'MVGA')}
-            className={`flex-1 py-2 rounded-lg font-medium text-sm transition ${
-              selectedToken === tok.symbol ? 'bg-primary-500 text-black' : 'text-gray-400'
+            className={`flex-1 py-2 font-medium text-sm transition ${
+              selectedToken === tok.symbol ? 'bg-gold-500 text-black' : 'text-gray-400'
             }`}
           >
             {tok.symbol}
@@ -79,9 +79,9 @@ export default function ChartsPage() {
           <button
             key={tf.days}
             onClick={() => setSelectedTimeframe(tf.days)}
-            className={`flex-1 py-2 rounded-xl text-sm font-medium transition ${
+            className={`flex-1 py-2 text-sm font-medium transition ${
               selectedTimeframe === tf.days
-                ? 'bg-primary-500/20 text-primary-400 border border-primary-500/30'
+                ? 'bg-gold-500/20 text-gold-400 border border-gold-500/30'
                 : 'bg-white/5 text-gray-400'
             }`}
           >
@@ -94,7 +94,7 @@ export default function ChartsPage() {
       <div className="card">
         {loading ? (
           <div className="h-[200px] flex items-center justify-center">
-            <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-gold-500 border-t-transparent rounded-full animate-spin" />
           </div>
         ) : data.length === 0 ? (
           <div className="h-[200px] flex items-center justify-center text-gray-400">

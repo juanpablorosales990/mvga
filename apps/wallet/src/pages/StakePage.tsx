@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useWallet, useConnection } from '@solana/wallet-adapter-react';
+import { useConnection } from '@solana/wallet-adapter-react';
+import { useSelfCustodyWallet } from '../contexts/WalletContext';
 import { PublicKey, Transaction } from '@solana/web3.js';
 import {
   getAssociatedTokenAddress,
@@ -95,7 +96,7 @@ export default function StakePage() {
     Diamond: t('stake.tierDiamond'),
   };
 
-  const { connected, publicKey, sendTransaction } = useWallet();
+  const { connected, publicKey, sendTransaction } = useSelfCustodyWallet();
   const { connection } = useConnection();
   const { authToken } = useAuth();
   const [amount, setAmount] = useState('');
@@ -370,7 +371,7 @@ export default function StakePage() {
             <button
               onClick={handleClaim}
               disabled={loading}
-              className="mt-1 text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded-lg"
+              className="mt-1 text-xs bg-green-500/20 text-green-400 px-2 py-1"
             >
               {t('stake.claim')}
             </button>
@@ -422,19 +423,19 @@ export default function StakePage() {
       </div>
 
       {/* Stake/Unstake Tabs */}
-      <div className="flex bg-white/5 rounded-xl p-1">
+      <div className="flex bg-white/5 p-1">
         <button
           onClick={() => setActiveTab('stake')}
-          className={`flex-1 py-2 rounded-lg font-medium transition ${
-            activeTab === 'stake' ? 'bg-primary-500 text-black' : 'text-gray-400'
+          className={`flex-1 py-2 font-medium transition ${
+            activeTab === 'stake' ? 'bg-gold-500 text-black' : 'text-gray-400'
           }`}
         >
           {t('stake.stakeTab')}
         </button>
         <button
           onClick={() => setActiveTab('unstake')}
-          className={`flex-1 py-2 rounded-lg font-medium transition ${
-            activeTab === 'unstake' ? 'bg-primary-500 text-black' : 'text-gray-400'
+          className={`flex-1 py-2 font-medium transition ${
+            activeTab === 'unstake' ? 'bg-gold-500 text-black' : 'text-gray-400'
           }`}
         >
           {t('stake.unstakeTab')}
@@ -451,7 +452,7 @@ export default function StakePage() {
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               placeholder="0"
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 pr-20 focus:outline-none focus:border-primary-500"
+              className="w-full bg-white/5 border border-white/10 px-4 py-3 pr-20 focus:outline-none focus:border-gold-500"
             />
             <button
               onClick={() =>
@@ -459,7 +460,7 @@ export default function StakePage() {
                   activeTab === 'stake' ? mvgaBalance.toString() : position.totalStaked.toString()
                 )
               }
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-primary-500 text-sm font-medium"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gold-500 text-sm font-medium"
             >
               {t('stake.max')}
             </button>
@@ -480,9 +481,9 @@ export default function StakePage() {
                 <button
                   key={period.days}
                   onClick={() => setLockPeriod(period.days)}
-                  className={`p-3 rounded-xl border transition ${
+                  className={`p-3 border transition ${
                     lockPeriod === period.days
-                      ? 'border-primary-500 bg-primary-500/10'
+                      ? 'border-gold-500 bg-gold-500/10'
                       : 'border-white/10 hover:border-white/30'
                   }`}
                 >

@@ -1,11 +1,11 @@
-import { useWallet } from '@solana/wallet-adapter-react';
+import { useSelfCustodyWallet } from '../contexts/WalletContext';
 import { QRCodeSVG } from 'qrcode.react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 export default function ReceivePage() {
   const { t } = useTranslation();
-  const { connected, publicKey } = useWallet();
+  const { connected, publicKey } = useSelfCustodyWallet();
   const [copied, setCopied] = useState(false);
 
   const address = publicKey?.toBase58() || '';
@@ -36,7 +36,7 @@ export default function ReceivePage() {
 
       <div className="card flex flex-col items-center py-8">
         {/* QR Code */}
-        <div className="bg-white p-4 rounded-2xl mb-6">
+        <div className="bg-white p-4 mb-6">
           <QRCodeSVG value={address} size={200} level="H" />
         </div>
 

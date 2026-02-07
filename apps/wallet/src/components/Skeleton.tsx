@@ -14,7 +14,7 @@ export function Skeleton({ className, variant = 'text', width, height }: Skeleto
         'animate-pulse bg-white/10',
         variant === 'circular' && 'rounded-full',
         variant === 'text' && 'rounded h-4',
-        variant === 'rectangular' && 'rounded-2xl',
+        variant === 'rectangular' && '',
         className
       )}
       style={{ width, height }}

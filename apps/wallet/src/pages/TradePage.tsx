@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useWallet, useConnection } from '@solana/wallet-adapter-react';
+import { useConnection } from '@solana/wallet-adapter-react';
+import { useSelfCustodyWallet } from '../contexts/WalletContext';
 import { PublicKey, Transaction } from '@solana/web3.js';
 import {
   getAssociatedTokenAddress,
@@ -55,7 +56,7 @@ export default function TradePage() {
   };
   const { tradeId } = useParams<{ tradeId: string }>();
   const navigate = useNavigate();
-  const { connected, publicKey, sendTransaction } = useWallet();
+  const { connected, publicKey, sendTransaction } = useSelfCustodyWallet();
   const { connection } = useConnection();
   const { authToken } = useAuth();
 
@@ -281,7 +282,7 @@ export default function TradePage() {
     return (
       <div className="text-center py-16 text-gray-400">
         <p>{t('trade.tradeNotFound')}</p>
-        <button onClick={() => navigate('/p2p')} className="text-primary-500 mt-2">
+        <button onClick={() => navigate('/p2p')} className="text-gold-500 mt-2">
           {t('trade.backToP2P')}
         </button>
       </div>
@@ -309,7 +310,7 @@ export default function TradePage() {
             <div key={step} className="flex-1 flex items-center">
               <div
                 className={`h-2 flex-1 rounded-full ${
-                  i <= currentStep ? 'bg-primary-500' : 'bg-white/10'
+                  i <= currentStep ? 'bg-gold-500' : 'bg-white/10'
                 }`}
               />
             </div>
@@ -324,7 +325,7 @@ export default function TradePage() {
               ? 'bg-green-500/20 text-green-400'
               : trade.status === 'CANCELLED' || trade.status === 'DISPUTED'
                 ? 'bg-red-500/20 text-red-400'
-                : 'bg-primary-500/20 text-primary-400'
+                : 'bg-gold-500/20 text-gold-400'
           }`}
         >
           {STATUS_LABELS[trade.status] || trade.status}
@@ -375,7 +376,7 @@ export default function TradePage() {
               href={`https://solscan.io/tx/${trade.escrowTx}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-primary-400 underline text-xs font-mono"
+              className="text-gold-400 underline text-xs font-mono"
             >
               {trade.escrowTx.slice(0, 12)}...
             </a>
@@ -445,7 +446,7 @@ export default function TradePage() {
               <button
                 onClick={handleConfirmPayment}
                 disabled={actionLoading}
-                className="w-full bg-green-500 text-black py-3 rounded-xl font-semibold disabled:opacity-50"
+                className="w-full bg-green-500 text-black py-3 font-semibold disabled:opacity-50"
               >
                 {actionLoading ? t('trade.confirming') : t('trade.confirmPayment')}
               </button>
@@ -465,7 +466,7 @@ export default function TradePage() {
               <button
                 onClick={() => setShowCancelModal(true)}
                 disabled={actionLoading}
-                className="flex-1 py-2 rounded-xl text-sm font-medium bg-white/10 text-gray-300 hover:bg-white/20"
+                className="flex-1 py-2 text-sm font-medium bg-white/10 text-gray-300 hover:bg-white/20"
               >
                 {t('common.cancel')}
               </button>
@@ -474,7 +475,7 @@ export default function TradePage() {
               <button
                 onClick={() => setShowDisputeModal(true)}
                 disabled={actionLoading}
-                className="flex-1 py-2 rounded-xl text-sm font-medium bg-red-500/10 text-red-400 hover:bg-red-500/20"
+                className="flex-1 py-2 text-sm font-medium bg-red-500/10 text-red-400 hover:bg-red-500/20"
               >
                 {t('trade.dispute')}
               </button>
@@ -498,12 +499,12 @@ export default function TradePage() {
 
       {/* Error / Success */}
       {error && (
-        <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 text-red-400 text-sm">
+        <div className="bg-red-500/10 border border-red-500/30 px-4 py-3 text-red-400 text-sm">
           {error}
         </div>
       )}
       {success && (
-        <div className="bg-green-500/10 border border-green-500/30 rounded-xl px-4 py-3 text-green-400 text-sm">
+        <div className="bg-green-500/10 border border-green-500/30 px-4 py-3 text-green-400 text-sm">
           {success}
         </div>
       )}

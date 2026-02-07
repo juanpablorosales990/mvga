@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useWallet } from '@solana/wallet-adapter-react';
+import { useSelfCustodyWallet } from '../contexts/WalletContext';
 import { useWalletStore } from '../stores/walletStore';
 
 export default function SettingsPage() {
   const { t, i18n } = useTranslation();
-  const { connected, publicKey } = useWallet();
+  const { connected, publicKey } = useSelfCustodyWallet();
   const preferredCurrency = useWalletStore((s) => s.preferredCurrency);
   const setPreferredCurrency = useWalletStore((s) => s.setPreferredCurrency);
   const autoCompoundDefault = useWalletStore((s) => s.autoCompoundDefault);
@@ -44,9 +44,9 @@ export default function SettingsPage() {
         <div className="flex gap-2">
           <button
             onClick={() => i18n.changeLanguage('en')}
-            className={`flex-1 py-2 rounded-lg text-sm font-medium transition ${
+            className={`flex-1 py-2 text-sm font-medium transition ${
               i18n.language === 'en'
-                ? 'bg-primary-500 text-black'
+                ? 'bg-gold-500 text-black'
                 : 'bg-white/10 text-gray-300 hover:bg-white/20'
             }`}
           >
@@ -54,9 +54,9 @@ export default function SettingsPage() {
           </button>
           <button
             onClick={() => i18n.changeLanguage('es')}
-            className={`flex-1 py-2 rounded-lg text-sm font-medium transition ${
+            className={`flex-1 py-2 text-sm font-medium transition ${
               i18n.language === 'es'
-                ? 'bg-primary-500 text-black'
+                ? 'bg-gold-500 text-black'
                 : 'bg-white/10 text-gray-300 hover:bg-white/20'
             }`}
           >
@@ -73,9 +73,9 @@ export default function SettingsPage() {
         <div className="flex gap-2">
           <button
             onClick={() => setPreferredCurrency('USD')}
-            className={`flex-1 py-2 rounded-lg text-sm font-medium transition ${
+            className={`flex-1 py-2 text-sm font-medium transition ${
               preferredCurrency === 'USD'
-                ? 'bg-primary-500 text-black'
+                ? 'bg-gold-500 text-black'
                 : 'bg-white/10 text-gray-300 hover:bg-white/20'
             }`}
           >
@@ -83,9 +83,9 @@ export default function SettingsPage() {
           </button>
           <button
             onClick={() => setPreferredCurrency('VES')}
-            className={`flex-1 py-2 rounded-lg text-sm font-medium transition ${
+            className={`flex-1 py-2 text-sm font-medium transition ${
               preferredCurrency === 'VES'
-                ? 'bg-primary-500 text-black'
+                ? 'bg-gold-500 text-black'
                 : 'bg-white/10 text-gray-300 hover:bg-white/20'
             }`}
           >
@@ -106,7 +106,7 @@ export default function SettingsPage() {
             </span>
             <button
               onClick={copyAddress}
-              className="text-xs px-3 py-1.5 rounded-lg bg-white/10 text-gray-300 hover:bg-white/20 transition flex-shrink-0"
+              className="text-xs px-3 py-1.5 bg-white/10 text-gray-300 hover:bg-white/20 transition flex-shrink-0"
             >
               {copied ? t('receive.copied') : t('receive.copyAddress')}
             </button>

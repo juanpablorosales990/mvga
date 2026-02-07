@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { useWallet, useConnection } from '@solana/wallet-adapter-react';
+import { useConnection } from '@solana/wallet-adapter-react';
+import { useSelfCustodyWallet } from '../contexts/WalletContext';
 import { PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import {
   createTransferInstruction,
@@ -22,7 +23,7 @@ const TOKEN_MINTS: Record<string, { mint: string; decimals: number }> = {
 
 export default function SendPage() {
   const { t } = useTranslation();
-  const { connected, publicKey, sendTransaction } = useWallet();
+  const { connected, publicKey, sendTransaction } = useSelfCustodyWallet();
   const { connection } = useConnection();
   const invalidateBalances = useWalletStore((s) => s.invalidateBalances);
 
@@ -209,7 +210,7 @@ export default function SendPage() {
           <select
             value={token}
             onChange={(e) => setToken(e.target.value)}
-            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-primary-500"
+            className="w-full bg-white/5 border border-white/10 px-4 py-3 focus:outline-none focus:border-gold-500"
           >
             <option value="SOL">{t('send.solLabel')}</option>
             <option value="USDC">{t('send.usdcLabel')}</option>
@@ -224,7 +225,7 @@ export default function SendPage() {
             <button
               type="button"
               onClick={() => setShowAddressBook(true)}
-              className="text-xs text-primary-500 hover:text-primary-400"
+              className="text-xs text-gold-500 hover:text-gold-400"
             >
               {t('addressBook.title')}
             </button>
@@ -234,7 +235,7 @@ export default function SendPage() {
             value={recipient}
             onChange={(e) => setRecipient(e.target.value)}
             placeholder={t('send.enterAddress')}
-            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-primary-500"
+            className="w-full bg-white/5 border border-white/10 px-4 py-3 focus:outline-none focus:border-gold-500"
           />
         </div>
 
@@ -248,7 +249,7 @@ export default function SendPage() {
               onChange={(e) => setAmount(e.target.value)}
               placeholder="0.00"
               step="any"
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 pr-16 focus:outline-none focus:border-primary-500"
+              className="w-full bg-white/5 border border-white/10 px-4 py-3 pr-16 focus:outline-none focus:border-gold-500"
             />
             <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">{token}</span>
           </div>
@@ -266,14 +267,14 @@ export default function SendPage() {
 
         {/* Error Message */}
         {error && (
-          <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 text-red-400 text-sm">
+          <div className="bg-red-500/10 border border-red-500/30 px-4 py-3 text-red-400 text-sm">
             {error}
           </div>
         )}
 
         {/* Success Message */}
         {txSignature && (
-          <div className="bg-green-500/10 border border-green-500/30 rounded-xl px-4 py-3 text-green-400 text-sm">
+          <div className="bg-green-500/10 border border-green-500/30 px-4 py-3 text-green-400 text-sm">
             <p>{t('send.success')}</p>
             <a
               href={`https://solscan.io/tx/${txSignature}`}

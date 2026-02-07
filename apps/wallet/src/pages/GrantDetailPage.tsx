@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useWallet } from '@solana/wallet-adapter-react';
+import { useSelfCustodyWallet } from '../contexts/WalletContext';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
 import { API_URL } from '../config';
@@ -29,7 +29,7 @@ export default function GrantDetailPage() {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { publicKey } = useWallet();
+  const { publicKey } = useSelfCustodyWallet();
   const { authToken } = useAuth();
 
   const [proposal, setProposal] = useState<ProposalDetail | null>(null);
@@ -90,7 +90,7 @@ export default function GrantDetailPage() {
     return (
       <div className="text-center py-16 text-gray-400">
         <p>{t('grants.proposalNotFound')}</p>
-        <button onClick={() => navigate('/grants')} className="text-primary-500 mt-2">
+        <button onClick={() => navigate('/grants')} className="text-gold-500 mt-2">
           {t('grants.backToGrants')}
         </button>
       </div>
@@ -118,7 +118,7 @@ export default function GrantDetailPage() {
               proposal.status === 'VOTING'
                 ? 'bg-blue-500/20 text-blue-400'
                 : proposal.status === 'FUNDED'
-                  ? 'bg-primary-500/20 text-primary-400'
+                  ? 'bg-gold-500/20 text-gold-400'
                   : 'bg-gray-500/20 text-gray-400'
             }`}
           >
@@ -133,7 +133,7 @@ export default function GrantDetailPage() {
             href={proposal.videoUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-primary-500 text-sm underline"
+            className="text-gold-500 text-sm underline"
           >
             {t('grants.watchVideo')}
           </a>
@@ -180,14 +180,14 @@ export default function GrantDetailPage() {
               <button
                 onClick={() => handleVote('FOR')}
                 disabled={voting}
-                className="flex-1 py-2 rounded-xl font-medium bg-green-500 text-black disabled:opacity-50"
+                className="flex-1 py-2 font-medium bg-green-500 text-black disabled:opacity-50"
               >
                 {voting ? '...' : t('grants.voteFor')}
               </button>
               <button
                 onClick={() => handleVote('AGAINST')}
                 disabled={voting}
-                className="flex-1 py-2 rounded-xl font-medium bg-red-500 text-white disabled:opacity-50"
+                className="flex-1 py-2 font-medium bg-red-500 text-white disabled:opacity-50"
               >
                 {voting ? '...' : t('grants.voteAgainst')}
               </button>

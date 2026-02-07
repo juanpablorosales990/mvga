@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useWallet } from '@solana/wallet-adapter-react';
+import { useSelfCustodyWallet } from '../contexts/WalletContext';
 import { useWalletStore } from '../stores/walletStore';
 import { showToast } from '../hooks/useToast';
 import { API_URL } from '../config';
@@ -39,7 +39,7 @@ function relativeTime(dateStr: string): string {
 
 export default function NotificationsPage() {
   const { t } = useTranslation();
-  const { connected, publicKey } = useWallet();
+  const { connected, publicKey } = useSelfCustodyWallet();
   const readNotifications = useWalletStore((s) => s.readNotifications);
   const markAllNotificationsRead = useWalletStore((s) => s.markAllNotificationsRead);
   const [entries, setEntries] = useState<LogEntry[]>([]);
@@ -79,7 +79,7 @@ export default function NotificationsPage() {
         {unreadIds.length > 0 && (
           <button
             onClick={() => markAllNotificationsRead(unreadIds)}
-            className="text-xs text-primary-400 hover:text-primary-300 transition"
+            className="text-xs text-gold-400 hover:text-gold-300 transition"
           >
             {t('notifications.markAllRead')}
           </button>
@@ -131,7 +131,7 @@ export default function NotificationsPage() {
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium">{t(config.labelKey)}</span>
                     {isUnread && (
-                      <span className="w-1.5 h-1.5 rounded-full bg-primary-500 flex-shrink-0" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-gold-500 flex-shrink-0" />
                     )}
                   </div>
                   <p className="text-xs text-gray-400 truncate">
