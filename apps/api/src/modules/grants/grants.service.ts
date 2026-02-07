@@ -367,28 +367,39 @@ export class GrantsService {
   }
 
   async disburseGrant(proposalId: string) {
+    // Atomically claim the proposal for disbursement (prevents double-disburse race)
+    const claimed = await this.prisma.grantProposal.updateMany({
+      where: { id: proposalId, status: 'APPROVED' },
+      data: { status: 'FUNDED', fundedAt: new Date() },
+    });
+
+    if (claimed.count === 0) {
+      const existing = await this.prisma.grantProposal.findUnique({
+        where: { id: proposalId },
+      });
+      if (!existing) throw new NotFoundException('Proposal not found');
+      throw new BadRequestException(`Proposal is ${existing.status}, not APPROVED`);
+    }
+
     const proposal = await this.prisma.grantProposal.findUnique({
       where: { id: proposalId },
     });
 
-    if (!proposal) {
-      throw new NotFoundException('Proposal not found');
-    }
-
-    if (proposal.status !== 'APPROVED') {
-      throw new BadRequestException('Only approved proposals can be funded');
-    }
-
     if (!this.humanitarianFundKeypair) {
+      // Revert status since we can't actually disburse
+      await this.prisma.grantProposal.update({
+        where: { id: proposalId },
+        data: { status: 'APPROVED', fundedAt: null },
+      });
       throw new BadRequestException('Grant disbursement is not configured');
     }
 
     // Amount is stored as USD * AMOUNT_SCALE, convert to USDC (6 decimals)
-    const usdAmount = Number(proposal.requestedAmount) / AMOUNT_SCALE;
+    const usdAmount = Number(proposal!.requestedAmount) / AMOUNT_SCALE;
     const usdcRawAmount = BigInt(Math.round(usdAmount * 10 ** USDC_DECIMALS));
 
     const connection = this.solana.getConnection();
-    const recipientPubkey = new PublicKey(proposal.applicantAddress);
+    const recipientPubkey = new PublicKey(proposal!.applicantAddress);
 
     const fundAta = await getAssociatedTokenAddress(
       this.usdcMint,
@@ -422,16 +433,22 @@ export class GrantsService {
       )
     );
 
-    const sig = await sendAndConfirmTransaction(connection, tx, [this.humanitarianFundKeypair]);
+    let sig: string;
+    try {
+      sig = await sendAndConfirmTransaction(connection, tx, [this.humanitarianFundKeypair]);
+    } catch (e) {
+      // Revert status on tx failure so it can be retried
+      await this.prisma.grantProposal.update({
+        where: { id: proposalId },
+        data: { status: 'APPROVED', fundedAt: null },
+      });
+      throw e;
+    }
 
-    // Update proposal status
+    // Update with funding tx signature
     await this.prisma.grantProposal.update({
       where: { id: proposalId },
-      data: {
-        status: 'FUNDED',
-        fundedAt: new Date(),
-        fundingTx: sig,
-      },
+      data: { fundingTx: sig },
     });
 
     // Log transaction

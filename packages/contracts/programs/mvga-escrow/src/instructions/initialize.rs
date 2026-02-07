@@ -4,7 +4,7 @@ use anchor_spl::token_interface::{
 };
 
 use crate::errors::EscrowError;
-use crate::state::{EscrowState, EscrowStatus};
+use crate::state::{EscrowInitialized, EscrowState, EscrowStatus};
 
 #[derive(Accounts)]
 #[instruction(trade_id: [u8; 16])]
@@ -65,6 +65,7 @@ pub fn handle_initialize(
 ) -> Result<()> {
     require!(amount > 0, EscrowError::ZeroAmount);
     require!(timeout_seconds > 0, EscrowError::ZeroTimeout);
+    require!(timeout_seconds <= 30 * 24 * 3600, EscrowError::TimeoutTooLong); // Max 30 days
 
     let clock = Clock::get()?;
 
@@ -91,6 +92,15 @@ pub fn handle_initialize(
     let cpi_program = ctx.accounts.token_program.to_account_info();
     let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
     transfer_checked(cpi_ctx, amount, ctx.accounts.mint.decimals)?;
+
+    emit!(EscrowInitialized {
+        trade_id,
+        seller: ctx.accounts.seller.key(),
+        buyer: ctx.accounts.buyer.key(),
+        mint: ctx.accounts.mint.key(),
+        amount,
+        timeout_seconds,
+    });
 
     msg!("Escrow initialized: {} tokens locked", amount);
     Ok(())

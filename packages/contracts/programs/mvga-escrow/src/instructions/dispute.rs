@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 
 use crate::errors::EscrowError;
-use crate::state::{EscrowState, EscrowStatus};
+use crate::state::{DisputeFiled, EscrowState, EscrowStatus};
 
 #[derive(Accounts)]
 pub struct FileDispute<'info> {
@@ -33,6 +33,11 @@ pub fn handle_dispute(ctx: Context<FileDispute>) -> Result<()> {
     );
 
     escrow.status = EscrowStatus::Disputed;
+
+    emit!(DisputeFiled {
+        trade_id: escrow.trade_id,
+        disputer,
+    });
 
     msg!("Dispute filed by {}", disputer);
     Ok(())

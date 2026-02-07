@@ -59,20 +59,34 @@ export class AuthService {
   }
 
   async verify(walletAddress: string, signature: string): Promise<{ accessToken: string }> {
-    const stored = await this.prisma.authNonce.findUnique({
-      where: { walletAddress },
+    // Atomically claim the nonce (prevents TOCTOU race — concurrent requests
+    // both reading used=false before either marks it used)
+    const claimed = await this.prisma.authNonce.updateMany({
+      where: { walletAddress, used: false, expiresAt: { gt: new Date() } },
+      data: { used: true },
     });
 
-    if (!stored || stored.used) {
-      throw new UnauthorizedException('No nonce found. Request a nonce first.');
-    }
-
-    if (new Date() > stored.expiresAt) {
+    if (claimed.count === 0) {
+      // Could be: no nonce, already used, or expired — check which
+      const stored = await this.prisma.authNonce.findUnique({
+        where: { walletAddress },
+      });
+      if (!stored) {
+        throw new UnauthorizedException('No nonce found. Request a nonce first.');
+      }
+      if (stored.used) {
+        throw new UnauthorizedException('Nonce already used. Request a new one.');
+      }
       await this.prisma.authNonce.delete({ where: { id: stored.id } });
       throw new UnauthorizedException('Nonce expired. Request a new one.');
     }
 
-    const message = `Sign this message to authenticate with MVGA.\n\nWallet: ${walletAddress}\nNonce: ${stored.nonce}`;
+    // Nonce is now atomically claimed — fetch it for signature verification
+    const stored = await this.prisma.authNonce.findUnique({
+      where: { walletAddress },
+    });
+
+    const message = `Sign this message to authenticate with MVGA.\n\nWallet: ${walletAddress}\nNonce: ${stored!.nonce}`;
     const messageBytes = new TextEncoder().encode(message);
     const signatureBytes = bs58.default.decode(signature);
     const publicKeyBytes = bs58.default.decode(walletAddress);
@@ -80,14 +94,13 @@ export class AuthService {
     const verified = nacl.sign.detached.verify(messageBytes, signatureBytes, publicKeyBytes);
 
     if (!verified) {
+      // Reset the nonce so the user can retry with the correct signature
+      await this.prisma.authNonce.updateMany({
+        where: { walletAddress, used: true },
+        data: { used: false },
+      });
       throw new UnauthorizedException('Invalid signature');
     }
-
-    // Mark nonce as used (atomic — prevents replay)
-    await this.prisma.authNonce.update({
-      where: { id: stored.id },
-      data: { used: true },
-    });
 
     // Upsert user in database
     const user = await this.prisma.user.upsert({

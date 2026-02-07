@@ -6,7 +6,7 @@ use anchor_spl::token_interface::{
 };
 
 use crate::errors::EscrowError;
-use crate::state::{EscrowState, EscrowStatus};
+use crate::state::{EscrowReleased, EscrowState, EscrowStatus};
 
 #[derive(Accounts)]
 pub struct ReleaseEscrow<'info> {
@@ -28,6 +28,7 @@ pub struct ReleaseEscrow<'info> {
 
     #[account(
         mut,
+        close = seller,
         constraint = escrow_state.seller == seller.key() @ EscrowError::UnauthorizedSeller,
         constraint = escrow_state.status == EscrowStatus::PaymentSent @ EscrowError::InvalidStatus,
         seeds = [b"escrow", escrow_state.trade_id.as_ref(), escrow_state.seller.as_ref()],
@@ -100,6 +101,13 @@ pub fn handle_release(ctx: Context<ReleaseEscrow>) -> Result<()> {
     // Update status
     let escrow = &mut ctx.accounts.escrow_state;
     escrow.status = EscrowStatus::Released;
+
+    emit!(EscrowReleased {
+        trade_id,
+        seller: seller_key,
+        buyer: ctx.accounts.buyer.key(),
+        amount,
+    });
 
     msg!("Escrow released: {} tokens sent to buyer", amount);
     Ok(())

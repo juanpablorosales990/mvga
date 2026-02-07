@@ -23,6 +23,7 @@ describe('AuthService', () => {
         upsert: jest.fn().mockResolvedValue({}),
         findUnique: jest.fn(),
         update: jest.fn().mockResolvedValue({}),
+        updateMany: jest.fn().mockResolvedValue({ count: 0 }),
         delete: jest.fn().mockResolvedValue({}),
         deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
       },
@@ -71,11 +72,15 @@ describe('AuthService', () => {
 
   describe('verify', () => {
     it('throws if no nonce was generated', async () => {
+      // updateMany returns 0 (no matching nonce), findUnique also returns null
+      prismaService.authNonce.updateMany.mockResolvedValue({ count: 0 });
       prismaService.authNonce.findUnique.mockResolvedValue(null);
       await expect(service.verify('unknown-wallet', 'sig')).rejects.toThrow(UnauthorizedException);
     });
 
     it('throws if nonce has expired', async () => {
+      // updateMany returns 0 (expired nonce not matched), findUnique returns expired nonce
+      prismaService.authNonce.updateMany.mockResolvedValue({ count: 0 });
       prismaService.authNonce.findUnique.mockResolvedValue({
         id: 'nonce-1',
         walletAddress: 'wallet',
@@ -89,6 +94,8 @@ describe('AuthService', () => {
     });
 
     it('throws if nonce is already used', async () => {
+      // updateMany returns 0 (used=true not matched), findUnique returns used nonce
+      prismaService.authNonce.updateMany.mockResolvedValue({ count: 0 });
       prismaService.authNonce.findUnique.mockResolvedValue({
         id: 'nonce-1',
         walletAddress: 'wallet',
@@ -97,7 +104,7 @@ describe('AuthService', () => {
         used: true,
       });
 
-      await expect(service.verify('wallet', 'sig')).rejects.toThrow('No nonce found');
+      await expect(service.verify('wallet', 'sig')).rejects.toThrow('Nonce already used');
     });
   });
 

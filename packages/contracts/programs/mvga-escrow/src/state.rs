@@ -38,3 +38,49 @@ pub enum EscrowStatus {
     /// Under dispute — awaiting admin resolution
     Disputed,
 }
+
+// ─── Events ────────────────────────────────────────────────────────────
+
+#[event]
+pub struct EscrowInitialized {
+    pub trade_id: [u8; 16],
+    pub seller: Pubkey,
+    pub buyer: Pubkey,
+    pub mint: Pubkey,
+    pub amount: u64,
+    pub timeout_seconds: u64,
+}
+
+#[event]
+pub struct PaymentMarked {
+    pub trade_id: [u8; 16],
+    pub buyer: Pubkey,
+}
+
+#[event]
+pub struct EscrowReleased {
+    pub trade_id: [u8; 16],
+    pub seller: Pubkey,
+    pub buyer: Pubkey,
+    pub amount: u64,
+}
+
+#[event]
+pub struct EscrowRefunded {
+    pub trade_id: [u8; 16],
+    pub seller: Pubkey,
+    pub amount: u64,
+}
+
+#[event]
+pub struct DisputeFiled {
+    pub trade_id: [u8; 16],
+    pub disputer: Pubkey,
+}
+
+#[event]
+pub struct DisputeResolved {
+    pub trade_id: [u8; 16],
+    pub admin: Pubkey,
+    pub resolution: u8, // 0 = ReleaseToBuyer, 1 = RefundToSeller
+}

@@ -5,7 +5,7 @@ use anchor_spl::token_interface::{
 };
 
 use crate::errors::EscrowError;
-use crate::state::{EscrowState, EscrowStatus};
+use crate::state::{EscrowRefunded, EscrowState, EscrowStatus};
 
 #[derive(Accounts)]
 pub struct RefundEscrow<'info> {
@@ -20,6 +20,7 @@ pub struct RefundEscrow<'info> {
 
     #[account(
         mut,
+        close = seller,
         constraint = escrow_state.seller == seller.key() @ EscrowError::UnauthorizedSeller,
         seeds = [b"escrow", escrow_state.trade_id.as_ref(), escrow_state.seller.as_ref()],
         bump = escrow_state.bump,
@@ -102,6 +103,12 @@ pub fn handle_refund(ctx: Context<RefundEscrow>) -> Result<()> {
     // Update status
     let escrow = &mut ctx.accounts.escrow_state;
     escrow.status = EscrowStatus::Refunded;
+
+    emit!(EscrowRefunded {
+        trade_id,
+        seller: seller_key,
+        amount,
+    });
 
     msg!("Escrow refunded: {} tokens returned to seller", amount);
     Ok(())

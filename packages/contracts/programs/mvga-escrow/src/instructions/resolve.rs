@@ -6,7 +6,7 @@ use anchor_spl::token_interface::{
 };
 
 use crate::errors::EscrowError;
-use crate::state::{EscrowState, EscrowStatus};
+use crate::state::{DisputeResolved, EscrowState, EscrowStatus};
 
 /// Resolution: 0 = release to buyer, 1 = refund to seller
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, PartialEq, Eq)]
@@ -36,6 +36,7 @@ pub struct ResolveDispute<'info> {
 
     #[account(
         mut,
+        close = seller,
         constraint = escrow_state.admin == admin.key() @ EscrowError::UnauthorizedAdmin,
         constraint = escrow_state.seller == seller.key() @ EscrowError::UnauthorizedSeller,
         constraint = escrow_state.buyer == buyer.key() @ EscrowError::UnauthorizedBuyer,
@@ -76,11 +77,9 @@ pub struct ResolveDispute<'info> {
 pub fn handle_resolve(ctx: Context<ResolveDispute>, resolution: Resolution) -> Result<()> {
     let escrow = &ctx.accounts.escrow_state;
 
-    // Can resolve from Disputed, Locked, or PaymentSent (admin override)
+    // Admin can only resolve disputed escrows
     require!(
-        escrow.status == EscrowStatus::Disputed
-            || escrow.status == EscrowStatus::Locked
-            || escrow.status == EscrowStatus::PaymentSent,
+        escrow.status == EscrowStatus::Disputed,
         EscrowError::InvalidStatus
     );
 
@@ -140,6 +139,12 @@ pub fn handle_resolve(ctx: Context<ResolveDispute>, resolution: Resolution) -> R
         Resolution::ReleaseToBuyer => EscrowStatus::Released,
         Resolution::RefundToSeller => EscrowStatus::Refunded,
     };
+
+    emit!(DisputeResolved {
+        trade_id: escrow.trade_id,
+        admin: ctx.accounts.admin.key(),
+        resolution: resolution as u8,
+    });
 
     msg!("Dispute resolved: {:?}", resolution);
     Ok(())

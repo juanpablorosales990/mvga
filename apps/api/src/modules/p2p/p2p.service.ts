@@ -374,6 +374,20 @@ export class P2PService {
       include: { buyer: true, seller: true, offer: true },
     });
 
+    // Restore offer availability when a trade is cancelled
+    if (requestedStatus === 'CANCELLED' && updated.offer) {
+      const restoredAmount =
+        Number(updated.offer.availableAmount) / AMOUNT_SCALE +
+        Number(updated.cryptoAmount) / AMOUNT_SCALE;
+      await this.prisma.p2POffer.update({
+        where: { id: updated.offerId },
+        data: {
+          availableAmount: toBigInt(restoredAmount),
+          status: 'ACTIVE',
+        },
+      });
+    }
+
     // No escrow, just update reputations on completion
     if (dto.status === 'CONFIRMED') {
       await this.updateReputation(trade.buyerAddress, true);

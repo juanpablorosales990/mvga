@@ -5,6 +5,7 @@ import { CreateProposalDto } from './dto/create-proposal.dto';
 import { CastVoteDto, PostUpdateDto } from './dto/cast-vote.dto';
 import { AuthGuard } from '../auth/auth.guard';
 import { AdminGuard } from '../auth/admin.guard';
+import { CurrentUser } from '../auth/auth.decorator';
 import { Roles } from '../auth/roles.decorator';
 import { Throttle } from '@nestjs/throttler';
 
@@ -35,7 +36,8 @@ export class GrantsController {
   @ApiBearerAuth()
   @Throttle({ default: { ttl: 86400000, limit: 3 } })
   @ApiOperation({ summary: 'Create a grant proposal (must be staker, max 3/day)' })
-  async createProposal(@Body() dto: CreateProposalDto) {
+  async createProposal(@CurrentUser('wallet') wallet: string, @Body() dto: CreateProposalDto) {
+    dto.applicantAddress = wallet;
     return this.grantsService.createProposal(dto);
   }
 
@@ -44,7 +46,12 @@ export class GrantsController {
   @ApiBearerAuth()
   @Throttle({ default: { ttl: 60000, limit: 5 } })
   @ApiOperation({ summary: 'Cast a vote (weight = staked MVGA)' })
-  async castVote(@Param('id') id: string, @Body() dto: CastVoteDto) {
+  async castVote(
+    @Param('id') id: string,
+    @CurrentUser('wallet') wallet: string,
+    @Body() dto: CastVoteDto
+  ) {
+    dto.voterAddress = wallet;
     return this.grantsService.castVote(id, dto);
   }
 
@@ -61,9 +68,10 @@ export class GrantsController {
   @ApiOperation({ summary: 'Post an update (applicant only)' })
   async postUpdate(
     @Param('id') id: string,
-    @Body() dto: PostUpdateDto & { applicantAddress: string }
+    @CurrentUser('wallet') wallet: string,
+    @Body() dto: PostUpdateDto
   ) {
-    return this.grantsService.postUpdate(id, dto.applicantAddress, dto);
+    return this.grantsService.postUpdate(id, wallet, dto);
   }
 
   @Post('proposals/:id/disburse')
@@ -72,7 +80,7 @@ export class GrantsController {
   @ApiBearerAuth()
   @Throttle({ default: { ttl: 60000, limit: 3 } })
   @ApiOperation({ summary: 'Manually trigger grant disbursement (admin only)' })
-  async disburseGrant(@Param('id') id: string, @Body() dto: { adminAddress: string }) {
-    return this.grantsService.manualDisburse(id, dto.adminAddress);
+  async disburseGrant(@Param('id') id: string, @CurrentUser('wallet') wallet: string) {
+    return this.grantsService.manualDisburse(id, wallet);
   }
 }

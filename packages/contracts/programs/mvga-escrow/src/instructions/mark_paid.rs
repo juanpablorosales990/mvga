@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 
 use crate::errors::EscrowError;
-use crate::state::{EscrowState, EscrowStatus};
+use crate::state::{EscrowState, EscrowStatus, PaymentMarked};
 
 #[derive(Accounts)]
 pub struct MarkPaid<'info> {
@@ -22,6 +22,11 @@ pub struct MarkPaid<'info> {
 pub fn handle_mark_paid(ctx: Context<MarkPaid>) -> Result<()> {
     let escrow = &mut ctx.accounts.escrow_state;
     escrow.status = EscrowStatus::PaymentSent;
+
+    emit!(PaymentMarked {
+        trade_id: escrow.trade_id,
+        buyer: ctx.accounts.buyer.key(),
+    });
 
     msg!("Buyer marked payment as sent");
     Ok(())

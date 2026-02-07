@@ -74,6 +74,7 @@ model Stake {
 
   @@index([userId])
   @@index([status])
+  @@index([status, createdAt])
 }
 
 enum StakeStatus {
@@ -166,6 +167,7 @@ model P2PTrade {
   @@index([sellerId])
   @@index([status])
   @@index([createdAt])
+  @@index([status, createdAt])
 }
 
 enum P2PTradeStatus {
@@ -430,6 +432,7 @@ model FeeCollection {
   @@index([source])
   @@index([collected])
   @@index([createdAt])
+  @@index([collected, createdAt])
 }
 
 enum FeeSource {
@@ -548,6 +551,7 @@ model CronLock {
 
   @@index([jobName])
   @@index([expiresAt])
+  @@index([jobName, completedAt])
 }
 
 model DistributionStep {

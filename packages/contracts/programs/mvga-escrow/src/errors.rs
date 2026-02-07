@@ -22,4 +22,6 @@ pub enum EscrowError {
     InvalidMint,
     #[msg("Timeout calculation overflow")]
     TimeoutOverflow,
+    #[msg("Timeout exceeds maximum allowed (30 days)")]
+    TimeoutTooLong,
 }
