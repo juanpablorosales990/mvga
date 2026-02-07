@@ -172,7 +172,15 @@ export default function SwapPage() {
       // Deserialize and sign
       const swapTransactionBuf = Uint8Array.from(atob(swapTransaction), (c) => c.charCodeAt(0));
       const transaction = VersionedTransaction.deserialize(swapTransactionBuf);
-      const signedTransaction = await signTransaction(transaction);
+
+      let signedTransaction: VersionedTransaction;
+      try {
+        signedTransaction = await signTransaction(transaction);
+      } catch (signErr) {
+        // User rejected or wallet is locked
+        setSwapping(false);
+        return;
+      }
 
       // Send transaction
       const rawTransaction = signedTransaction.serialize();

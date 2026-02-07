@@ -6,12 +6,17 @@ import { useWalletStore } from '../stores/walletStore';
 
 export default function SettingsPage() {
   const { t, i18n } = useTranslation();
-  const { connected, publicKey } = useSelfCustodyWallet();
+  const { connected, publicKey, hasMnemonic, exportMnemonic } = useSelfCustodyWallet();
   const preferredCurrency = useWalletStore((s) => s.preferredCurrency);
   const setPreferredCurrency = useWalletStore((s) => s.setPreferredCurrency);
   const autoCompoundDefault = useWalletStore((s) => s.autoCompoundDefault);
   const setAutoCompoundDefault = useWalletStore((s) => s.setAutoCompoundDefault);
   const [copied, setCopied] = useState(false);
+  const [showRecovery, setShowRecovery] = useState(false);
+  const [recoveryPassword, setRecoveryPassword] = useState('');
+  const [recoveryWords, setRecoveryWords] = useState<string[] | null>(null);
+  const [recoveryError, setRecoveryError] = useState('');
+  const [recoveryLoading, setRecoveryLoading] = useState(false);
 
   const copyAddress = () => {
     if (!publicKey) return;
@@ -111,6 +116,107 @@ export default function SettingsPage() {
               {copied ? t('receive.copied') : t('receive.copyAddress')}
             </button>
           </div>
+        </div>
+      )}
+
+      {/* View Recovery Phrase */}
+      {connected && hasMnemonic && (
+        <div className="card p-4 space-y-3">
+          <h2 className="font-semibold text-sm text-gray-400 uppercase tracking-wide">
+            {t('settings.recoveryPhrase', { defaultValue: 'Recovery Phrase' })}
+          </h2>
+          {!showRecovery ? (
+            <button
+              onClick={() => setShowRecovery(true)}
+              className="w-full py-2 text-sm font-medium bg-white/10 text-gray-300 hover:bg-white/20 transition"
+            >
+              {t('settings.viewRecoveryPhrase', { defaultValue: 'View Recovery Phrase' })}
+            </button>
+          ) : recoveryWords ? (
+            <div className="space-y-3">
+              <div className="grid grid-cols-3 gap-2">
+                {recoveryWords.map((word, i) => (
+                  <div key={i} className="bg-white/5 px-2 py-1.5 text-sm font-mono">
+                    <span className="text-gray-500 mr-1">{i + 1}.</span>
+                    {word}
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-yellow-400">
+                {t('settings.recoveryWarning', {
+                  defaultValue:
+                    'Never share your recovery phrase. Anyone with these words can access your wallet.',
+                })}
+              </p>
+              <button
+                onClick={() => {
+                  setShowRecovery(false);
+                  setRecoveryWords(null);
+                  setRecoveryPassword('');
+                }}
+                className="w-full py-2 text-sm font-medium bg-white/10 text-gray-300 hover:bg-white/20 transition"
+              >
+                {t('common.close', { defaultValue: 'Close' })}
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <input
+                type="password"
+                value={recoveryPassword}
+                onChange={(e) => {
+                  setRecoveryPassword(e.target.value);
+                  setRecoveryError('');
+                }}
+                placeholder={t('settings.enterPassword', { defaultValue: 'Enter your password' })}
+                className="w-full bg-white/5 border border-white/10 px-3 py-2 text-sm focus:outline-none focus:border-gold-500"
+              />
+              {recoveryError && <p className="text-xs text-red-400">{recoveryError}</p>}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setShowRecovery(false);
+                    setRecoveryPassword('');
+                    setRecoveryError('');
+                  }}
+                  className="flex-1 py-2 text-sm font-medium bg-white/10 text-gray-300 hover:bg-white/20 transition"
+                >
+                  {t('common.cancel')}
+                </button>
+                <button
+                  onClick={async () => {
+                    if (!recoveryPassword) return;
+                    setRecoveryLoading(true);
+                    setRecoveryError('');
+                    try {
+                      const words = await exportMnemonic(recoveryPassword);
+                      if (words) {
+                        setRecoveryWords(words);
+                      } else {
+                        setRecoveryError(
+                          t('settings.noMnemonic', {
+                            defaultValue: 'No recovery phrase found for this wallet.',
+                          })
+                        );
+                      }
+                    } catch {
+                      setRecoveryError(
+                        t('settings.wrongPassword', { defaultValue: 'Wrong password.' })
+                      );
+                    } finally {
+                      setRecoveryLoading(false);
+                    }
+                  }}
+                  disabled={recoveryLoading || !recoveryPassword}
+                  className="flex-1 py-2 text-sm font-medium bg-gold-500 text-black disabled:opacity-50 transition"
+                >
+                  {recoveryLoading
+                    ? t('common.loading', { defaultValue: 'Loading...' })
+                    : t('settings.reveal', { defaultValue: 'Reveal' })}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

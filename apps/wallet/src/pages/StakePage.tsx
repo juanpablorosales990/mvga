@@ -497,12 +497,25 @@ export default function StakePage() {
           </div>
         )}
 
+        {activeTab === 'stake' && amount && parseFloat(amount) > 0 && parseFloat(amount) < 1 && (
+          <p className="text-xs text-yellow-400">
+            {t('stake.minimumAmount', { defaultValue: 'Minimum stake amount is 1 MVGA' })}
+          </p>
+        )}
+
         <button
           onClick={() => {
             if (!amount || parseFloat(amount) <= 0) return;
+            if (activeTab === 'stake' && parseFloat(amount) < 1) return;
             setShowPreview(true);
           }}
-          disabled={!amount || parseFloat(amount) <= 0 || loading || !authToken}
+          disabled={
+            !amount ||
+            parseFloat(amount) <= 0 ||
+            (activeTab === 'stake' && parseFloat(amount) < 1) ||
+            loading ||
+            !authToken
+          }
           className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading

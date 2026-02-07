@@ -87,6 +87,23 @@ export default function SendPage() {
             setError(t('send.noTokenBalance', { token }));
             return;
           }
+
+          // Check SOL balance for tx fee + potential ATA creation (~0.002 SOL rent)
+          const recipientPubkey = new PublicKey(recipient);
+          const recipientAta = await getAssociatedTokenAddress(mintPubkey, recipientPubkey);
+          const recipientAtaInfo = await connection.getAccountInfo(recipientAta);
+          const solBalance = await connection.getBalance(publicKey);
+          const requiredSol = recipientAtaInfo ? 5000 : 2_039_280 + 5000; // rent-exempt minimum + tx fee
+          if (solBalance < requiredSol) {
+            setError(
+              t('send.insufficientSolForFee', {
+                defaultValue:
+                  'Not enough SOL for transaction fee' +
+                  (recipientAtaInfo ? '' : ' + token account creation (~0.002 SOL)'),
+              })
+            );
+            return;
+          }
         }
       }
     } catch {

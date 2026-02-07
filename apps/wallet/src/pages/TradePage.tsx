@@ -68,6 +68,7 @@ export default function TradePage() {
   const [showEscrowPreview, setShowEscrowPreview] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showDisputeModal, setShowDisputeModal] = useState(false);
+  const [escrowLocking, setEscrowLocking] = useState(false);
 
   const walletAddress = publicKey?.toBase58() || '';
 
@@ -102,7 +103,8 @@ export default function TradePage() {
   const isBuyer = trade?.buyerAddress === walletAddress;
 
   const handleLockEscrow = async () => {
-    if (!trade || !publicKey || !sendTransaction) return;
+    if (!trade || !publicKey || !sendTransaction || escrowLocking) return;
+    setEscrowLocking(true);
     setActionLoading(true);
     setError(null);
 
@@ -160,6 +162,7 @@ export default function TradePage() {
       setError(err instanceof Error ? err.message : t('trade.failed'));
     } finally {
       setActionLoading(false);
+      setEscrowLocking(false);
     }
   };
 
