@@ -6,6 +6,7 @@ import { TiersService } from '../tiers/tiers.service';
 const mockPrismaService = {
   feeCollection: {
     create: jest.fn(),
+    findFirst: jest.fn().mockResolvedValue(null),
   },
   stake: {
     findMany: jest.fn().mockResolvedValue([]),
@@ -22,8 +23,20 @@ describe('SwapService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockPrismaService.feeCollection.findFirst.mockResolvedValue(null);
     tiersService = new TiersService(mockPrismaService as any);
-    const mockSolanaService = { getConnection: jest.fn() };
+    const mockSolanaService = {
+      getConnection: jest.fn().mockReturnValue({
+        getParsedTransaction: jest.fn().mockResolvedValue({
+          meta: { err: null },
+          transaction: {
+            message: {
+              accountKeys: [{ pubkey: { toBase58: () => 'test-wallet' } }],
+            },
+          },
+        }),
+      }),
+    };
     service = new SwapService(
       mockPrismaService as any,
       mockConfigService as any,

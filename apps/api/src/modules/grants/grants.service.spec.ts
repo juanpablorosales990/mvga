@@ -53,7 +53,10 @@ describe('GrantsService', () => {
       getConnection: jest.fn(),
     };
 
-    const mockCronLockService = { acquireLock: jest.fn(), releaseLock: jest.fn() };
+    const mockCronLockService = {
+      acquireLock: jest.fn().mockResolvedValue('lock-id'),
+      releaseLock: jest.fn().mockResolvedValue(undefined),
+    };
     service = new GrantsService(
       mockPrisma,
       mockCronLockService as any,

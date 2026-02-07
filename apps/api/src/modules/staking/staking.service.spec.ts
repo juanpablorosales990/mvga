@@ -30,6 +30,12 @@ describe('StakingService', () => {
       tokenBurn: {
         aggregate: jest.fn().mockResolvedValue({ _sum: { amount: null } }),
       },
+      stakingClaim: {
+        findFirst: jest.fn().mockResolvedValue(null),
+        create: jest.fn(),
+      },
+      $transaction: jest.fn((fn: any) => fn(mockPrisma)),
+      $queryRaw: jest.fn().mockResolvedValue([]),
     };
 
     mockConfig = {
@@ -294,7 +300,7 @@ describe('StakingService', () => {
 
     it('throws if no rewards to claim', async () => {
       mockPrisma.user.findUnique.mockResolvedValue({ id: 'user-1', walletAddress: 'wallet' });
-      mockPrisma.stake.findMany.mockResolvedValue([]);
+      mockPrisma.$queryRaw.mockResolvedValue([]); // No active stakes via SELECT FOR UPDATE
 
       await expect(service.createClaimTransaction('wallet')).rejects.toThrow(BadRequestException);
     });
@@ -303,13 +309,14 @@ describe('StakingService', () => {
       // Stake 1000 MVGA for 10 days at Bronze (12% APY * 1.3 dynamic, no lock) => ~4.27 MVGA rewards
       const tenDaysAgo = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000);
       mockPrisma.user.findUnique.mockResolvedValue({ id: 'user-1', walletAddress: 'wallet' });
-      mockPrisma.stake.findMany.mockResolvedValue([
+      mockPrisma.$queryRaw.mockResolvedValue([
         {
           id: 'stake-1',
           amount: BigInt(1000 * 10 ** MVGA_DECIMALS),
           lockPeriod: 0,
           lockedUntil: null,
           createdAt: tenDaysAgo,
+          lastClaimedAt: null,
           status: 'ACTIVE',
           autoCompound: false,
         },
@@ -324,13 +331,14 @@ describe('StakingService', () => {
       // Create a stake old enough to have > 10 MVGA in rewards
       const sixMonthsAgo = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000);
       mockPrisma.user.findUnique.mockResolvedValue({ id: 'user-1', walletAddress: 'wallet' });
-      mockPrisma.stake.findMany.mockResolvedValue([
+      mockPrisma.$queryRaw.mockResolvedValue([
         {
           id: 'stake-1',
           amount: BigInt(50000 * 10 ** MVGA_DECIMALS),
           lockPeriod: 0,
           lockedUntil: null,
           createdAt: sixMonthsAgo,
+          lastClaimedAt: null,
           status: 'ACTIVE',
           autoCompound: false,
         },

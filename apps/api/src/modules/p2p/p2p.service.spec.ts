@@ -35,7 +35,8 @@ describe('P2PService', () => {
           .mockResolvedValue({ totalTrades: 1, completedTrades: 1, disputesLost: 0 }),
         update: jest.fn(),
       },
-      $transaction: jest.fn(),
+      $transaction: jest.fn((fn: any) => fn(mockPrisma)),
+      $queryRaw: jest.fn(),
     };
 
     const mockConfig = {
@@ -103,10 +104,10 @@ describe('P2PService', () => {
   });
 
   describe('acceptOffer', () => {
-    const mockOffer = {
+    const mockOfferRow = {
       id: 'offer-1',
       sellerId: 'seller-id',
-      seller: { walletAddress: 'seller-addr' },
+      sellerAddress: 'seller-addr',
       type: 'SELL',
       cryptoAmount: toBigInt(100),
       availableAmount: toBigInt(100),
@@ -119,7 +120,7 @@ describe('P2PService', () => {
     };
 
     it('rejects amount below minimum', async () => {
-      mockPrisma.p2POffer.findUnique.mockResolvedValue(mockOffer);
+      mockPrisma.$queryRaw.mockResolvedValue([mockOfferRow]);
 
       await expect(
         service.acceptOffer('offer-1', { buyerAddress: 'buyer-addr', amount: 5 })
@@ -127,7 +128,7 @@ describe('P2PService', () => {
     });
 
     it('rejects amount above maximum', async () => {
-      mockPrisma.p2POffer.findUnique.mockResolvedValue(mockOffer);
+      mockPrisma.$queryRaw.mockResolvedValue([mockOfferRow]);
 
       await expect(
         service.acceptOffer('offer-1', { buyerAddress: 'buyer-addr', amount: 60 })
@@ -135,10 +136,12 @@ describe('P2PService', () => {
     });
 
     it('rejects if offer is not active', async () => {
-      mockPrisma.p2POffer.findUnique.mockResolvedValue({
-        ...mockOffer,
-        status: 'COMPLETED',
-      });
+      mockPrisma.$queryRaw.mockResolvedValue([
+        {
+          ...mockOfferRow,
+          status: 'COMPLETED',
+        },
+      ]);
 
       await expect(
         service.acceptOffer('offer-1', { buyerAddress: 'buyer-addr', amount: 20 })
@@ -146,10 +149,12 @@ describe('P2PService', () => {
     });
 
     it('rejects if not enough available', async () => {
-      mockPrisma.p2POffer.findUnique.mockResolvedValue({
-        ...mockOffer,
-        availableAmount: toBigInt(5), // Only 5 available
-      });
+      mockPrisma.$queryRaw.mockResolvedValue([
+        {
+          ...mockOfferRow,
+          availableAmount: toBigInt(5),
+        },
+      ]);
 
       await expect(
         service.acceptOffer('offer-1', { buyerAddress: 'buyer-addr', amount: 20 })
@@ -157,7 +162,7 @@ describe('P2PService', () => {
     });
 
     it('throws NotFoundException for unknown offer', async () => {
-      mockPrisma.p2POffer.findUnique.mockResolvedValue(null);
+      mockPrisma.$queryRaw.mockResolvedValue([]);
 
       await expect(
         service.acceptOffer('unknown', { buyerAddress: 'buyer-addr', amount: 20 })
