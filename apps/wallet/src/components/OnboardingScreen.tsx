@@ -14,7 +14,8 @@ const INPUT_CLASS =
   'w-full bg-white/5 border border-white/10 px-4 py-3 text-white placeholder:text-white/20 focus:border-gold-500 outline-none font-mono text-sm';
 
 export default function OnboardingScreen() {
-  const { createWallet, importFromMnemonic, importFromSecretKey } = useSelfCustodyWallet();
+  const { createWallet, completeOnboarding, importFromMnemonic, importFromSecretKey } =
+    useSelfCustodyWallet();
   const [step, setStep] = useState<Step>('CHOICE');
 
   // Create flow
@@ -83,9 +84,11 @@ export default function OnboardingScreen() {
         return;
       }
     }
-    // Wallet is already created and unlocked — just clearing mnemonic from state
+    // Mnemonic confirmed — clear sensitive data from component state
     setMnemonicWords([]);
     setConfirmAnswers({});
+    // Transition wallet state from NO_WALLET → UNLOCKED
+    completeOnboarding();
   };
 
   // ─── Import from mnemonic ──────────────────────────────────────

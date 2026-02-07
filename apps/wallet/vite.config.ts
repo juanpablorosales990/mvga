@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import { sentryVitePlugin } from '@sentry/vite-plugin';
+import { nodePolyfills } from 'vite-plugin-node-polyfills';
 
 const NODE_MAJOR = Number(process.versions.node.split('.')[0] || 0);
 // Workbox uses Rollup+Terser when `mode: 'production'`. This currently flakes on
@@ -11,6 +12,7 @@ const WORKBOX_MODE = NODE_MAJOR >= 25 ? 'development' : 'production';
 
 export default defineConfig({
   plugins: [
+    nodePolyfills({ include: ['buffer'], globals: { Buffer: true } }),
     react(),
     VitePWA({
       registerType: 'autoUpdate',

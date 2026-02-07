@@ -170,7 +170,7 @@ export default function SwapPage() {
       const { swapTransaction } = await swapResponse.json();
 
       // Deserialize and sign
-      const swapTransactionBuf = Buffer.from(swapTransaction, 'base64');
+      const swapTransactionBuf = Uint8Array.from(atob(swapTransaction), (c) => c.charCodeAt(0));
       const transaction = VersionedTransaction.deserialize(swapTransactionBuf);
       const signedTransaction = await signTransaction(transaction);
 
