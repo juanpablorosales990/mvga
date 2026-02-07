@@ -1,10 +1,12 @@
 import { Controller, Get, Param } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiParam } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { WalletService } from './wallet.service';
 import { TransactionLoggerService } from '../../common/transaction-logger.service';
 import { ParseSolanaAddressPipe } from '../../common/validators/solana-address.validator';
 
 @ApiTags('Wallet')
+@Throttle({ default: { ttl: 60000, limit: 30 } })
 @Controller('wallet')
 export class WalletController {
   constructor(

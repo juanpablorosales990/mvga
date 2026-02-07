@@ -1,10 +1,12 @@
 import { Controller, Get, Post, Body, UseGuards } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { BankingService } from './banking.service';
 import { AuthGuard } from '../auth/auth.guard';
 import { CurrentUser } from '../auth/auth.decorator';
 import { JoinWaitlistDto } from './banking.dto';
 import { SubmitKycDto } from './dto/kyc.dto';
 
+@Throttle({ default: { ttl: 60000, limit: 20 } })
 @Controller('banking')
 export class BankingController {
   constructor(private readonly bankingService: BankingService) {}
@@ -26,6 +28,7 @@ export class BankingController {
   // ─── KYC ───────────────────────────────────────────────────────────
 
   @Post('kyc/submit')
+  @Throttle({ default: { ttl: 60000, limit: 3 } })
   @UseGuards(AuthGuard)
   async submitKyc(@CurrentUser('wallet') wallet: string, @Body() dto: SubmitKycDto) {
     return this.bankingService.submitKyc(wallet, {
@@ -48,6 +51,7 @@ export class BankingController {
   // ─── Card ──────────────────────────────────────────────────────────
 
   @Post('card/issue')
+  @Throttle({ default: { ttl: 60000, limit: 3 } })
   @UseGuards(AuthGuard)
   async issueCard(@CurrentUser('wallet') wallet: string) {
     return this.bankingService.issueCard(wallet);
