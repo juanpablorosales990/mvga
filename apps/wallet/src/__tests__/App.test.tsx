@@ -72,7 +72,7 @@ describe('BottomNav', () => {
     const hrefs = Array.from(links).map((l) => l.getAttribute('href'));
     expect(hrefs).toContain('/');
     expect(hrefs).toContain('/swap');
-    expect(hrefs).toContain('/stake');
+    expect(hrefs).toContain('/banking');
     expect(hrefs).toContain('/p2p');
     expect(hrefs).toContain('/more');
   });
