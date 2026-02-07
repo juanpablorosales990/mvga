@@ -4,7 +4,7 @@ test.describe('Landing Page — Hero', () => {
   test('displays hero heading and badges', async ({ page }) => {
     await page.goto('/');
     await expect(page.locator('text=Make Venezuela Great Again')).toBeVisible();
-    await expect(page.getByText('Open Source')).toBeVisible();
+    await expect(page.getByText('Open Source').first()).toBeVisible();
     await expect(page.getByText('Zero Founder Fees')).toBeVisible();
   });
 
@@ -91,7 +91,7 @@ test.describe('Landing Page — Tokenomics Section', () => {
   test('shows token details', async ({ page }) => {
     await page.goto('/');
     await expect(page.locator('text=1,000,000,000')).toBeVisible();
-    await expect(page.locator('text=Solana')).toBeVisible();
+    await expect(page.locator('#tokenomics').getByText('Solana', { exact: true })).toBeVisible();
   });
 });
 
