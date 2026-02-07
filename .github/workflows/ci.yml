@@ -10,16 +10,13 @@ jobs:
   api:
     name: API - Lint, Type-check, Test, Build
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: apps/api
 
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
           cache: npm
 
       - name: Install dependencies
@@ -27,39 +24,38 @@ jobs:
 
       - name: Generate Prisma client
         run: npx prisma generate
+        working-directory: apps/api
 
       - name: Validate Prisma schema
         run: npx prisma validate
+        working-directory: apps/api
 
       - name: Lint
         run: npm run lint
+        working-directory: apps/api
 
       - name: Type-check
         run: npx tsc --noEmit
+        working-directory: apps/api
 
       - name: Run tests
         run: npm test
-
-      - name: Security audit
-        run: npm audit --audit-level=high
-        continue-on-error: true
+        working-directory: apps/api
 
       - name: Build
         run: npm run build
+        working-directory: apps/api
 
   wallet:
     name: Wallet - Type-check, Test, Build
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: apps/wallet
 
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
           cache: npm
 
       - name: Install dependencies
@@ -67,34 +63,31 @@ jobs:
 
       - name: Lint
         run: npm run lint
+        working-directory: apps/wallet
 
       - name: Type-check
         run: npx tsc --noEmit
+        working-directory: apps/wallet
 
       - name: Run tests
         run: npx vitest run
-
-      - name: Security audit
-        run: npm audit --audit-level=high
-        continue-on-error: true
+        working-directory: apps/wallet
 
       - name: Build
         run: npm run build
+        working-directory: apps/wallet
 
   e2e:
     name: Wallet - E2E Tests
     runs-on: ubuntu-latest
     needs: wallet
-    defaults:
-      run:
-        working-directory: apps/wallet
 
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
           cache: npm
 
       - name: Install dependencies
@@ -102,9 +95,11 @@ jobs:
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
+        working-directory: apps/wallet
 
       - name: Run E2E tests
         run: npx playwright test --project=chromium
+        working-directory: apps/wallet
 
       - name: Upload test results
         if: failure()
@@ -117,16 +112,13 @@ jobs:
   web:
     name: Web - Lint, Type-check, Build
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: apps/web
 
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
           cache: npm
 
       - name: Install dependencies
@@ -134,31 +126,27 @@ jobs:
 
       - name: Lint
         run: npm run lint
+        working-directory: apps/web
 
       - name: Type-check
         run: npx tsc --noEmit
-
-      - name: Security audit
-        run: npm audit --audit-level=high
-        continue-on-error: true
+        working-directory: apps/web
 
       - name: Build
         run: npm run build
+        working-directory: apps/web
 
   web-e2e:
     name: Web - E2E Tests
     runs-on: ubuntu-latest
     needs: web
-    defaults:
-      run:
-        working-directory: apps/web
 
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
           cache: npm
 
       - name: Install dependencies
@@ -166,9 +154,11 @@ jobs:
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
+        working-directory: apps/web
 
       - name: Run E2E tests
         run: npx playwright test --project=chromium
+        working-directory: apps/web
 
       - name: Upload test results
         if: failure()
