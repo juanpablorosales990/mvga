@@ -508,9 +508,7 @@ export default function StakePage() {
         )}
 
         {activeTab === 'stake' && amount && parseFloat(amount) > 0 && parseFloat(amount) < 1 && (
-          <p className="text-xs text-yellow-400">
-            {t('stake.minimumAmount', { defaultValue: 'Minimum stake amount is 1 MVGA' })}
-          </p>
+          <p className="text-xs text-yellow-400">{t('stake.minimumAmount')}</p>
         )}
 
         <button

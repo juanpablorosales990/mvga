@@ -68,13 +68,13 @@ export default function GrantDetailPage() {
       });
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.message || 'Vote failed');
+        throw new Error(data.message || t('grants.voteFailed'));
       }
       // Refresh proposal
       const updated = await fetch(`${API_URL}/grants/proposals/${proposal.id}`);
       if (updated.ok) setProposal(await updated.json());
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Vote failed');
+      setError(err instanceof Error ? err.message : t('grants.voteFailed'));
     } finally {
       setVoting(false);
     }
@@ -111,7 +111,7 @@ export default function GrantDetailPage() {
 
         <div className="flex gap-2 flex-wrap">
           <span className="text-xs px-2 py-1 rounded-full bg-white/10">
-            ${proposal.requestedAmount.toLocaleString()} requested
+            ${proposal.requestedAmount.toLocaleString()} {t('grants.requested')}
           </span>
           <span
             className={`text-xs px-2 py-1 rounded-full ${
@@ -156,7 +156,9 @@ export default function GrantDetailPage() {
         <div className="card space-y-3">
           <h2 className="font-semibold">{t('grants.vote')}</h2>
           <div className="flex items-center gap-4 text-sm">
-            <span className="text-green-400">{proposal.votesFor} For</span>
+            <span className="text-green-400">
+              {proposal.votesFor} {t('grants.forVotes')}
+            </span>
             <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
               <div
                 className="h-full bg-green-500 rounded-full"
@@ -169,10 +171,12 @@ export default function GrantDetailPage() {
                 }}
               />
             </div>
-            <span className="text-red-400">{proposal.votesAgainst} Against</span>
+            <span className="text-red-400">
+              {proposal.votesAgainst} {t('grants.againstVotes')}
+            </span>
           </div>
           <p className="text-xs text-gray-500">
-            Voting ends {new Date(proposal.votingEndsAt).toLocaleDateString()}
+            {t('grants.votingEndsLabel')} {new Date(proposal.votingEndsAt).toLocaleDateString()}
           </p>
 
           {!hasVoted && publicKey ? (

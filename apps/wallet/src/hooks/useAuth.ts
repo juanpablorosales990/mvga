@@ -1,4 +1,5 @@
 import { useEffect, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSelfCustodyWallet } from '../contexts/WalletContext';
 import { useWalletStore } from '../stores/walletStore';
 import { showToast } from './useToast';
@@ -20,6 +21,7 @@ function isTokenExpired(token: string): boolean {
 }
 
 export function useAuth() {
+  const { t } = useTranslation();
   const { connected, publicKey, signMessage } = useSelfCustodyWallet();
   const { authToken, setAuthToken } = useWalletStore();
   const hasAutoAuthed = useRef(false);
@@ -46,9 +48,9 @@ export function useAuth() {
 
         if (!nonceRes.ok) {
           if (nonceRes.status === 429) {
-            showToast('error', 'Too many requests. Please wait a moment.');
+            showToast('error', t('auth.rateLimited'));
           } else {
-            showToast('error', 'Authentication failed. Please try again.');
+            showToast('error', t('auth.authFailed'));
           }
           return;
         }
@@ -68,9 +70,9 @@ export function useAuth() {
 
         if (!verifyRes.ok) {
           if (verifyRes.status === 429) {
-            showToast('error', 'Too many requests. Please wait a moment.');
+            showToast('error', t('auth.rateLimited'));
           } else {
-            showToast('error', 'Signature verification failed. Please try again.');
+            showToast('error', t('auth.verifyFailed'));
           }
           return;
         }
@@ -78,7 +80,7 @@ export function useAuth() {
 
         setAuthToken(accessToken);
       } catch {
-        showToast('error', 'Network error. Please check your connection.');
+        showToast('error', t('auth.networkError'));
       }
     };
 
@@ -88,7 +90,7 @@ export function useAuth() {
     } finally {
       authPromise = null;
     }
-  }, [connected, publicKey, signMessage, setAuthToken]);
+  }, [connected, publicKey, signMessage, setAuthToken, t]);
 
   // Auto-authenticate on wallet unlock (once per connect cycle)
   useEffect(() => {

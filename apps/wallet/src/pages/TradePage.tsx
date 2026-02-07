@@ -324,11 +324,11 @@ export default function TradePage() {
         },
         body: JSON.stringify({ status: 'CANCELLED', notes: '' }),
       });
-      if (!res.ok) throw new Error((await res.json()).message || 'Failed to cancel');
+      if (!res.ok) throw new Error((await res.json()).message || t('trade.cancelFailed'));
       setSuccess(t('trade.tradeCancelled'));
       fetchTrade();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed');
+      setError(err instanceof Error ? err.message : t('trade.failed'));
     } finally {
       setActionLoading(false);
     }
@@ -349,11 +349,11 @@ export default function TradePage() {
         },
         body: JSON.stringify({ status: 'DISPUTED', notes: reason }),
       });
-      if (!res.ok) throw new Error((await res.json()).message || 'Failed to dispute');
+      if (!res.ok) throw new Error((await res.json()).message || t('trade.disputeFailed'));
       setSuccess(t('trade.disputeFiled'));
       fetchTrade();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed');
+      setError(err instanceof Error ? err.message : t('trade.failed'));
     } finally {
       setActionLoading(false);
     }

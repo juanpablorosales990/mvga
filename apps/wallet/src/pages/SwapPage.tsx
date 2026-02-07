@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useConnection } from '@solana/wallet-adapter-react';
 import { useSelfCustodyWallet } from '../contexts/WalletContext';
 import { VersionedTransaction } from '@solana/web3.js';
@@ -65,6 +65,7 @@ export default function SwapPage() {
   const [quote, setQuote] = useState<QuoteResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [swapping, setSwapping] = useState(false);
+  const swappingRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const [txSignature, setTxSignature] = useState<string | null>(null);
   const [slippageBps, setSlippageBps] = useState(50);
@@ -115,13 +116,13 @@ export default function SwapPage() {
       );
 
       if (!response.ok) {
-        throw new Error('Failed to get quote');
+        throw new Error(t('swap.quoteError'));
       }
 
       const data = await response.json();
       setQuote(data);
     } catch {
-      setError('Failed to get quote. Try again.');
+      setError(t('swap.quoteError'));
       setQuote(null);
     } finally {
       setLoading(false);
@@ -143,7 +144,8 @@ export default function SwapPage() {
   };
 
   const handleSwap = async () => {
-    if (!connected || !publicKey || !signTransaction || !quote) return;
+    if (!connected || !publicKey || !signTransaction || !quote || swappingRef.current) return;
+    swappingRef.current = true;
 
     setSwapping(true);
     setError(null);
@@ -164,7 +166,7 @@ export default function SwapPage() {
       });
 
       if (!swapResponse.ok) {
-        throw new Error('Failed to create swap transaction');
+        throw new Error(t('swap.swapTxError'));
       }
 
       const { swapTransaction } = await swapResponse.json();
@@ -217,9 +219,10 @@ export default function SwapPage() {
       setFromAmount('');
       setQuote(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Swap failed');
+      setError(err instanceof Error ? err.message : t('swap.swapFailed'));
     } finally {
       setSwapping(false);
+      swappingRef.current = false;
       // Always refresh balances to reflect actual on-chain state
       invalidateBalances();
     }

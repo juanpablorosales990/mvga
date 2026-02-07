@@ -123,14 +123,14 @@ export default function SettingsPage() {
       {connected && hasMnemonic && (
         <div className="card p-4 space-y-3">
           <h2 className="font-semibold text-sm text-gray-400 uppercase tracking-wide">
-            {t('settings.recoveryPhrase', { defaultValue: 'Recovery Phrase' })}
+            {t('settings.recoveryPhrase')}
           </h2>
           {!showRecovery ? (
             <button
               onClick={() => setShowRecovery(true)}
               className="w-full py-2 text-sm font-medium bg-white/10 text-gray-300 hover:bg-white/20 transition"
             >
-              {t('settings.viewRecoveryPhrase', { defaultValue: 'View Recovery Phrase' })}
+              {t('settings.viewRecoveryPhrase')}
             </button>
           ) : recoveryWords ? (
             <div className="space-y-3">
@@ -142,12 +142,7 @@ export default function SettingsPage() {
                   </div>
                 ))}
               </div>
-              <p className="text-xs text-yellow-400">
-                {t('settings.recoveryWarning', {
-                  defaultValue:
-                    'Never share your recovery phrase. Anyone with these words can access your wallet.',
-                })}
-              </p>
+              <p className="text-xs text-yellow-400">{t('settings.recoveryWarning')}</p>
               <button
                 onClick={() => {
                   setShowRecovery(false);
@@ -156,7 +151,7 @@ export default function SettingsPage() {
                 }}
                 className="w-full py-2 text-sm font-medium bg-white/10 text-gray-300 hover:bg-white/20 transition"
               >
-                {t('common.close', { defaultValue: 'Close' })}
+                {t('common.close')}
               </button>
             </div>
           ) : (
@@ -168,7 +163,7 @@ export default function SettingsPage() {
                   setRecoveryPassword(e.target.value);
                   setRecoveryError('');
                 }}
-                placeholder={t('settings.enterPassword', { defaultValue: 'Enter your password' })}
+                placeholder={t('settings.enterPassword')}
                 className="w-full bg-white/5 border border-white/10 px-3 py-2 text-sm focus:outline-none focus:border-gold-500"
               />
               {recoveryError && <p className="text-xs text-red-400">{recoveryError}</p>}
@@ -193,16 +188,10 @@ export default function SettingsPage() {
                       if (words) {
                         setRecoveryWords(words);
                       } else {
-                        setRecoveryError(
-                          t('settings.noMnemonic', {
-                            defaultValue: 'No recovery phrase found for this wallet.',
-                          })
-                        );
+                        setRecoveryError(t('settings.noMnemonic'));
                       }
                     } catch {
-                      setRecoveryError(
-                        t('settings.wrongPassword', { defaultValue: 'Wrong password.' })
-                      );
+                      setRecoveryError(t('settings.wrongPassword'));
                     } finally {
                       setRecoveryLoading(false);
                     }
@@ -210,9 +199,7 @@ export default function SettingsPage() {
                   disabled={recoveryLoading || !recoveryPassword}
                   className="flex-1 py-2 text-sm font-medium bg-gold-500 text-black disabled:opacity-50 transition"
                 >
-                  {recoveryLoading
-                    ? t('common.loading', { defaultValue: 'Loading...' })
-                    : t('settings.reveal', { defaultValue: 'Reveal' })}
+                  {recoveryLoading ? t('common.loading') : t('settings.reveal')}
                 </button>
               </div>
             </div>

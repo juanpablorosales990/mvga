@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useConnection } from '@solana/wallet-adapter-react';
 import { useSelfCustodyWallet } from '../contexts/WalletContext';
 import { PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
@@ -29,6 +29,7 @@ export default function SendPage() {
   const [amount, setAmount] = useState('');
   const [token, setToken] = useState('SOL');
   const [sending, setSending] = useState(false);
+  const sendingRef = useRef(false);
   const [txSignature, setTxSignature] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
@@ -122,14 +123,18 @@ export default function SendPage() {
   };
 
   const handleSend = async () => {
+    if (sendingRef.current) return;
+    sendingRef.current = true;
     setShowPreview(false);
     if (!connected || !publicKey) {
       setError(t('send.connectFirst'));
+      sendingRef.current = false;
       return;
     }
 
     if (!recipient || !amount) {
       setError(t('send.fillAllFields'));
+      sendingRef.current = false;
       return;
     }
 
@@ -138,12 +143,14 @@ export default function SendPage() {
       recipientPubkey = new PublicKey(recipient);
     } catch {
       setError(t('send.invalidAddress'));
+      sendingRef.current = false;
       return;
     }
 
     const amountNum = parseFloat(amount);
     if (isNaN(amountNum) || amountNum <= 0) {
       setError(t('send.invalidAmount'));
+      sendingRef.current = false;
       return;
     }
 
@@ -219,6 +226,7 @@ export default function SendPage() {
       setError(err instanceof Error ? err.message : t('send.txFailed'));
     } finally {
       setSending(false);
+      sendingRef.current = false;
     }
   };
 

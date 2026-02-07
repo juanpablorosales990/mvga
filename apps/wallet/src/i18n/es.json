@@ -18,7 +18,10 @@
     "processing": "Procesando...",
     "tryAgain": "Intentar de nuevo",
     "somethingWrong": "Algo salió mal",
-    "unexpectedError": "Ocurrió un error inesperado. Por favor intenta de nuevo."
+    "unexpectedError": "Ocurrió un error inesperado. Por favor intenta de nuevo.",
+    "close": "Cerrar",
+    "pageNotFound": "Página no encontrada",
+    "goHome": "Ir al Inicio"
   },
   "wallet": {
     "title": "Bienvenido a MVGA",
@@ -93,7 +96,10 @@
     "tier": "Nivel",
     "tierBenefits": "Beneficios de Nivel Aplicados",
     "zeroFees": "Sin Comisiones",
-    "stakeForBenefits": "Stakea MVGA para descuentos y reembolsos"
+    "stakeForBenefits": "Stakea MVGA para descuentos y reembolsos",
+    "quoteError": "Error al obtener cotización. Intenta de nuevo.",
+    "swapTxError": "Error al crear transacción de cambio",
+    "swapFailed": "Cambio falló"
   },
   "stake": {
     "title": "Staking MVGA",
@@ -154,7 +160,8 @@
     "dLock": "{{days}}d bloqueo",
     "unstakedSuccess": "¡Retirado! TX: {{sig}}",
     "claimedSuccess": "¡Reclamado {{rewards}} MVGA! TX: {{sig}}",
-    "errorPrefix": "Error: {{message}}"
+    "errorPrefix": "Error: {{message}}",
+    "minimumAmount": "El monto mínimo de staking es 1 MVGA"
   },
   "p2p": {
     "title": "Intercambio P2P",
@@ -234,7 +241,9 @@
     "disputeFiled": "Disputa registrada",
     "describeIssue": "Describe el problema:",
     "loadFailed": "Error al cargar operación",
-    "failed": "Falló"
+    "failed": "Falló",
+    "cancelFailed": "Error al cancelar",
+    "disputeFailed": "Error al disputar"
   },
   "history": {
     "title": "Historial de Transacciones",
@@ -291,7 +300,12 @@
     "statusRejected": "Rechazado",
     "statusFunded": "Financiado",
     "statusCompleted": "Completado",
-    "votingEndsDate": "Votación termina {{date}}"
+    "votingEndsDate": "Votación termina {{date}}",
+    "voteFailed": "Error al votar",
+    "requested": "solicitado",
+    "forVotes": "A favor",
+    "againstVotes": "En contra",
+    "votingEndsLabel": "Votación termina"
   },
   "fiat": {
     "usd": "USD",
@@ -429,7 +443,14 @@
     "connectedWallet": "Billetera Conectada",
     "autoCompound": "Auto-Compound por Defecto",
     "autoCompoundDesc": "Componer automáticamente las recompensas para nuevos stakes",
-    "helpSupport": "Ayuda y Soporte"
+    "helpSupport": "Ayuda y Soporte",
+    "recoveryPhrase": "Frase de Recuperación",
+    "viewRecoveryPhrase": "Ver Frase de Recuperación",
+    "recoveryWarning": "Nunca compartas tu frase de recuperación. Cualquiera con estas palabras puede acceder a tu billetera.",
+    "enterPassword": "Ingresa tu contraseña",
+    "noMnemonic": "No se encontró frase de recuperación para esta billetera.",
+    "wrongPassword": "Contraseña incorrecta.",
+    "reveal": "Revelar"
   },
   "onboarding": {
     "tagline": "Tus llaves, tus monedas. Sin extensiones. Sin intermediarios.",
@@ -491,6 +512,12 @@
     "decryptShow": "Descifrar y Mostrar",
     "neverShareKey": "Nunca compartas esta llave. Cualquiera con ella controla tus fondos.",
     "copy": "Copiar"
+  },
+  "auth": {
+    "rateLimited": "Demasiadas solicitudes. Espera un momento.",
+    "authFailed": "Autenticación fallida. Intenta de nuevo.",
+    "verifyFailed": "Verificación de firma fallida. Intenta de nuevo.",
+    "networkError": "Error de red. Verifica tu conexión."
   },
   "notifications": {
     "title": "Notificaciones",

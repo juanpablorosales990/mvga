@@ -18,7 +18,10 @@
     "processing": "Processing...",
     "tryAgain": "Try Again",
     "somethingWrong": "Something went wrong",
-    "unexpectedError": "An unexpected error occurred. Please try again."
+    "unexpectedError": "An unexpected error occurred. Please try again.",
+    "close": "Close",
+    "pageNotFound": "Page not found",
+    "goHome": "Go Home"
   },
   "wallet": {
     "title": "Welcome to MVGA",
@@ -93,7 +96,10 @@
     "tier": "Tier",
     "tierBenefits": "Tier Benefits Applied",
     "zeroFees": "Zero Fees",
-    "stakeForBenefits": "Stake MVGA for fee discounts & cashback"
+    "stakeForBenefits": "Stake MVGA for fee discounts & cashback",
+    "quoteError": "Failed to get quote. Try again.",
+    "swapTxError": "Failed to create swap transaction",
+    "swapFailed": "Swap failed"
   },
   "stake": {
     "title": "Stake MVGA",
@@ -154,7 +160,8 @@
     "dLock": "{{days}}d lock",
     "unstakedSuccess": "Unstaked! TX: {{sig}}",
     "claimedSuccess": "Claimed {{rewards}} MVGA! TX: {{sig}}",
-    "errorPrefix": "Error: {{message}}"
+    "errorPrefix": "Error: {{message}}",
+    "minimumAmount": "Minimum stake amount is 1 MVGA"
   },
   "p2p": {
     "title": "P2P Exchange",
@@ -234,7 +241,9 @@
     "disputeFiled": "Dispute filed",
     "describeIssue": "Describe the issue:",
     "loadFailed": "Failed to load trade",
-    "failed": "Failed"
+    "failed": "Failed",
+    "cancelFailed": "Failed to cancel",
+    "disputeFailed": "Failed to dispute"
   },
   "history": {
     "title": "Transaction History",
@@ -291,7 +300,12 @@
     "statusRejected": "Rejected",
     "statusFunded": "Funded",
     "statusCompleted": "Completed",
-    "votingEndsDate": "Voting ends {{date}}"
+    "votingEndsDate": "Voting ends {{date}}",
+    "voteFailed": "Vote failed",
+    "requested": "requested",
+    "forVotes": "For",
+    "againstVotes": "Against",
+    "votingEndsLabel": "Voting ends"
   },
   "fiat": {
     "usd": "USD",
@@ -429,7 +443,14 @@
     "connectedWallet": "Connected Wallet",
     "autoCompound": "Auto-Compound Default",
     "autoCompoundDesc": "Automatically compound rewards for new stakes",
-    "helpSupport": "Help & Support"
+    "helpSupport": "Help & Support",
+    "recoveryPhrase": "Recovery Phrase",
+    "viewRecoveryPhrase": "View Recovery Phrase",
+    "recoveryWarning": "Never share your recovery phrase. Anyone with these words can access your wallet.",
+    "enterPassword": "Enter your password",
+    "noMnemonic": "No recovery phrase found for this wallet.",
+    "wrongPassword": "Wrong password.",
+    "reveal": "Reveal"
   },
   "onboarding": {
     "tagline": "Your keys, your coins. No extensions. No middlemen.",
@@ -491,6 +512,12 @@
     "decryptShow": "Decrypt & Show",
     "neverShareKey": "Never share this key. Anyone with it controls your funds.",
     "copy": "Copy"
+  },
+  "auth": {
+    "rateLimited": "Too many requests. Please wait a moment.",
+    "authFailed": "Authentication failed. Please try again.",
+    "verifyFailed": "Signature verification failed. Please try again.",
+    "networkError": "Network error. Please check your connection."
   },
   "notifications": {
     "title": "Notifications",
