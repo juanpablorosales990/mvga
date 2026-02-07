@@ -27,7 +27,7 @@
     "react-dom": "18.2.0"
   },
   "devDependencies": {
-    "@eslint/js": "^10.0.1",
+    "@eslint/js": "~9.39.0",
     "canvas": "^3.2.1",
     "eslint": "^9.39.2",
     "husky": "^9.1.7",
