@@ -1,22 +1,23 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Landing Page — Hero', () => {
-  test('displays hero heading and badge', async ({ page }) => {
+  test('displays hero heading and badges', async ({ page }) => {
     await page.goto('/');
     await expect(page.locator('text=Make Venezuela Great Again')).toBeVisible();
-    await expect(page.getByText('Open Source • Community Owned')).toBeVisible();
+    await expect(page.getByText('Open Source')).toBeVisible();
+    await expect(page.getByText('Zero Founder Fees')).toBeVisible();
   });
 
   test('Open Wallet button links to app.mvga.io', async ({ page }) => {
     await page.goto('/');
-    const openWallet = page.locator('a:has-text("Open Wallet")');
+    const openWallet = page.locator('a:has-text("Open Wallet")').first();
     await expect(openWallet).toHaveAttribute('href', 'https://app.mvga.io');
   });
 
-  test('Launch App button links to app.mvga.io', async ({ page }) => {
+  test('View Source button links to GitHub', async ({ page }) => {
     await page.goto('/');
-    const launchApp = page.locator('a:has-text("Launch App")');
-    await expect(launchApp).toHaveAttribute('href', 'https://app.mvga.io');
+    const viewSource = page.locator('a:has-text("View Source")').first();
+    await expect(viewSource).toHaveAttribute('href', 'https://github.com/juanpablorosales990/mvga');
   });
 });
 
@@ -42,17 +43,17 @@ test.describe('Landing Page — Mission Section', () => {
   test('shows 3 mission cards', async ({ page }) => {
     await page.goto('/');
     await expect(page.getByRole('heading', { name: 'Zero Fee Remittances' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Support Local Business' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Your Money, Stable' })).toBeVisible();
     await expect(page.getByRole('heading', { name: '100% Open Source' })).toBeVisible();
   });
 });
 
 test.describe('Landing Page — Features Section', () => {
-  test('shows 4 feature cards', async ({ page }) => {
+  test('shows key feature headings', async ({ page }) => {
     await page.goto('/');
-    await expect(page.getByRole('heading', { name: 'MVGA Wallet' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Non-Custodial Wallet' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'P2P Exchange' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Staking & Rewards' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Token Staking' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Business Grants' })).toBeVisible();
   });
 });
@@ -115,8 +116,9 @@ test.describe('Landing Page — External Links', () => {
 });
 
 test.describe('Landing Page — Footer', () => {
-  test('shows Patria y Vida', async ({ page }) => {
+  test('footer has legal links', async ({ page }) => {
     await page.goto('/');
-    await expect(page.locator('text=Patria y Vida')).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Privacy' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Terms' })).toBeVisible();
   });
 });
