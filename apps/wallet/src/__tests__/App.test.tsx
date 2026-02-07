@@ -35,7 +35,7 @@ vi.mock('../contexts/WalletContext', () => ({
 }));
 
 vi.mock('../hooks/useAuth', () => ({
-  useAuth: () => ({ authToken: null }),
+  useAuth: () => ({ isAuthenticated: false, authenticate: vi.fn(), logout: vi.fn() }),
 }));
 
 import BottomNav from '../components/BottomNav';

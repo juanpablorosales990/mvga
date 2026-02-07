@@ -55,7 +55,6 @@ function relativeTime(dateStr: string): string {
 export default function NotificationsPage() {
   const { t } = useTranslation();
   const { connected, publicKey } = useSelfCustodyWallet();
-  const authToken = useWalletStore((s) => s.authToken);
   const readNotifications = useWalletStore((s) => s.readNotifications);
   const markAllNotificationsRead = useWalletStore((s) => s.markAllNotificationsRead);
   const [entries, setEntries] = useState<LogEntry[]>([]);
@@ -106,15 +105,15 @@ export default function NotificationsPage() {
 
   const togglePref = useCallback(
     async (key: keyof Preferences) => {
-      if (!publicKey || !authToken || !prefs) return;
+      if (!publicKey || !prefs) return;
       const updated = { ...prefs, [key]: !prefs[key] };
       setPrefs(updated);
       try {
         await fetch(`${API_URL}/notifications/preferences/${publicKey.toBase58()}`, {
           method: 'PUT',
+          credentials: 'include',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${authToken}`,
           },
           body: JSON.stringify({ [key]: updated[key] }),
         });
@@ -122,7 +121,7 @@ export default function NotificationsPage() {
         setPrefs(prefs); // Revert on error
       }
     },
-    [publicKey, authToken, prefs]
+    [publicKey, prefs]
   );
 
   const unreadIds = entries.filter((e) => !readNotifications.includes(e.id)).map((e) => e.id);

@@ -8,7 +8,6 @@ describe('walletStore', () => {
     useWalletStore.setState({
       publicKey: null,
       isConnected: false,
-      authToken: null,
       balances: [],
       totalUsdValue: 0,
       isLoadingBalances: false,
@@ -33,7 +32,6 @@ describe('walletStore', () => {
 
     it('disconnects and clears state', () => {
       useWalletStore.getState().setPublicKey('ABC123');
-      useWalletStore.getState().setAuthToken('jwt-token');
       useWalletStore
         .getState()
         .setBalances([
@@ -44,7 +42,6 @@ describe('walletStore', () => {
       const state = useWalletStore.getState();
       expect(state.publicKey).toBeNull();
       expect(state.isConnected).toBe(false);
-      expect(state.authToken).toBeNull();
       expect(state.balances).toHaveLength(0);
       expect(state.totalUsdValue).toBe(0);
     });

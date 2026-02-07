@@ -1,30 +1,31 @@
-import { useEffect, useCallback, useRef } from 'react';
+import { useEffect, useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSelfCustodyWallet } from '../contexts/WalletContext';
-import { useWalletStore } from '../stores/walletStore';
 import { showToast } from './useToast';
 import bs58 from 'bs58';
 import { API_URL } from '../config';
+import { apiFetch } from '../lib/apiClient';
 
 // Singleton promise so only one authenticate() runs at a time across all hook instances
 let authPromise: Promise<void> | null = null;
 
-/** Decode JWT payload and check if expired (with 60s buffer) */
-function isTokenExpired(token: string): boolean {
-  try {
-    const [, payload] = token.split('.');
-    const decoded = JSON.parse(atob(payload));
-    return decoded.exp * 1000 < Date.now() + 60_000;
-  } catch {
-    return true;
-  }
-}
-
 export function useAuth() {
   const { t } = useTranslation();
   const { connected, publicKey, signMessage } = useSelfCustodyWallet();
-  const { authToken, setAuthToken } = useWalletStore();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const hasAutoAuthed = useRef(false);
+
+  /** Check auth status via httpOnly cookie (server validates) */
+  const checkAuth = useCallback(async (): Promise<boolean> => {
+    try {
+      const res = await apiFetch<{ authenticated: boolean }>('/auth/me');
+      setIsAuthenticated(res.authenticated);
+      return res.authenticated;
+    } catch {
+      setIsAuthenticated(false);
+      return false;
+    }
+  }, []);
 
   const authenticate = useCallback(async () => {
     if (!connected || !publicKey || !signMessage) return;
@@ -42,6 +43,7 @@ export function useAuth() {
         // 1. Request nonce from server
         const nonceRes = await fetch(`${API_URL}/auth/nonce`, {
           method: 'POST',
+          credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ walletAddress }),
         });
@@ -61,9 +63,10 @@ export function useAuth() {
         const signatureBytes = await signMessage(encodedMessage);
         const signature = bs58.encode(signatureBytes);
 
-        // 3. Verify signature and get JWT
+        // 3. Verify signature — server sets httpOnly cookie
         const verifyRes = await fetch(`${API_URL}/auth/verify`, {
           method: 'POST',
+          credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ walletAddress, signature }),
         });
@@ -76,9 +79,9 @@ export function useAuth() {
           }
           return;
         }
-        const { accessToken } = await verifyRes.json();
 
-        setAuthToken(accessToken);
+        // Cookie is set by server — verify we're authenticated
+        setIsAuthenticated(true);
       } catch {
         showToast('error', t('auth.networkError'));
       }
@@ -90,35 +93,36 @@ export function useAuth() {
     } finally {
       authPromise = null;
     }
-  }, [connected, publicKey, signMessage, setAuthToken, t]);
+  }, [connected, publicKey, signMessage, t]);
+
+  /** Clear server-side auth cookie */
+  const logout = useCallback(async () => {
+    try {
+      await apiFetch('/auth/logout', { method: 'POST' });
+    } catch {
+      // Best-effort
+    }
+    setIsAuthenticated(false);
+  }, []);
 
   // Auto-authenticate on wallet unlock (once per connect cycle)
   useEffect(() => {
     if (!connected || !publicKey) {
-      setAuthToken(null);
       hasAutoAuthed.current = false;
-      // Cancel any in-flight authentication to prevent stale token writes
+      if (isAuthenticated) logout();
       authPromise = null;
       return;
-    }
-
-    // If we have a valid (non-expired) token, skip
-    if (authToken && !isTokenExpired(authToken)) {
-      hasAutoAuthed.current = true;
-      return;
-    }
-
-    // Clear stale/expired token
-    if (authToken && isTokenExpired(authToken)) {
-      setAuthToken(null);
     }
 
     // Only auto-auth once per connect cycle to avoid races
     if (!hasAutoAuthed.current) {
       hasAutoAuthed.current = true;
-      authenticate();
+      // Check if existing cookie is still valid, otherwise re-authenticate
+      checkAuth().then((valid) => {
+        if (!valid) authenticate();
+      });
     }
-  }, [connected, publicKey, authToken, authenticate, setAuthToken]);
+  }, [connected, publicKey, isAuthenticated, authenticate, checkAuth, logout]);
 
-  return { authToken, authenticate, isAuthenticated: !!authToken && !isTokenExpired(authToken) };
+  return { isAuthenticated, authenticate, logout };
 }

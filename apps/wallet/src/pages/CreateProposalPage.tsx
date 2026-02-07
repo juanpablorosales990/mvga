@@ -2,14 +2,12 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelfCustodyWallet } from '../contexts/WalletContext';
 import { useTranslation } from 'react-i18next';
-import { useAuth } from '../hooks/useAuth';
 import { API_URL } from '../config';
 
 export default function CreateProposalPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { connected, publicKey } = useSelfCustodyWallet();
-  const { authToken } = useAuth();
 
   const [form, setForm] = useState({
     businessName: '',
@@ -30,9 +28,9 @@ export default function CreateProposalPage() {
     try {
       const res = await fetch(`${API_URL}/grants/proposals`, {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
         },
         body: JSON.stringify({
           applicantAddress: publicKey.toBase58(),

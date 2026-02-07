@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  CanActivate,
-  ExecutionContext,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 
 @Injectable()
@@ -12,13 +7,19 @@ export class AuthGuard implements CanActivate {
 
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest();
-    const authHeader = request.headers['authorization'];
 
-    if (!authHeader?.startsWith('Bearer ')) {
-      throw new UnauthorizedException('Missing authorization header');
+    // 1. Try httpOnly cookie first
+    const cookieToken = request.cookies?.['mvga_auth'];
+    // 2. Fall back to Authorization header (backwards compatibility)
+    const authHeader = request.headers['authorization'];
+    const headerToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+
+    const token = cookieToken || headerToken;
+
+    if (!token) {
+      throw new UnauthorizedException('Missing authentication');
     }
 
-    const token = authHeader.slice(7);
     const payload = this.authService.validateToken(token);
 
     // Attach user info to request

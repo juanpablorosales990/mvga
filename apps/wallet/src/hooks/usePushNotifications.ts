@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSelfCustodyWallet } from '../contexts/WalletContext';
-import { useWalletStore } from '../stores/walletStore';
+import { useAuth } from './useAuth';
 import { API_URL, VAPID_PUBLIC_KEY } from '../config';
 
 type Permission = NotificationPermission | 'unsupported';
@@ -18,7 +18,7 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
 
 export function usePushNotifications() {
   const { connected, publicKey } = useSelfCustodyWallet();
-  const authToken = useWalletStore((s) => s.authToken);
+  const { isAuthenticated } = useAuth();
   const [permission, setPermission] = useState<Permission>(() => {
     if (typeof window === 'undefined' || !('Notification' in window)) return 'unsupported';
     return Notification.permission;
@@ -39,7 +39,7 @@ export function usePushNotifications() {
   }, [isSupported]);
 
   const subscribe = useCallback(async () => {
-    if (!isSupported || !connected || !publicKey || !authToken) return;
+    if (!isSupported || !connected || !publicKey || !isAuthenticated) return;
     setLoading(true);
 
     try {
@@ -61,9 +61,9 @@ export function usePushNotifications() {
 
       await fetch(`${API_URL}/notifications/subscribe`, {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${authToken}`,
         },
         body: JSON.stringify({
           walletAddress: publicKey.toBase58(),
@@ -80,10 +80,10 @@ export function usePushNotifications() {
     } finally {
       setLoading(false);
     }
-  }, [isSupported, connected, publicKey, authToken]);
+  }, [isSupported, connected, publicKey, isAuthenticated]);
 
   const unsubscribe = useCallback(async () => {
-    if (!isSupported || !authToken) return;
+    if (!isSupported || !isAuthenticated) return;
     setLoading(true);
 
     try {
@@ -93,9 +93,9 @@ export function usePushNotifications() {
       if (sub) {
         await fetch(`${API_URL}/notifications/subscribe`, {
           method: 'DELETE',
+          credentials: 'include',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${authToken}`,
           },
           body: JSON.stringify({ endpoint: sub.endpoint }),
         });
@@ -108,7 +108,7 @@ export function usePushNotifications() {
     } finally {
       setLoading(false);
     }
-  }, [isSupported, authToken]);
+  }, [isSupported, isAuthenticated]);
 
   return {
     isSupported,

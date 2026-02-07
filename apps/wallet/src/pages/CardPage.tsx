@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useSelfCustodyWallet } from '../contexts/WalletContext';
 import { useWalletStore } from '../stores/walletStore';
+import { useAuth } from '../hooks/useAuth';
 import { useCard } from '../hooks/useCard';
 import { showToast } from '../hooks/useToast';
 import { API_URL } from '../config';
@@ -253,7 +254,7 @@ const FEATURES = [
 
 function WaitlistView() {
   const { t } = useTranslation();
-  const authToken = useWalletStore((s) => s.authToken);
+  const { isAuthenticated } = useAuth();
   const setCardStatus = useWalletStore((s) => s.setCardStatus);
   const [email, setEmail] = useState('');
   const [joining, setJoining] = useState(false);
@@ -266,12 +267,13 @@ function WaitlistView() {
   ];
 
   const handleJoinWaitlist = async () => {
-    if (!authToken) return;
+    if (!isAuthenticated) return;
     setJoining(true);
     try {
       const res = await fetch(`${API_URL}/banking/card-waitlist`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.trim() || undefined }),
       });
       if (!res.ok) throw new Error();
@@ -347,7 +349,7 @@ function WaitlistView() {
         </div>
         <button
           onClick={handleJoinWaitlist}
-          disabled={joining || !authToken}
+          disabled={joining || !isAuthenticated}
           className="w-full py-2.5 bg-gold-500 text-black font-medium text-sm hover:bg-gold-400 transition disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {joining ? t('banking.joining') : t('banking.joinWaitlist')}

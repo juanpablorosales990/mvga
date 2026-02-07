@@ -14,27 +14,27 @@ interface ReferralStats {
 export default function ReferralPage() {
   const { t } = useTranslation();
   const { connected } = useSelfCustodyWallet();
-  const { authToken } = useAuth();
+  const { isAuthenticated } = useAuth();
   const [stats, setStats] = useState<ReferralStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    if (!authToken) return;
+    if (!isAuthenticated) return;
     const controller = new AbortController();
 
     async function fetchData() {
       try {
         // Get or create referral code
         const codeRes = await fetch(`${API_URL}/referrals/code`, {
-          headers: { Authorization: `Bearer ${authToken}` },
+          credentials: 'include',
           signal: controller.signal,
         });
         if (!codeRes.ok) return;
 
         // Get stats
         const statsRes = await fetch(`${API_URL}/referrals/stats`, {
-          headers: { Authorization: `Bearer ${authToken}` },
+          credentials: 'include',
           signal: controller.signal,
         });
         if (statsRes.ok) {
@@ -49,7 +49,7 @@ export default function ReferralPage() {
 
     fetchData();
     return () => controller.abort();
-  }, [authToken]);
+  }, [isAuthenticated]);
 
   const referralLink = stats?.code ? `${window.location.origin}?ref=${stats.code}` : '';
 

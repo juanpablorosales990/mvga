@@ -98,7 +98,7 @@ export default function StakePage() {
 
   const { connected, publicKey, sendTransaction } = useSelfCustodyWallet();
   const { connection } = useConnection();
-  const { authToken } = useAuth();
+  const { isAuthenticated } = useAuth();
   const [amount, setAmount] = useState('');
   const [lockPeriod, setLockPeriod] = useState(30);
   const [activeTab, setActiveTab] = useState<'stake' | 'unstake'>('stake');
@@ -178,16 +178,16 @@ export default function StakePage() {
   }, [fetchData]);
 
   const handleStake = async () => {
-    if (!publicKey || !amount || !authToken) return;
+    if (!publicKey || !amount || !isAuthenticated) return;
     setLoading(true);
     setStatus('');
 
     try {
       const stakeRes = await fetch(`${API_URL}/staking/stake`, {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${authToken}`,
         },
         body: JSON.stringify({
           address: publicKey.toBase58(),
@@ -230,9 +230,9 @@ export default function StakePage() {
       setStatus(t('stake.recording'));
       const confirmRes = await fetch(`${API_URL}/staking/confirm-stake`, {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${authToken}`,
         },
         body: JSON.stringify({ signature, amount: parseFloat(amount), lockPeriod }),
       });
@@ -256,16 +256,16 @@ export default function StakePage() {
   };
 
   const handleUnstake = async () => {
-    if (!publicKey || !amount || !authToken) return;
+    if (!publicKey || !amount || !isAuthenticated) return;
     setLoading(true);
     setStatus('');
 
     try {
       const res = await fetch(`${API_URL}/staking/unstake`, {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${authToken}`,
         },
         body: JSON.stringify({ address: publicKey.toBase58(), amount: parseFloat(amount) }),
       });
@@ -290,14 +290,14 @@ export default function StakePage() {
   };
 
   const handleClaim = async () => {
-    if (!publicKey || !authToken) return;
+    if (!publicKey || !isAuthenticated) return;
     setLoading(true);
     setStatus('');
 
     try {
       const res = await fetch(`${API_URL}/staking/${publicKey.toBase58()}/claim`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${authToken}` },
+        credentials: 'include',
       });
 
       if (!res.ok) {
@@ -324,13 +324,13 @@ export default function StakePage() {
   };
 
   const handleToggleAutoCompound = async (stakeId: string, enabled: boolean) => {
-    if (!authToken) return;
+    if (!isAuthenticated) return;
     try {
       const res = await fetch(`${API_URL}/staking/auto-compound`, {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${authToken}`,
         },
         body: JSON.stringify({ stakeId, enabled }),
       });
@@ -522,7 +522,7 @@ export default function StakePage() {
             parseFloat(amount) <= 0 ||
             (activeTab === 'stake' && parseFloat(amount) < 1) ||
             loading ||
-            !authToken
+            !isAuthenticated
           }
           className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
         >

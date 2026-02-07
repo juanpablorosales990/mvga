@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
+import * as cookieParser from 'cookie-parser';
 import * as express from 'express';
 import * as Sentry from '@sentry/node';
 import { PublicKey } from '@solana/web3.js';
@@ -69,6 +70,9 @@ async function bootstrap() {
 
   // Graceful shutdown hooks
   app.enableShutdownHooks();
+
+  // Cookie parser (httpOnly auth cookies)
+  app.use(cookieParser());
 
   // Request body size limit
   app.use(express.json({ limit: '10kb' }));

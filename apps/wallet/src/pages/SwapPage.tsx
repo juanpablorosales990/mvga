@@ -3,7 +3,6 @@ import { useConnection } from '@solana/wallet-adapter-react';
 import { useSelfCustodyWallet } from '../contexts/WalletContext';
 import { VersionedTransaction } from '@solana/web3.js';
 import { useTranslation } from 'react-i18next';
-import { useAuth } from '../hooks/useAuth';
 import { useWalletStore } from '../stores/walletStore';
 import { API_URL } from '../config';
 
@@ -56,7 +55,6 @@ export default function SwapPage() {
   const { t } = useTranslation();
   const { connected, publicKey, signTransaction } = useSelfCustodyWallet();
   const { connection } = useConnection();
-  const { authToken } = useAuth();
   const invalidateBalances = useWalletStore((s) => s.invalidateBalances);
 
   const [fromToken, setFromToken] = useState(TOKENS[0]);
@@ -199,9 +197,9 @@ export default function SwapPage() {
       try {
         await fetch(`${API_URL}/swap/record`, {
           method: 'POST',
+          credentials: 'include',
           headers: {
             'Content-Type': 'application/json',
-            ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
           },
           body: JSON.stringify({
             walletAddress: publicKey.toString(),

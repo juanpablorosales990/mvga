@@ -11,7 +11,6 @@ import {
 } from '@solana/spl-token';
 import BN from 'bn.js';
 import { useTranslation } from 'react-i18next';
-import { useAuth } from '../hooks/useAuth';
 import TransactionPreviewModal from '../components/TransactionPreviewModal';
 import ConfirmModal from '../components/ConfirmModal';
 import { API_URL, KNOWN_ESCROW_WALLET } from '../config';
@@ -63,7 +62,6 @@ export default function TradePage() {
   const navigate = useNavigate();
   const { connected, publicKey, sendTransaction } = useSelfCustodyWallet();
   const { connection } = useConnection();
-  const { authToken } = useAuth();
 
   const [trade, setTrade] = useState<Trade | null>(null);
   const [loading, setLoading] = useState(true);
@@ -119,9 +117,9 @@ export default function TradePage() {
       // 1. Get escrow info from API
       const lockRes = await fetch(`${API_URL}/p2p/trades/${trade.id}/lock-escrow`, {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
         },
       });
       if (!lockRes.ok)
@@ -187,9 +185,9 @@ export default function TradePage() {
       // 3. Confirm with API
       const confirmRes = await fetch(`${API_URL}/p2p/trades/${trade.id}/confirm-escrow`, {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
         },
         body: JSON.stringify({ signature }),
       });
@@ -214,9 +212,9 @@ export default function TradePage() {
     try {
       const res = await fetch(`${API_URL}/p2p/trades/${trade.id}/paid`, {
         method: 'PATCH',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
         },
         body: JSON.stringify({ status: 'PAID', notes: '' }),
       });
@@ -244,9 +242,9 @@ export default function TradePage() {
           // Get escrow info to check mode
           const infoRes = await fetch(`${API_URL}/p2p/trades/${trade.id}/lock-escrow`, {
             method: 'POST',
+            credentials: 'include',
             headers: {
               'Content-Type': 'application/json',
-              ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
             },
           });
           const escrowInfo = await infoRes.json();
@@ -272,9 +270,9 @@ export default function TradePage() {
             // Confirm with API
             const confirmRes = await fetch(`${API_URL}/p2p/trades/${trade.id}/confirm-release`, {
               method: 'POST',
+              credentials: 'include',
               headers: {
                 'Content-Type': 'application/json',
-                ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
               },
               body: JSON.stringify({ signature }),
             });
@@ -293,9 +291,9 @@ export default function TradePage() {
       // Legacy mode: server signs the release
       const res = await fetch(`${API_URL}/p2p/trades/${trade.id}/confirm`, {
         method: 'PATCH',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
         },
         body: JSON.stringify({ status: 'CONFIRMED', notes: '' }),
       });
@@ -318,9 +316,9 @@ export default function TradePage() {
     try {
       const res = await fetch(`${API_URL}/p2p/trades/${trade.id}/cancel`, {
         method: 'PATCH',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
         },
         body: JSON.stringify({ status: 'CANCELLED', notes: '' }),
       });
@@ -343,9 +341,9 @@ export default function TradePage() {
     try {
       const res = await fetch(`${API_URL}/p2p/trades/${trade.id}/dispute`, {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
         },
         body: JSON.stringify({ status: 'DISPUTED', notes: reason }),
       });

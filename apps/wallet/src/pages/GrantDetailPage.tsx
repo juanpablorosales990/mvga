@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSelfCustodyWallet } from '../contexts/WalletContext';
 import { useTranslation } from 'react-i18next';
-import { useAuth } from '../hooks/useAuth';
 import { API_URL } from '../config';
 
 interface ProposalDetail {
@@ -30,7 +29,6 @@ export default function GrantDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { publicKey } = useSelfCustodyWallet();
-  const { authToken } = useAuth();
 
   const [proposal, setProposal] = useState<ProposalDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -60,9 +58,9 @@ export default function GrantDetailPage() {
     try {
       const res = await fetch(`${API_URL}/grants/proposals/${proposal.id}/vote`, {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
         },
         body: JSON.stringify({ voterAddress: publicKey.toBase58(), direction }),
       });

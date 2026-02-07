@@ -3,6 +3,7 @@ import { useConnection } from '@solana/wallet-adapter-react';
 import { Transaction } from '@solana/web3.js';
 import { API_URL } from '../config';
 import { useSelfCustodyWallet } from '../contexts/WalletContext';
+import { apiFetch } from '../lib/apiClient';
 
 interface YieldRate {
   protocol: string;
@@ -33,32 +34,6 @@ const FALLBACK_RATES: YieldRate[] = [
   { protocol: 'Kamino', token: 'USDC', supplyApy: 5.2 },
   { protocol: 'Kamino', token: 'USDT', supplyApy: 4.8 },
 ];
-
-function getAuthToken(): string | null {
-  try {
-    const store = JSON.parse(localStorage.getItem('mvga-wallet-storage') || '{}');
-    return store?.state?.authToken || null;
-  } catch {
-    return null;
-  }
-}
-
-async function authFetch<T>(path: string, options?: RequestInit): Promise<T> {
-  const token = getAuthToken();
-  const res = await fetch(`${API_URL}${path}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...options?.headers,
-    },
-  });
-  if (!res.ok) {
-    const body = await res.text().catch(() => '');
-    throw new Error(`API ${res.status}: ${body}`);
-  }
-  return res.json();
-}
 
 interface DepositResponse {
   positionId: string;
@@ -130,7 +105,7 @@ export function useSavings(walletAddress: string | null) {
 
   const deposit = useCallback(
     async (amount: number, token = 'USDC') => {
-      const result = await authFetch<DepositResponse>('/savings/deposit', {
+      const result = await apiFetch<DepositResponse>('/savings/deposit', {
         method: 'POST',
         body: JSON.stringify({ amount, token }),
       });
@@ -145,7 +120,7 @@ export function useSavings(walletAddress: string | null) {
         signature = `mock_${Date.now()}`;
       }
 
-      await authFetch('/savings/confirm-deposit', {
+      await apiFetch('/savings/confirm-deposit', {
         method: 'POST',
         body: JSON.stringify({ signature }),
       });
@@ -157,7 +132,7 @@ export function useSavings(walletAddress: string | null) {
 
   const withdraw = useCallback(
     async (positionId: string, amount?: number) => {
-      const result = await authFetch<WithdrawResponse>('/savings/withdraw', {
+      const result = await apiFetch<WithdrawResponse>('/savings/withdraw', {
         method: 'POST',
         body: JSON.stringify({ positionId, amount }),
       });
@@ -170,7 +145,7 @@ export function useSavings(walletAddress: string | null) {
         signature = `mock_${Date.now()}`;
       }
 
-      await authFetch('/savings/confirm-withdraw', {
+      await apiFetch('/savings/confirm-withdraw', {
         method: 'POST',
         body: JSON.stringify({ positionId, signature }),
       });

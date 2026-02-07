@@ -7,7 +7,7 @@ const REF_STORAGE_KEY = 'mvga_ref_code';
 
 export function useReferral() {
   const { connected } = useSelfCustodyWallet();
-  const { authToken } = useAuth();
+  const { isAuthenticated } = useAuth();
 
   // Capture ?ref= param on first load
   useEffect(() => {
@@ -24,16 +24,16 @@ export function useReferral() {
 
   // Claim referral after wallet connect
   useEffect(() => {
-    if (!connected || !authToken) return;
+    if (!connected || !isAuthenticated) return;
 
     const code = localStorage.getItem(REF_STORAGE_KEY);
     if (!code) return;
 
     fetch(`${API_URL}/referrals/claim`, {
       method: 'POST',
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${authToken}`,
       },
       body: JSON.stringify({ code }),
     })
@@ -45,5 +45,5 @@ export function useReferral() {
       .catch(() => {
         // Will retry on next connect
       });
-  }, [connected, authToken]);
+  }, [connected, isAuthenticated]);
 }

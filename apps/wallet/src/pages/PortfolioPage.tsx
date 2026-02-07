@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useSelfCustodyWallet } from '../contexts/WalletContext';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { usePrices } from '../hooks/usePrices';
+import { useAuth } from '../hooks/useAuth';
 import { useWalletStore } from '../stores/walletStore';
 import { showToast } from '../hooks/useToast';
 import { SkeletonStatCard } from '../components/Skeleton';
@@ -34,7 +35,7 @@ const PIE_COLORS = ['#3b82f6', '#22c55e', '#ec4899'];
 export default function PortfolioPage() {
   const { t } = useTranslation();
   const { connected, publicKey } = useSelfCustodyWallet();
-  const authToken = useWalletStore((s) => s.authToken);
+  const { isAuthenticated } = useAuth();
   const preferredCurrency = useWalletStore((s) => s.preferredCurrency);
   const totalUsdValue = useWalletStore((s) => s.totalUsdValue);
   const { prices, formatUsdValue } = usePrices();
@@ -58,9 +59,9 @@ export default function PortfolioPage() {
         .catch(() => null),
 
       // Referral stats (authed)
-      authToken
+      isAuthenticated
         ? fetch(`${API_URL}/referrals/stats`, {
-            headers: { Authorization: `Bearer ${authToken}` },
+            credentials: 'include',
             signal: controller.signal,
           })
             .then((r) => r.json())
@@ -82,7 +83,7 @@ export default function PortfolioPage() {
       .finally(() => setLoading(false));
 
     return () => controller.abort();
-  }, [connected, publicKey, authToken, t]);
+  }, [connected, publicKey, isAuthenticated, t]);
 
   const stakedValueUsd = (staking?.totalStaked ?? 0) * prices.mvga;
   const referralValueUsd = (referrals?.totalEarned ?? 0) * prices.mvga;

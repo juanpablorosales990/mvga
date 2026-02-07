@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useSelfCustodyWallet } from '../contexts/WalletContext';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useAuth } from '../hooks/useAuth';
 import FiatValue from '../components/FiatValue';
 
 interface P2POffer {
@@ -32,7 +31,6 @@ const CRYPTO_OPTIONS = ['USDC', 'MVGA'] as const;
 export default function P2PPage() {
   const { t } = useTranslation();
   const { connected, publicKey } = useSelfCustodyWallet();
-  const { authToken } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'buy' | 'sell' | 'my'>('buy');
   const [myTrades, setMyTrades] = useState<
@@ -138,9 +136,9 @@ export default function P2PPage() {
     try {
       const response = await fetch(`${API_URL}/p2p/offers`, {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
         },
         body: JSON.stringify({
           sellerAddress: publicKey.toString(),
@@ -178,9 +176,9 @@ export default function P2PPage() {
     try {
       const response = await fetch(`${API_URL}/p2p/offers/${selectedOffer.id}/accept`, {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
         },
         body: JSON.stringify({
           buyerAddress: publicKey.toString(),
