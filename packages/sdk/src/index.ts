@@ -3,6 +3,26 @@ import { PublicKey } from '@solana/web3.js';
 // MVGA SDK - Shared constants, types, and utilities
 
 // ============================================================================
+// Re-exports: Escrow program SDK
+// ============================================================================
+
+export {
+  ESCROW_PROGRAM_ID,
+  findEscrowPDA,
+  findVaultPDA,
+  uuidToTradeId,
+  tradeIdToUuid,
+  Resolution,
+  buildInitializeEscrowIx,
+  buildMarkPaidIx,
+  buildReleaseEscrowIx,
+  buildRefundEscrowIx,
+  buildFileDisputeIx,
+  buildResolveDisputeIx,
+} from './escrow';
+export type { EscrowStatus, EscrowAccount } from './escrow';
+
+// ============================================================================
 // Constants
 // ============================================================================
 

@@ -11,10 +11,12 @@
     "lint": "eslint src/"
   },
   "dependencies": {
-    "@solana/web3.js": "^1.91.0"
+    "@solana/spl-token": "^0.4.9",
+    "@solana/web3.js": "^1.91.0",
+    "bn.js": "^5.2.1"
   },
   "devDependencies": {
-    "@solana/spl-token": "^0.4.9",
+    "@types/bn.js": "^5.2.0",
     "tsup": "^8.0.0",
     "typescript": "^5.4.0"
   }

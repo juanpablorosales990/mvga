@@ -1,0 +1,26 @@
+use anchor_lang::prelude::*;
+
+use crate::errors::EscrowError;
+use crate::state::{EscrowState, EscrowStatus};
+
+#[derive(Accounts)]
+pub struct MarkPaid<'info> {
+    /// Buyer who marks the off-chain payment as sent
+    pub buyer: Signer<'info>,
+
+    /// Escrow state — must be in Locked status
+    #[account(
+        mut,
+        constraint = escrow_state.buyer == buyer.key() @ EscrowError::UnauthorizedBuyer,
+        constraint = escrow_state.status == EscrowStatus::Locked @ EscrowError::InvalidStatus,
+    )]
+    pub escrow_state: Account<'info, EscrowState>,
+}
+
+pub fn handler(ctx: Context<MarkPaid>) -> Result<()> {
+    let escrow = &mut ctx.accounts.escrow_state;
+    escrow.status = EscrowStatus::PaymentSent;
+
+    msg!("Buyer marked payment as sent");
+    Ok(())
+}
