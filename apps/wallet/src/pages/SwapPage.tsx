@@ -216,11 +216,12 @@ export default function SwapPage() {
 
       setFromAmount('');
       setQuote(null);
-      invalidateBalances();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Swap failed');
     } finally {
       setSwapping(false);
+      // Always refresh balances to reflect actual on-chain state
+      invalidateBalances();
     }
   };
 

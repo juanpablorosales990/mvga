@@ -506,7 +506,7 @@ export default function TransparencyPage() {
                   {
                     label: 'Startup Ecosystem',
                     pct: 10,
-                    address: 'H9j1W4u5LEiw8AZdui6c8AmN6t4tKkPQCAULPW8eMiTE',
+                    address: 'EjX2UrqvJkWvc4B1FPz3gU3ERAAB5BkVbpWrcGMdZkR3',
                     gold: false,
                   },
                   {

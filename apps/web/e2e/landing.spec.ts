@@ -22,7 +22,7 @@ test.describe('Landing Page — Hero', () => {
 
 test.describe('Landing Page — Navigation', () => {
   // Nav links are hidden behind a hamburger menu on mobile viewports
-  test('nav has all anchor links', async ({ page, browserName }, testInfo) => {
+  test('nav has all anchor links', async ({ page, browserName: _browserName }, testInfo) => {
     test.skip(testInfo.project.name === 'mobile', 'Nav links hidden on mobile');
     await page.goto('/');
     await expect(page.locator('nav a[href="#mission"]')).toBeVisible();

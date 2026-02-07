@@ -259,6 +259,15 @@ export class SwapService {
       if (signerKey !== walletAddress) {
         throw new BadRequestException('Transaction signer does not match claimed wallet');
       }
+
+      // Verify the transaction involves the Jupiter Aggregator program
+      const JUPITER_V6_PROGRAM = 'JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4';
+      const programIds = accountKeys.map((k: { pubkey: { toBase58(): string } }) =>
+        k.pubkey.toBase58()
+      );
+      if (!programIds.includes(JUPITER_V6_PROGRAM)) {
+        throw new BadRequestException('Transaction is not a valid Jupiter swap');
+      }
     } catch (error) {
       if (error instanceof BadRequestException) throw error;
       this.logger.warn(

@@ -440,8 +440,8 @@ export class StakingService {
           orderBy: { claimedAt: 'desc' },
         });
 
-        if (lastClaim && Date.now() - lastClaim.claimedAt.getTime() < 3600_000) {
-          throw new BadRequestException('Please wait at least 1 hour between claims');
+        if (lastClaim && Date.now() - lastClaim.claimedAt.getTime() < 86_400_000) {
+          throw new BadRequestException('Please wait at least 24 hours between claims');
         }
 
         // Calculate rewards from lastClaimedAt (not createdAt) to prevent re-claiming

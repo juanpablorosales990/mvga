@@ -47,6 +47,16 @@ function validateEnv(logger: Logger) {
     }
   }
 
+  // In production, warn about missing critical wallet keypairs
+  if (isProd) {
+    const requiredKeypairs = ['ESCROW_WALLET_KEYPAIR', 'STAKING_VAULT_KEYPAIR', 'TREASURY_KEYPAIR'];
+    for (const varName of requiredKeypairs) {
+      if (!process.env[varName]) {
+        logger.warn(`${varName} not set — related operations will be unavailable`);
+      }
+    }
+  }
+
   logger.log('Environment validation passed');
 }
 

@@ -203,6 +203,12 @@ export class P2PService {
         }
 
         const cryptoAmount = dto.amount * offer.rate;
+        if (
+          !Number.isFinite(cryptoAmount) ||
+          cryptoAmount > Number.MAX_SAFE_INTEGER / AMOUNT_SCALE
+        ) {
+          throw new BadRequestException('Calculated amount exceeds safe limits');
+        }
         const availableAmount = Number(offer.availableAmount) / AMOUNT_SCALE;
         if (cryptoAmount > availableAmount) {
           throw new BadRequestException('Not enough available in offer');

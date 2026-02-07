@@ -49,6 +49,10 @@ export default function Header() {
 
   const handleCopyKey = () => {
     navigator.clipboard.writeText(exportedKey);
+    // Auto-clear clipboard after 30 seconds for security
+    setTimeout(() => {
+      navigator.clipboard.writeText('').catch(() => {});
+    }, 30_000);
   };
 
   const addr = publicKey?.toBase58() || '';

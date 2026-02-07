@@ -13,7 +13,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
 import TransactionPreviewModal from '../components/TransactionPreviewModal';
 import ConfirmModal from '../components/ConfirmModal';
-import { API_URL } from '../config';
+import { API_URL, KNOWN_ESCROW_WALLET } from '../config';
 
 interface Trade {
   id: string;
@@ -120,6 +120,11 @@ export default function TradePage() {
       if (!lockRes.ok)
         throw new Error((await lockRes.json()).message || 'Failed to get escrow info');
       const { escrowWallet, mintAddress, amount, decimals } = await lockRes.json();
+
+      // Validate escrow wallet matches known address to prevent API compromise
+      if (KNOWN_ESCROW_WALLET && escrowWallet !== KNOWN_ESCROW_WALLET) {
+        throw new Error('Escrow wallet address mismatch — please contact support');
+      }
 
       // 2. Build SPL transfer: seller → escrow
       const mintPubkey = new PublicKey(mintAddress);

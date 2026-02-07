@@ -1,3 +1,5 @@
+import { PublicKey } from '@solana/web3.js';
+
 // MVGA SDK - Shared constants, types, and utilities
 
 // ============================================================================
@@ -199,15 +201,12 @@ export function calculateAPY(
 }
 
 /**
- * Validate a Solana address
+ * Validate a Solana address using PublicKey constructor (validates base58 + length)
  */
 export function isValidSolanaAddress(address: string): boolean {
   try {
-    // Basic validation - Solana addresses are base58 encoded, 32-44 chars
-    if (address.length < 32 || address.length > 44) return false;
-    // Check for valid base58 characters
-    const base58Regex = /^[1-9A-HJ-NP-Za-km-z]+$/;
-    return base58Regex.test(address);
+    new PublicKey(address);
+    return true;
   } catch {
     return false;
   }
@@ -234,7 +233,10 @@ export class MVGAClient {
     });
 
     if (!response.ok) {
-      throw new Error(`API Error: ${response.statusText}`);
+      const errorBody = await response.json().catch(() => ({ message: response.statusText }));
+      throw new Error(
+        `API Error (${response.status}): ${errorBody.message || response.statusText}`
+      );
     }
 
     return response.json();

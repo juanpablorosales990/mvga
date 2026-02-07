@@ -76,8 +76,15 @@ export default function SendPage() {
           const ata = await getAssociatedTokenAddress(mintPubkey, publicKey);
           try {
             const tokenBalance = await connection.getTokenAccountBalance(ata);
-            const available = parseFloat(tokenBalance.value.uiAmountString || '0');
-            if (available < amountNum) {
+            // Use raw BigInt comparison to avoid floating-point precision loss
+            const availableRaw = BigInt(tokenBalance.value.amount);
+            const [whole, fraction = ''] = amount.split('.');
+            const paddedFraction = fraction
+              .padEnd(tokenConfig.decimals, '0')
+              .slice(0, tokenConfig.decimals);
+            const requestedRaw = BigInt(whole + paddedFraction);
+            if (requestedRaw > availableRaw) {
+              const available = parseFloat(tokenBalance.value.uiAmountString || '0');
               setError(t('send.insufficientToken', { token, available }));
               return;
             }

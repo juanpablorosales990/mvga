@@ -35,7 +35,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     site: '@mvga',
-    images: ['/og-image.png'],
+    images: [{ url: '/og-image.png', alt: 'MVGA - Make Venezuela Great Again' }],
   },
   icons: {
     icon: '/favicon.ico',
@@ -45,7 +45,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${archivo.variable} ${jetbrains.variable}`}>
+    <html lang="es" className={`${archivo.variable} ${jetbrains.variable}`}>
       <body className="antialiased bg-black text-white grain">
         <a
           href="#main-content"

@@ -31,7 +31,10 @@ describe('SwapService', () => {
           meta: { err: null },
           transaction: {
             message: {
-              accountKeys: [{ pubkey: { toBase58: () => 'test-wallet' } }],
+              accountKeys: [
+                { pubkey: { toBase58: () => 'test-wallet' } },
+                { pubkey: { toBase58: () => 'JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4' } },
+              ],
             },
           },
         }),

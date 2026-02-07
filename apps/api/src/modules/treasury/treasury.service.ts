@@ -268,6 +268,19 @@ export class TreasuryService {
       data: { status: 'IN_PROGRESS', startedAt: new Date() },
     });
 
+    // Idempotency: if this step already has a signature, the on-chain tx succeeded
+    // in a previous attempt even though the DB update may have failed. Skip re-execution.
+    if (step.signature) {
+      this.logger.log(
+        `Step ${step.stepName} already has signature ${step.signature}, marking complete`
+      );
+      await this.prisma.distributionStep.update({
+        where: { id: step.id },
+        data: { status: 'COMPLETED', completedAt: new Date() },
+      });
+      return;
+    }
+
     let signature: string | null = null;
 
     switch (step.stepName) {

@@ -95,6 +95,8 @@ export function useAuth() {
     if (!connected || !publicKey) {
       setAuthToken(null);
       hasAutoAuthed.current = false;
+      // Cancel any in-flight authentication to prevent stale token writes
+      authPromise = null;
       return;
     }
 

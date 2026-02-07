@@ -84,6 +84,7 @@ export function SelfCustodyWalletProvider({ children }: { children: ReactNode })
   const [pendingOnboarding, setPendingOnboarding] = useState(false);
   const lastActivityRef = useRef(Date.now());
   const lockTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lockRef = useRef<() => void>(() => {});
 
   const storeSetPublicKey = useWalletStore((s) => s.setPublicKey);
   const storeSetConnected = useWalletStore((s) => s.setConnected);
@@ -108,7 +109,7 @@ export function SelfCustodyWalletProvider({ children }: { children: ReactNode })
 
     lockTimerRef.current = setInterval(() => {
       if (Date.now() - lastActivityRef.current > AUTO_LOCK_MS) {
-        lock();
+        lockRef.current();
       }
     }, 30000);
 
@@ -278,6 +279,7 @@ export function SelfCustodyWalletProvider({ children }: { children: ReactNode })
     storeSetConnected(false);
     if (lockTimerRef.current) clearInterval(lockTimerRef.current);
   }, [storeSetConnected]);
+  lockRef.current = lock;
 
   const deleteWallet = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY);
