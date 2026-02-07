@@ -88,3 +88,51 @@ export async function decryptKeypair(
 
   return new Uint8Array(plaintext);
 }
+
+/**
+ * Encrypt arbitrary data using a pre-existing salt (for V2 multi-field storage).
+ * Returns { iv, ciphertext } as base64 strings. Caller must store the salt separately.
+ */
+export async function encryptData(
+  data: Uint8Array,
+  password: string,
+  saltBase64: string
+): Promise<{ iv: string; ciphertext: string }> {
+  const salt = fromBase64(saltBase64);
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const key = await deriveKey(password, salt);
+
+  const ct = await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv: iv as BufferSource },
+    key,
+    data as BufferSource
+  );
+
+  return {
+    iv: toBase64(iv),
+    ciphertext: toBase64(new Uint8Array(ct)),
+  };
+}
+
+/**
+ * Decrypt data encrypted with encryptData, given iv/ciphertext/salt as base64.
+ */
+export async function decryptData(
+  ciphertextBase64: string,
+  ivBase64: string,
+  saltBase64: string,
+  password: string
+): Promise<Uint8Array> {
+  const salt = fromBase64(saltBase64);
+  const iv = fromBase64(ivBase64);
+  const ciphertext = fromBase64(ciphertextBase64);
+  const key = await deriveKey(password, salt);
+
+  const plaintext = await crypto.subtle.decrypt(
+    { name: 'AES-GCM', iv: iv as BufferSource },
+    key,
+    ciphertext as BufferSource
+  );
+
+  return new Uint8Array(plaintext);
+}

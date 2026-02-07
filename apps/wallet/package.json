@@ -11,6 +11,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@scure/bip39": "^2.0.1",
     "@sentry/react": "^10.38.0",
     "@sentry/vite-plugin": "^4.9.0",
     "@solana/spl-token": "^0.4.0",
@@ -23,6 +24,7 @@
     "clsx": "^2.1.0",
     "i18next": "^25.8.4",
     "i18next-browser-languagedetector": "^8.2.0",
+    "micro-key-producer": "^0.8.2",
     "qrcode.react": "^3.1.0",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",

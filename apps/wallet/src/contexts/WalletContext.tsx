@@ -10,27 +10,40 @@ import {
 import { Keypair, PublicKey, Transaction, VersionedTransaction, Connection } from '@solana/web3.js';
 import nacl from 'tweetnacl';
 import bs58 from 'bs58';
-import { encryptKeypair, decryptKeypair, type EncryptedKeypair } from '../lib/keypairEncryption';
+import {
+  encryptKeypair,
+  decryptKeypair,
+  encryptData,
+  decryptData,
+  type EncryptedKeypair,
+} from '../lib/keypairEncryption';
+import {
+  createMnemonic,
+  isValidMnemonic,
+  deriveKeypairFromMnemonic,
+  getDerivationPath,
+} from '../lib/mnemonicDerivation';
 import { useWalletStore } from '../stores/walletStore';
 
 export type WalletState = 'NO_WALLET' | 'LOCKED' | 'UNLOCKED';
 
 interface WalletContextValue {
-  // State
   walletState: WalletState;
   connected: boolean;
   publicKey: PublicKey | null;
   keypair: Keypair | null;
+  hasMnemonic: boolean;
 
-  // Wallet lifecycle
-  createWallet: (password: string) => Promise<string>; // returns base58 secret key for backup
+  createWallet: (password: string) => Promise<string[]>;
   importWallet: (secretKeyBase58: string, password: string) => Promise<void>;
+  importFromMnemonic: (words: string[], password: string) => Promise<void>;
+  importFromSecretKey: (secretKeyBase58: string, password: string) => Promise<void>;
   unlock: (password: string) => Promise<void>;
   lock: () => void;
   deleteWallet: () => void;
   exportSecretKey: (password: string) => Promise<string>;
+  exportMnemonic: (password: string) => Promise<string[] | null>;
 
-  // Transaction signing (drop-in for wallet adapter)
   signMessage: (message: Uint8Array) => Promise<Uint8Array>;
   signTransaction: <T extends Transaction | VersionedTransaction>(tx: T) => Promise<T>;
   sendTransaction: (
@@ -42,11 +55,28 @@ interface WalletContextValue {
 const WalletContext = createContext<WalletContextValue | null>(null);
 
 const STORAGE_KEY = 'mvga-encrypted-keypair';
-const AUTO_LOCK_MS = 15 * 60 * 1000; // 15 minutes
+const AUTO_LOCK_MS = 15 * 60 * 1000;
+
+// V2 storage with mnemonic support
+interface EncryptedWalletV2 {
+  version: 2;
+  salt: string;
+  keypair_iv: string;
+  keypair_ct: string;
+  mnemonic_iv: string;
+  mnemonic_ct: string;
+  derivationPath: string;
+  createdVia: 'mnemonic' | 'import_mnemonic' | 'import_key';
+}
+
+function isV2(data: unknown): data is EncryptedWalletV2 {
+  return typeof data === 'object' && data !== null && (data as any).version === 2;
+}
 
 export function SelfCustodyWalletProvider({ children }: { children: ReactNode }) {
   const [walletState, setWalletState] = useState<WalletState>('NO_WALLET');
   const [keypair, setKeypair] = useState<Keypair | null>(null);
+  const [hasMnemonic, setHasMnemonic] = useState(false);
   const lastActivityRef = useRef(Date.now());
   const lockTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -54,14 +84,9 @@ export function SelfCustodyWalletProvider({ children }: { children: ReactNode })
   const storeSetConnected = useWalletStore((s) => s.setConnected);
   const storeDisconnect = useWalletStore((s) => s.disconnect);
 
-  // Check for existing encrypted keypair on mount
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      setWalletState('LOCKED');
-    } else {
-      setWalletState('NO_WALLET');
-    }
+    setWalletState(stored ? 'LOCKED' : 'NO_WALLET');
   }, []);
 
   // Auto-lock timer
@@ -91,48 +116,142 @@ export function SelfCustodyWalletProvider({ children }: { children: ReactNode })
   }, [walletState]);
 
   const createWallet = useCallback(
-    async (password: string): Promise<string> => {
-      const kp = Keypair.generate();
-      const encrypted = await encryptKeypair(kp.secretKey, password);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(encrypted));
+    async (password: string): Promise<string[]> => {
+      const mnemonic = createMnemonic();
+      const words = mnemonic.split(' ');
+      const kp = deriveKeypairFromMnemonic(mnemonic, 0);
+
+      const {
+        salt,
+        iv: keypairIv,
+        ciphertext: keypairCt,
+      } = await encryptKeypair(kp.secretKey, password);
+      const { iv: mnemonicIv, ciphertext: mnemonicCt } = await encryptData(
+        new TextEncoder().encode(mnemonic),
+        password,
+        salt
+      );
+
+      const stored: EncryptedWalletV2 = {
+        version: 2,
+        salt,
+        keypair_iv: keypairIv,
+        keypair_ct: keypairCt,
+        mnemonic_iv: mnemonicIv,
+        mnemonic_ct: mnemonicCt,
+        derivationPath: getDerivationPath(0),
+        createdVia: 'mnemonic',
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
 
       setKeypair(kp);
+      setHasMnemonic(true);
       setWalletState('UNLOCKED');
       storeSetPublicKey(kp.publicKey.toBase58());
       storeSetConnected(true);
 
-      return bs58.encode(kp.secretKey);
+      return words;
     },
     [storeSetPublicKey, storeSetConnected]
   );
 
-  const importWallet = useCallback(
+  const importFromMnemonic = useCallback(
+    async (words: string[], password: string): Promise<void> => {
+      const mnemonic = words.join(' ').trim().toLowerCase();
+      if (!isValidMnemonic(mnemonic)) {
+        throw new Error('Invalid recovery phrase');
+      }
+
+      const kp = deriveKeypairFromMnemonic(mnemonic, 0);
+
+      const {
+        salt,
+        iv: keypairIv,
+        ciphertext: keypairCt,
+      } = await encryptKeypair(kp.secretKey, password);
+      const { iv: mnemonicIv, ciphertext: mnemonicCt } = await encryptData(
+        new TextEncoder().encode(mnemonic),
+        password,
+        salt
+      );
+
+      const stored: EncryptedWalletV2 = {
+        version: 2,
+        salt,
+        keypair_iv: keypairIv,
+        keypair_ct: keypairCt,
+        mnemonic_iv: mnemonicIv,
+        mnemonic_ct: mnemonicCt,
+        derivationPath: getDerivationPath(0),
+        createdVia: 'import_mnemonic',
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
+
+      setKeypair(kp);
+      setHasMnemonic(true);
+      setWalletState('UNLOCKED');
+      storeSetPublicKey(kp.publicKey.toBase58());
+      storeSetConnected(true);
+    },
+    [storeSetPublicKey, storeSetConnected]
+  );
+
+  const importFromSecretKey = useCallback(
     async (secretKeyBase58: string, password: string): Promise<void> => {
       const secretKey = bs58.decode(secretKeyBase58);
       if (secretKey.length !== 64) throw new Error('Invalid secret key length');
 
       const kp = Keypair.fromSecretKey(secretKey);
-      const encrypted = await encryptKeypair(kp.secretKey, password);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(encrypted));
+      const {
+        salt,
+        iv: keypairIv,
+        ciphertext: keypairCt,
+      } = await encryptKeypair(kp.secretKey, password);
+
+      const stored: EncryptedWalletV2 = {
+        version: 2,
+        salt,
+        keypair_iv: keypairIv,
+        keypair_ct: keypairCt,
+        mnemonic_iv: '',
+        mnemonic_ct: '',
+        derivationPath: '',
+        createdVia: 'import_key',
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
 
       setKeypair(kp);
+      setHasMnemonic(false);
       setWalletState('UNLOCKED');
       storeSetPublicKey(kp.publicKey.toBase58());
       storeSetConnected(true);
     },
     [storeSetPublicKey, storeSetConnected]
   );
+
+  const importWallet = importFromSecretKey;
 
   const unlock = useCallback(
     async (password: string): Promise<void> => {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (!stored) throw new Error('No wallet found');
 
-      const encrypted: EncryptedKeypair = JSON.parse(stored);
-      const secretKey = await decryptKeypair(encrypted, password);
-      const kp = Keypair.fromSecretKey(secretKey);
+      const data = JSON.parse(stored);
+      let kp: Keypair;
+      let mnemonicFlag = false;
+
+      if (isV2(data)) {
+        const secretKey = await decryptData(data.keypair_ct, data.keypair_iv, data.salt, password);
+        kp = Keypair.fromSecretKey(secretKey);
+        mnemonicFlag = data.createdVia !== 'import_key' && !!data.mnemonic_ct;
+      } else {
+        const encrypted: EncryptedKeypair = data;
+        const secretKey = await decryptKeypair(encrypted, password);
+        kp = Keypair.fromSecretKey(secretKey);
+      }
 
       setKeypair(kp);
+      setHasMnemonic(mnemonicFlag);
       setWalletState('UNLOCKED');
       lastActivityRef.current = Date.now();
       storeSetPublicKey(kp.publicKey.toBase58());
@@ -151,6 +270,7 @@ export function SelfCustodyWalletProvider({ children }: { children: ReactNode })
   const deleteWallet = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY);
     setKeypair(null);
+    setHasMnemonic(false);
     setWalletState('NO_WALLET');
     storeDisconnect();
   }, [storeDisconnect]);
@@ -159,9 +279,31 @@ export function SelfCustodyWalletProvider({ children }: { children: ReactNode })
     const stored = localStorage.getItem(STORAGE_KEY);
     if (!stored) throw new Error('No wallet found');
 
-    const encrypted: EncryptedKeypair = JSON.parse(stored);
+    const data = JSON.parse(stored);
+    if (isV2(data)) {
+      const secretKey = await decryptData(data.keypair_ct, data.keypair_iv, data.salt, password);
+      return bs58.encode(secretKey);
+    }
+    const encrypted: EncryptedKeypair = data;
     const secretKey = await decryptKeypair(encrypted, password);
     return bs58.encode(secretKey);
+  }, []);
+
+  const exportMnemonic = useCallback(async (password: string): Promise<string[] | null> => {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (!stored) throw new Error('No wallet found');
+
+    const data = JSON.parse(stored);
+    if (isV2(data) && data.mnemonic_ct) {
+      const mnemonicBytes = await decryptData(
+        data.mnemonic_ct,
+        data.mnemonic_iv,
+        data.salt,
+        password
+      );
+      return new TextDecoder().decode(mnemonicBytes).split(' ');
+    }
+    return null;
   }, []);
 
   const signMessage = useCallback(
@@ -175,7 +317,6 @@ export function SelfCustodyWalletProvider({ children }: { children: ReactNode })
   const signTransaction = useCallback(
     async <T extends Transaction | VersionedTransaction>(tx: T): Promise<T> => {
       if (!keypair) throw new Error('Wallet is locked');
-
       if (tx instanceof VersionedTransaction) {
         tx.sign([keypair]);
       } else {
@@ -189,19 +330,15 @@ export function SelfCustodyWalletProvider({ children }: { children: ReactNode })
   const sendTransaction = useCallback(
     async (tx: Transaction | VersionedTransaction, connection: Connection): Promise<string> => {
       if (!keypair) throw new Error('Wallet is locked');
-
       if (tx instanceof VersionedTransaction) {
         tx.sign([keypair]);
-        const rawTx = tx.serialize();
-        return connection.sendRawTransaction(rawTx, { skipPreflight: false });
-      } else {
-        const { blockhash } = await connection.getLatestBlockhash();
-        tx.recentBlockhash = tx.recentBlockhash || blockhash;
-        tx.feePayer = tx.feePayer || keypair.publicKey;
-        tx.sign(keypair);
-        const rawTx = tx.serialize();
-        return connection.sendRawTransaction(rawTx, { skipPreflight: false });
+        return connection.sendRawTransaction(tx.serialize(), { skipPreflight: false });
       }
+      const { blockhash } = await connection.getLatestBlockhash();
+      tx.recentBlockhash = tx.recentBlockhash || blockhash;
+      tx.feePayer = tx.feePayer || keypair.publicKey;
+      tx.sign(keypair);
+      return connection.sendRawTransaction(tx.serialize(), { skipPreflight: false });
     },
     [keypair]
   );
@@ -216,12 +353,16 @@ export function SelfCustodyWalletProvider({ children }: { children: ReactNode })
         connected,
         publicKey,
         keypair,
+        hasMnemonic,
         createWallet,
         importWallet,
+        importFromMnemonic,
+        importFromSecretKey,
         unlock,
         lock,
         deleteWallet,
         exportSecretKey,
+        exportMnemonic,
         signMessage,
         signTransaction,
         sendTransaction,

@@ -206,7 +206,7 @@ export default function WalletPage() {
           { label: t('wallet.send'), icon: '↑', href: '/send' },
           { label: t('wallet.receive'), icon: '↓', href: '/receive' },
           { label: t('wallet.swap'), icon: '⇄', href: '/swap' },
-          { label: t('wallet.stake'), icon: '◎', href: '/stake' },
+          { label: 'Deposit', icon: '$', href: '/deposit' },
         ].map((action) => (
           <Link
             key={action.label}
