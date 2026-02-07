@@ -29,6 +29,9 @@ pub struct ResolveDispute<'info> {
     #[account(mut)]
     pub buyer: UncheckedAccount<'info>,
 
+    #[account(
+        constraint = mint.key() == escrow_state.mint @ EscrowError::InvalidMint,
+    )]
     pub mint: InterfaceAccount<'info, Mint>,
 
     #[account(

@@ -18,4 +18,8 @@ pub enum EscrowError {
     ZeroTimeout,
     #[msg("Invalid dispute resolution: must be 'release' or 'refund'")]
     InvalidResolution,
+    #[msg("Mint does not match escrow")]
+    InvalidMint,
+    #[msg("Timeout calculation overflow")]
+    TimeoutOverflow,
 }

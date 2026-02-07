@@ -15,9 +15,15 @@ pub struct ReleaseEscrow<'info> {
     pub seller: Signer<'info>,
 
     /// CHECK: Buyer receives the escrowed tokens
-    #[account(mut)]
+    #[account(
+        mut,
+        constraint = buyer.key() == escrow_state.buyer @ EscrowError::UnauthorizedBuyer,
+    )]
     pub buyer: UncheckedAccount<'info>,
 
+    #[account(
+        constraint = mint.key() == escrow_state.mint @ EscrowError::InvalidMint,
+    )]
     pub mint: InterfaceAccount<'info, Mint>,
 
     #[account(

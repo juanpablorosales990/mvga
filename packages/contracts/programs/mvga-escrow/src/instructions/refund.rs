@@ -13,6 +13,9 @@ pub struct RefundEscrow<'info> {
     #[account(mut)]
     pub seller: Signer<'info>,
 
+    #[account(
+        constraint = mint.key() == escrow_state.mint @ EscrowError::InvalidMint,
+    )]
     pub mint: InterfaceAccount<'info, Mint>,
 
     #[account(
@@ -52,7 +55,10 @@ pub fn handle_refund(ctx: Context<RefundEscrow>) -> Result<()> {
     match escrow.status {
         EscrowStatus::Locked => {
             let clock = Clock::get()?;
-            let deadline = escrow.locked_at + escrow.timeout_seconds as i64;
+            let deadline = escrow
+                .locked_at
+                .checked_add(escrow.timeout_seconds as i64)
+                .ok_or(EscrowError::TimeoutOverflow)?;
             require!(clock.unix_timestamp >= deadline, EscrowError::NotTimedOut);
         }
         // Disputed status refund is handled by resolve_dispute (admin only)

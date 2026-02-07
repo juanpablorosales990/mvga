@@ -13,6 +13,8 @@ pub struct MarkPaid<'info> {
         mut,
         constraint = escrow_state.buyer == buyer.key() @ EscrowError::UnauthorizedBuyer,
         constraint = escrow_state.status == EscrowStatus::Locked @ EscrowError::InvalidStatus,
+        seeds = [b"escrow", escrow_state.trade_id.as_ref(), escrow_state.seller.as_ref()],
+        bump = escrow_state.bump,
     )]
     pub escrow_state: Account<'info, EscrowState>,
 }
