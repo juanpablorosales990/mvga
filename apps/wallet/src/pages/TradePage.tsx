@@ -9,11 +9,18 @@ import {
   createTransferInstruction,
   getAccount,
 } from '@solana/spl-token';
+import BN from 'bn.js';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
 import TransactionPreviewModal from '../components/TransactionPreviewModal';
 import ConfirmModal from '../components/ConfirmModal';
 import { API_URL, KNOWN_ESCROW_WALLET } from '../config';
+import {
+  buildInitializeEscrowIx,
+  buildReleaseEscrowIx,
+  uuidToTradeId,
+  findEscrowPDA,
+} from '@mvga/sdk';
 
 interface Trade {
   id: string;
@@ -119,35 +126,59 @@ export default function TradePage() {
       });
       if (!lockRes.ok)
         throw new Error((await lockRes.json()).message || 'Failed to get escrow info');
-      const { escrowWallet, mintAddress, amount, decimals } = await lockRes.json();
+      const escrowInfo = await lockRes.json();
 
-      // Validate escrow wallet matches known address to prevent API compromise
-      if (KNOWN_ESCROW_WALLET && escrowWallet !== KNOWN_ESCROW_WALLET) {
-        throw new Error('Escrow wallet address mismatch — please contact support');
+      let signature: string;
+
+      if (escrowInfo.mode === 'onchain') {
+        // On-chain mode: build initialize_escrow program instruction
+        const mintPubkey = new PublicKey(escrowInfo.mintAddress);
+        const rawAmount = Math.round(escrowInfo.amount * 10 ** escrowInfo.decimals);
+        const tradeIdBytes = uuidToTradeId(trade.id);
+
+        const ix = buildInitializeEscrowIx({
+          seller: publicKey,
+          buyer: new PublicKey(escrowInfo.buyerAddress),
+          admin: new PublicKey(escrowInfo.adminPubkey),
+          mint: mintPubkey,
+          tradeId: tradeIdBytes,
+          amount: new BN(rawAmount),
+          timeoutSeconds: new BN(escrowInfo.timeoutSeconds),
+        });
+
+        const tx = new Transaction().add(ix);
+        signature = await sendTransaction(tx, connection);
+      } else {
+        // Legacy mode: build SPL transfer to treasury wallet
+        const { escrowWallet, mintAddress, amount, decimals } = escrowInfo;
+
+        // Validate escrow wallet matches known address to prevent API compromise
+        if (KNOWN_ESCROW_WALLET && escrowWallet !== KNOWN_ESCROW_WALLET) {
+          throw new Error('Escrow wallet address mismatch — please contact support');
+        }
+
+        const mintPubkey = new PublicKey(mintAddress);
+        const escrowPubkey = new PublicKey(escrowWallet);
+        const rawAmount = BigInt(Math.round(amount * 10 ** decimals));
+
+        const senderAta = await getAssociatedTokenAddress(mintPubkey, publicKey);
+        const escrowAta = await getAssociatedTokenAddress(mintPubkey, escrowPubkey);
+
+        const tx = new Transaction();
+
+        // Create escrow ATA if needed
+        try {
+          await getAccount(connection, escrowAta);
+        } catch {
+          tx.add(
+            createAssociatedTokenAccountInstruction(publicKey, escrowAta, escrowPubkey, mintPubkey)
+          );
+        }
+
+        tx.add(createTransferInstruction(senderAta, escrowAta, publicKey, rawAmount));
+        signature = await sendTransaction(tx, connection);
       }
 
-      // 2. Build SPL transfer: seller → escrow
-      const mintPubkey = new PublicKey(mintAddress);
-      const escrowPubkey = new PublicKey(escrowWallet);
-      const rawAmount = BigInt(Math.round(amount * 10 ** decimals));
-
-      const senderAta = await getAssociatedTokenAddress(mintPubkey, publicKey);
-      const escrowAta = await getAssociatedTokenAddress(mintPubkey, escrowPubkey);
-
-      const tx = new Transaction();
-
-      // Create escrow ATA if needed
-      try {
-        await getAccount(connection, escrowAta);
-      } catch {
-        tx.add(
-          createAssociatedTokenAccountInstruction(publicKey, escrowAta, escrowPubkey, mintPubkey)
-        );
-      }
-
-      tx.add(createTransferInstruction(senderAta, escrowAta, publicKey, rawAmount));
-
-      const signature = await sendTransaction(tx, connection);
       const confirmation = await connection.confirmTransaction(signature, 'confirmed');
       if (confirmation.value.err) {
         throw new Error('Transaction failed on-chain');
@@ -200,11 +231,66 @@ export default function TradePage() {
   };
 
   const handleConfirmPayment = async () => {
-    if (!trade) return;
+    if (!trade || !publicKey || !sendTransaction) return;
     setActionLoading(true);
     setError(null);
 
     try {
+      // Check if on-chain escrow by looking at the escrow lock tx
+      // If trade has escrowTx, try on-chain release first
+      if (trade.escrowTx && isSeller) {
+        // Try on-chain release: seller signs release_escrow instruction
+        try {
+          // Get escrow info to check mode
+          const infoRes = await fetch(`${API_URL}/p2p/trades/${trade.id}/lock-escrow`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+            },
+          });
+          const escrowInfo = await infoRes.json();
+
+          if (escrowInfo.mode === 'onchain') {
+            const tradeIdBytes = uuidToTradeId(trade.id);
+            const sellerPubkey = new PublicKey(trade.sellerAddress);
+            const [escrowState] = findEscrowPDA(tradeIdBytes, sellerPubkey);
+            const mintPubkey = new PublicKey(escrowInfo.mintAddress);
+
+            const ix = buildReleaseEscrowIx({
+              seller: publicKey,
+              buyer: new PublicKey(trade.buyerAddress),
+              mint: mintPubkey,
+              escrowState,
+            });
+
+            const tx = new Transaction().add(ix);
+            const signature = await sendTransaction(tx, connection);
+            const confirmation = await connection.confirmTransaction(signature, 'confirmed');
+            if (confirmation.value.err) throw new Error('Release transaction failed on-chain');
+
+            // Confirm with API
+            const confirmRes = await fetch(`${API_URL}/p2p/trades/${trade.id}/confirm-release`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+              },
+              body: JSON.stringify({ signature }),
+            });
+            if (!confirmRes.ok) throw new Error('Failed to confirm release');
+
+            setSuccess(t('trade.tradeCompletedMsg'));
+            fetchTrade();
+            return;
+          }
+        } catch (e) {
+          // Fall through to legacy if on-chain release fails with a non-critical error
+          if (e instanceof Error && e.message.includes('Release transaction failed')) throw e;
+        }
+      }
+
+      // Legacy mode: server signs the release
       const res = await fetch(`${API_URL}/p2p/trades/${trade.id}/confirm`, {
         method: 'PATCH',
         headers: {

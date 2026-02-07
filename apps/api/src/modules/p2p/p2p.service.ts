@@ -9,6 +9,12 @@ import { P2POfferType, PaymentMethod, P2POfferStatus, P2PTradeStatus } from '@pr
 import { Keypair, PublicKey, Transaction, sendAndConfirmTransaction } from '@solana/web3.js';
 import { getAssociatedTokenAddress, createTransferInstruction } from '@solana/spl-token';
 
+// On-chain escrow constants
+const ESCROW_PROGRAM_ID = '6GXdYCDckUVEFBaQSgfQGX95gZSNN7FWN19vRDSyTJ5E';
+const DEFAULT_ESCROW_TIMEOUT = 7200; // 2 hours
+
+type EscrowMode = 'onchain' | 'legacy';
+
 // Scale factor for storing decimal amounts as BigInt (6 decimal places)
 const AMOUNT_SCALE = 1_000_000;
 
@@ -70,6 +76,8 @@ interface RawTradeRow {
 export class P2PService {
   private readonly logger = new Logger(P2PService.name);
   private escrowKeypair: Keypair | null = null;
+  private readonly escrowMode: EscrowMode;
+  private readonly escrowAdminPubkey: string;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -78,18 +86,34 @@ export class P2PService {
     private readonly config: ConfigService,
     private readonly eventEmitter: EventEmitter2
   ) {
-    // Load escrow wallet keypair from env
-    const keypairStr = this.config.get<string>('ESCROW_WALLET_KEYPAIR');
-    if (keypairStr) {
-      try {
-        const decoded = Buffer.from(keypairStr, 'base64');
-        this.escrowKeypair = Keypair.fromSecretKey(new Uint8Array(JSON.parse(decoded.toString())));
-        this.logger.log('Escrow wallet keypair loaded');
-      } catch (e) {
-        throw new Error(`ESCROW_WALLET_KEYPAIR is set but invalid: ${(e as Error).message}`);
+    // Determine escrow mode (defaults to legacy if ESCROW_MODE not set)
+    this.escrowMode = (this.config.get<string>('ESCROW_MODE') || 'legacy') as EscrowMode;
+    this.escrowAdminPubkey = this.config.get<string>(
+      'ESCROW_ADMIN_PUBKEY',
+      'H9j1W4u5LEiw8AZdui6c8AmN6t4tKkPQCAULPW8eMiTE'
+    );
+    this.logger.log(`Escrow mode: ${this.escrowMode}`);
+
+    if (this.escrowMode === 'legacy') {
+      // Load escrow wallet keypair for legacy mode
+      const keypairStr = this.config.get<string>('ESCROW_WALLET_KEYPAIR');
+      if (keypairStr) {
+        try {
+          const decoded = Buffer.from(keypairStr, 'base64');
+          this.escrowKeypair = Keypair.fromSecretKey(
+            new Uint8Array(JSON.parse(decoded.toString()))
+          );
+          this.logger.log('Escrow wallet keypair loaded (legacy mode)');
+        } catch (e) {
+          throw new Error(`ESCROW_WALLET_KEYPAIR is set but invalid: ${(e as Error).message}`);
+        }
+      } else {
+        this.logger.warn(
+          'ESCROW_WALLET_KEYPAIR not set — legacy escrow release/refund unavailable'
+        );
       }
     } else {
-      this.logger.warn('ESCROW_WALLET_KEYPAIR not set — escrow release/refund will be unavailable');
+      this.logger.log(`On-chain escrow program: ${ESCROW_PROGRAM_ID}`);
     }
   }
 
@@ -304,11 +328,17 @@ export class P2PService {
       throw new BadRequestException(`Cannot transition from ${trade.status} to ${requestedStatus}`);
     }
 
-    // Escrow operations: delegate to releaseEscrow/refundEscrow which have their own
-    // row-level locking and idempotency. The FOR UPDATE above prevents two concurrent
-    // callers from both passing the status guard; the escrow methods provide a second
-    // layer of protection via their own SELECT ... FOR UPDATE.
+    // Escrow operations differ by mode:
+    // On-chain: client signs release/refund ix, then calls confirmOnChainAction
+    // Legacy: server signs the transfer from treasury wallet
     if (dto.status === 'CONFIRMED' && trade.escrowTx) {
+      if (this.escrowMode === 'onchain') {
+        // On-chain mode: client must call confirm-release endpoint separately
+        // Just update status to allow the release
+        throw new BadRequestException(
+          'On-chain escrow: use POST /p2p/trades/:id/confirm-release with the release tx signature'
+        );
+      }
       await this.releaseEscrow(tradeId);
       const updated = await this.prisma.p2PTrade.findUnique({
         where: { id: tradeId },
@@ -318,6 +348,11 @@ export class P2PService {
     }
 
     if (dto.status === 'CANCELLED' && trade.escrowTx && trade.status === 'ESCROW_LOCKED') {
+      if (this.escrowMode === 'onchain') {
+        throw new BadRequestException(
+          'On-chain escrow: use POST /p2p/trades/:id/confirm-refund with the refund tx signature'
+        );
+      }
       await this.refundEscrow(tradeId);
       const updated = await this.prisma.p2PTrade.findUnique({
         where: { id: tradeId },
@@ -434,30 +469,48 @@ export class P2PService {
   // ============ ESCROW ============
 
   /**
-   * Returns the escrow (treasury) wallet address for the seller to build a transfer tx.
-   * Frontend builds the SPL transfer, user signs it, then calls confirmEscrowLock.
+   * Returns escrow info for the client to build the lock transaction.
+   * Legacy mode: returns treasury wallet address for SPL transfer.
+   * On-chain mode: returns program ID, admin, buyer, mint info for initialize_escrow ix.
    */
   async lockEscrow(tradeId: string) {
     const trade = await this.prisma.p2PTrade.findUnique({
       where: { id: tradeId },
-      include: { offer: true, seller: true },
+      include: { offer: true, seller: true, buyer: true },
     });
     if (!trade) throw new NotFoundException('Trade not found');
     if (trade.status !== 'PENDING') {
       throw new BadRequestException('Trade is not in PENDING status');
     }
 
-    const escrowWallet = this.config.get(
-      'TREASURY_WALLET',
-      'H9j1W4u5LEiw8AZdui6c8AmN6t4tKkPQCAULPW8eMiTE'
-    );
-
     const currency = trade.offer.cryptoCurrency;
     const mintAddress = TOKEN_MINTS[currency];
     const decimals = TOKEN_DECIMALS[currency] || 9;
     const amount = toNumber(trade.cryptoAmount);
 
+    if (this.escrowMode === 'onchain') {
+      return {
+        mode: 'onchain' as const,
+        programId: ESCROW_PROGRAM_ID,
+        adminPubkey: this.escrowAdminPubkey,
+        buyerAddress: trade.buyer.walletAddress,
+        sellerAddress: trade.seller.walletAddress,
+        mintAddress,
+        amount,
+        decimals,
+        timeoutSeconds: DEFAULT_ESCROW_TIMEOUT,
+        tradeId,
+      };
+    }
+
+    // Legacy mode
+    const escrowWallet = this.config.get(
+      'TREASURY_WALLET',
+      'H9j1W4u5LEiw8AZdui6c8AmN6t4tKkPQCAULPW8eMiTE'
+    );
+
     return {
+      mode: 'legacy' as const,
       escrowWallet,
       mintAddress,
       amount,
@@ -469,6 +522,8 @@ export class P2PService {
   /**
    * Seller confirms escrow lock by providing the tx signature.
    * Server verifies on-chain, updates trade status.
+   * On-chain mode: verifies the escrow PDA account exists and has correct state.
+   * Legacy mode: verifies SPL transfer to treasury wallet.
    */
   async confirmEscrowLock(tradeId: string, signature: string) {
     return this.prisma.$transaction(
@@ -476,10 +531,12 @@ export class P2PService {
         // Lock the trade row to prevent concurrent confirmations
         const [trade] = await tx.$queryRaw<RawTradeRow[]>`
           SELECT t.*, o."cryptoCurrency", o."cryptoAmount" as "offerCryptoAmount",
-                 s."walletAddress" as "sellerAddress"
+                 s."walletAddress" as "sellerAddress",
+                 b."walletAddress" as "buyerAddress"
           FROM "P2PTrade" t
           JOIN "P2POffer" o ON t."offerId" = o."id"
           JOIN "User" s ON t."sellerId" = s."id"
+          JOIN "User" b ON t."buyerId" = b."id"
           WHERE t."id" = ${tradeId}
           FOR UPDATE
         `;
@@ -525,42 +582,54 @@ export class P2PService {
           throw new BadRequestException('Transaction was not signed by the seller');
         }
 
-        // Verify on-chain transfer amount matches expected escrow amount
-        const currency = trade.cryptoCurrency;
-        const decimals = TOKEN_DECIMALS[currency] || 9;
-        const expectedAmount = Number(trade.cryptoAmount) / AMOUNT_SCALE;
-        const expectedRaw = Math.round(expectedAmount * 10 ** decimals);
+        if (this.escrowMode === 'onchain') {
+          // On-chain mode: verify the escrow program was invoked in this tx
+          const programInvoked = parsedTx.transaction.message.accountKeys.some(
+            (k: { pubkey: { toBase58(): string } }) => k.pubkey.toBase58() === ESCROW_PROGRAM_ID
+          );
+          if (!programInvoked) {
+            throw new BadRequestException('Transaction did not invoke the escrow program');
+          }
+        } else {
+          // Legacy mode: verify SPL transfer amount
+          const currency = trade.cryptoCurrency;
+          const decimals = TOKEN_DECIMALS[currency] || 9;
+          const expectedAmount = Number(trade.cryptoAmount) / AMOUNT_SCALE;
+          const expectedRaw = Math.round(expectedAmount * 10 ** decimals);
 
-        // Check parsed inner instructions for SPL token transfers
-        const innerInstructions = parsedTx.meta?.innerInstructions ?? [];
-        const allInstructions = [
-          ...parsedTx.transaction.message.instructions,
-          ...innerInstructions.flatMap((ix: { instructions: unknown[] }) => ix.instructions),
-        ];
+          const innerInstructions = parsedTx.meta?.innerInstructions ?? [];
+          const allInstructions = [
+            ...parsedTx.transaction.message.instructions,
+            ...innerInstructions.flatMap((ix: { instructions: unknown[] }) => ix.instructions),
+          ];
 
-        let transferFound = false;
-        for (const ix of allInstructions) {
-          const parsed = (ix as Record<string, unknown>).parsed as
-            | Record<string, unknown>
-            | undefined;
-          if (!parsed) continue;
-          if ((parsed.type === 'transfer' || parsed.type === 'transferChecked') && parsed.info) {
-            const info = parsed.info as Record<string, unknown>;
-            const tokenAmount = info.tokenAmount as Record<string, unknown> | undefined;
-            const transferAmount = Number(info.amount || tokenAmount?.amount || 0);
-            // Allow 1% tolerance for rounding
-            if (Math.abs(transferAmount - expectedRaw) / expectedRaw < 0.01) {
-              transferFound = true;
-              break;
+          let transferFound = false;
+          for (const ix of allInstructions) {
+            const parsed = (ix as Record<string, unknown>).parsed as
+              | Record<string, unknown>
+              | undefined;
+            if (!parsed) continue;
+            if ((parsed.type === 'transfer' || parsed.type === 'transferChecked') && parsed.info) {
+              const info = parsed.info as Record<string, unknown>;
+              const tokenAmount = info.tokenAmount as Record<string, unknown> | undefined;
+              const transferAmount = Number(info.amount || tokenAmount?.amount || 0);
+              // Allow 1% tolerance for rounding
+              if (Math.abs(transferAmount - expectedRaw) / expectedRaw < 0.01) {
+                transferFound = true;
+                break;
+              }
             }
+          }
+
+          if (!transferFound) {
+            throw new BadRequestException(
+              'On-chain transfer amount does not match expected escrow amount'
+            );
           }
         }
 
-        if (!transferFound) {
-          throw new BadRequestException(
-            'On-chain transfer amount does not match expected escrow amount'
-          );
-        }
+        const currency = trade.cryptoCurrency;
+        const expectedAmount = Number(trade.cryptoAmount) / AMOUNT_SCALE;
 
         await tx.p2PTrade.update({
           where: { id: tradeId },
@@ -594,8 +663,96 @@ export class P2PService {
   }
 
   /**
+   * Confirm on-chain release/refund — client already signed the program instruction,
+   * server just verifies the on-chain tx and updates DB state.
+   */
+  async confirmOnChainAction(
+    tradeId: string,
+    signature: string,
+    expectedStatus: 'COMPLETED' | 'REFUNDED'
+  ) {
+    return this.prisma.$transaction(
+      async (tx) => {
+        const [trade] = await tx.$queryRaw<RawTradeRow[]>`
+          SELECT t.*, o."cryptoCurrency",
+                 b."walletAddress" as "buyerAddress",
+                 s."walletAddress" as "sellerAddress"
+          FROM "P2PTrade" t
+          JOIN "P2POffer" o ON t."offerId" = o."id"
+          JOIN "User" b ON t."buyerId" = b."id"
+          JOIN "User" s ON t."sellerId" = s."id"
+          WHERE t."id" = ${tradeId}
+          FOR UPDATE
+        `;
+        if (!trade) throw new NotFoundException('Trade not found');
+
+        // Idempotent
+        if (trade.releaseTx === signature) {
+          return { success: true, tradeId, signature };
+        }
+
+        // Verify on-chain
+        const connection = this.solana.getConnection();
+        const parsedTx = await connection.getParsedTransaction(signature, {
+          commitment: 'confirmed',
+          maxSupportedTransactionVersion: 0,
+        });
+
+        if (!parsedTx || parsedTx.meta?.err) {
+          throw new BadRequestException('Transaction not found or failed');
+        }
+
+        // Verify escrow program was invoked
+        const programInvoked = parsedTx.transaction.message.accountKeys.some(
+          (k: { pubkey: { toBase58(): string } }) => k.pubkey.toBase58() === ESCROW_PROGRAM_ID
+        );
+        if (!programInvoked) {
+          throw new BadRequestException('Transaction did not invoke the escrow program');
+        }
+
+        await tx.p2PTrade.update({
+          where: { id: tradeId },
+          data: {
+            releaseTx: signature,
+            status: expectedStatus,
+            completedAt: new Date(),
+          },
+        });
+
+        const logType = expectedStatus === 'COMPLETED' ? 'P2P_ESCROW_RELEASE' : 'P2P_ESCROW_REFUND';
+        this.txLogger
+          .log({
+            walletAddress:
+              expectedStatus === 'COMPLETED' ? trade.buyerAddress : trade.sellerAddress,
+            type: logType,
+            signature,
+            amount: Number(trade.cryptoAmount) / AMOUNT_SCALE,
+            token: trade.cryptoCurrency,
+          })
+          .then(() => this.txLogger.confirm(signature))
+          .catch((e) => this.logger.error(`Failed to log ${logType}:`, e));
+
+        if (expectedStatus === 'COMPLETED') {
+          this.updateReputation(trade.buyerAddress, true).catch(() => {});
+          this.updateReputation(trade.sellerAddress, true).catch(() => {});
+          this.eventEmitter.emit('p2p.funds.released', {
+            tradeId,
+            buyerWallet: trade.buyerAddress,
+            sellerWallet: trade.sellerAddress,
+            amount: Number(trade.cryptoAmount) / AMOUNT_SCALE,
+            token: trade.cryptoCurrency,
+          });
+        }
+
+        return { success: true, tradeId, signature };
+      },
+      { maxWait: 10000, timeout: 30000 }
+    );
+  }
+
+  /**
    * Release escrow: server signs transfer from treasury → buyer.
-   * Called when seller confirms payment received.
+   * Called when seller confirms payment received (legacy mode only).
    */
   async releaseEscrow(tradeId: string): Promise<string> {
     return this.prisma.$transaction(

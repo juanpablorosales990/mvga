@@ -181,6 +181,26 @@ export class P2PController {
     return this.p2pService.confirmEscrowLock(id, dto.signature);
   }
 
+  // ============ ON-CHAIN ESCROW CONFIRMATIONS ============
+
+  @Post('trades/:id/confirm-release')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Confirm on-chain escrow release (seller signed release_escrow ix)' })
+  async confirmRelease(@Param('id') id: string, @Body() dto: ConfirmEscrowDto) {
+    return this.p2pService.confirmOnChainAction(id, dto.signature, 'COMPLETED');
+  }
+
+  @Post('trades/:id/confirm-refund')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Confirm on-chain escrow refund (seller signed refund_escrow ix)' })
+  async confirmRefund(@Param('id') id: string, @Body() dto: ConfirmEscrowDto) {
+    return this.p2pService.confirmOnChainAction(id, dto.signature, 'REFUNDED');
+  }
+
   // ============ DISPUTE RESOLUTION ============
 
   @Post('trades/:id/resolve-dispute')
