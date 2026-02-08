@@ -11,12 +11,16 @@ export class SwapController {
   constructor(private readonly swapService: SwapService) {}
 
   @Post('quote')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Get swap quote from Jupiter' })
   async getQuote(@Body() dto: QuoteDto) {
     return this.swapService.getQuote(dto);
   }
 
   @Post('transaction')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Get swap transaction to sign' })
   async getSwapTransaction(@Body() dto: SwapDto) {
     return this.swapService.getSwapTransaction(dto);

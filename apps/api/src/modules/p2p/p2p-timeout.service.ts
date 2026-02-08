@@ -76,9 +76,9 @@ export class P2PTimeoutService {
             );
           }
         }
-        // Fallback: cancel without refund (needs manual review)
-        await this.prisma.p2PTrade.update({
-          where: { id: trade.id },
+        // Fallback: cancel only if still ESCROW_LOCKED (prevents canceling PAID trades)
+        await this.prisma.p2PTrade.updateMany({
+          where: { id: trade.id, status: 'ESCROW_LOCKED' },
           data: { status: 'CANCELLED' },
         });
         this.logger.log(

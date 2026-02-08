@@ -97,11 +97,7 @@ export class AuthService {
     const verified = nacl.sign.detached.verify(messageBytes, signatureBytes, publicKeyBytes);
 
     if (!verified) {
-      // Reset the nonce so the user can retry with the correct signature
-      await this.prisma.authNonce.updateMany({
-        where: { walletAddress, used: true },
-        data: { used: false },
-      });
+      // Nonce stays consumed — user must request a fresh nonce to retry
       throw new UnauthorizedException('Invalid signature');
     }
 

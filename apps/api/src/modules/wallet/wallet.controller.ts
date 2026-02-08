@@ -1,9 +1,11 @@
-import { Controller, Get, Param } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiParam } from '@nestjs/swagger';
+import { Controller, Get, Param, UseGuards, ForbiddenException } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiParam, ApiBearerAuth } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { WalletService } from './wallet.service';
 import { TransactionLoggerService } from '../../common/transaction-logger.service';
 import { ParseSolanaAddressPipe } from '../../common/validators/solana-address.validator';
+import { AuthGuard } from '../auth/auth.guard';
+import { CurrentUser } from '../auth/auth.decorator';
 
 @ApiTags('Wallet')
 @Throttle({ default: { ttl: 60000, limit: 30 } })
@@ -35,9 +37,17 @@ export class WalletController {
   }
 
   @Get(':address/transaction-log')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Get MVGA transaction log (staking, escrow, etc.)' })
   @ApiParam({ name: 'address', description: 'Solana wallet address' })
-  async getTransactionLog(@Param('address', ParseSolanaAddressPipe) address: string) {
+  async getTransactionLog(
+    @Param('address', ParseSolanaAddressPipe) address: string,
+    @CurrentUser('wallet') wallet: string
+  ) {
+    if (address !== wallet) {
+      throw new ForbiddenException("Cannot view other users' transaction log");
+    }
     return this.txLogger.getByWallet(address);
   }
 }

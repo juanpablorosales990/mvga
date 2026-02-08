@@ -1,4 +1,10 @@
-import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  BadRequestException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { CardAppStatus } from '@prisma/client';
 import { PrismaService } from '../../common/prisma.service';
 import { RainAdapter, KycData, RainTransaction } from './rain.adapter';
@@ -38,7 +44,10 @@ export class BankingService {
 
   async submitKyc(walletAddress: string, data: Omit<KycData, 'walletAddress'>) {
     if (!this.rain.isEnabled) {
-      // Mock mode — simulate approval
+      if (process.env.NODE_ENV === 'production') {
+        throw new ServiceUnavailableException('Banking service not configured');
+      }
+      // Mock mode — simulate approval (dev only)
       const app = await this.prisma.cardApplication.create({
         data: { walletAddress, status: 'KYC_APPROVED' },
       });
@@ -111,6 +120,9 @@ export class BankingService {
     if (app.rainCardId) return { cardId: app.rainCardId, status: 'CARD_ISSUED' };
 
     if (!this.rain.isEnabled || !app.rainUserId) {
+      if (process.env.NODE_ENV === 'production') {
+        throw new ServiceUnavailableException('Card issuance not configured');
+      }
       await this.prisma.cardApplication.update({
         where: { id: app.id },
         data: { status: 'CARD_ISSUED', rainCardId: 'mock_card_001' },

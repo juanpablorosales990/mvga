@@ -179,8 +179,8 @@ export class P2PController {
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get escrow info (returns treasury wallet for seller to transfer to)' })
-  async lockEscrow(@Param('id') id: string) {
-    return this.p2pService.lockEscrow(id);
+  async lockEscrow(@Param('id') id: string, @CurrentUser('wallet') wallet: string) {
+    return this.p2pService.lockEscrow(id, wallet);
   }
 
   @Post('trades/:id/confirm-escrow')
@@ -188,8 +188,12 @@ export class P2PController {
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Confirm escrow lock after seller signs the transfer' })
-  async confirmEscrowLock(@Param('id') id: string, @Body() dto: ConfirmEscrowDto) {
-    return this.p2pService.confirmEscrowLock(id, dto.signature);
+  async confirmEscrowLock(
+    @Param('id') id: string,
+    @Body() dto: ConfirmEscrowDto,
+    @CurrentUser('wallet') wallet: string
+  ) {
+    return this.p2pService.confirmEscrowLock(id, dto.signature, wallet);
   }
 
   // ============ ON-CHAIN ESCROW CONFIRMATIONS ============
@@ -199,8 +203,12 @@ export class P2PController {
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Confirm on-chain escrow release (seller signed release_escrow ix)' })
-  async confirmRelease(@Param('id') id: string, @Body() dto: ConfirmEscrowDto) {
-    return this.p2pService.confirmOnChainAction(id, dto.signature, 'COMPLETED');
+  async confirmRelease(
+    @Param('id') id: string,
+    @Body() dto: ConfirmEscrowDto,
+    @CurrentUser('wallet') wallet: string
+  ) {
+    return this.p2pService.confirmOnChainAction(id, dto.signature, 'COMPLETED', wallet);
   }
 
   @Post('trades/:id/confirm-refund')
@@ -208,8 +216,12 @@ export class P2PController {
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Confirm on-chain escrow refund (seller signed refund_escrow ix)' })
-  async confirmRefund(@Param('id') id: string, @Body() dto: ConfirmEscrowDto) {
-    return this.p2pService.confirmOnChainAction(id, dto.signature, 'REFUNDED');
+  async confirmRefund(
+    @Param('id') id: string,
+    @Body() dto: ConfirmEscrowDto,
+    @CurrentUser('wallet') wallet: string
+  ) {
+    return this.p2pService.confirmOnChainAction(id, dto.signature, 'REFUNDED', wallet);
   }
 
   // ============ DISPUTE RESOLUTION ============

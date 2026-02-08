@@ -8,11 +8,14 @@ export class AuthGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest();
 
-    // 1. Try httpOnly cookie first
+    // 1. Try httpOnly cookie first (primary auth method)
     const cookieToken = request.cookies?.['mvga_auth'];
-    // 2. Fall back to Authorization header (backwards compatibility)
-    const authHeader = request.headers['authorization'];
-    const headerToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+    // 2. Fall back to Authorization header only in development (for Swagger testing)
+    let headerToken: string | null = null;
+    if (process.env.NODE_ENV !== 'production') {
+      const authHeader = request.headers['authorization'];
+      headerToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+    }
 
     const token = cookieToken || headerToken;
 

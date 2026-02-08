@@ -509,12 +509,15 @@ export class P2PService {
    * Legacy mode: returns treasury wallet address for SPL transfer.
    * On-chain mode: returns program ID, admin, buyer, mint info for initialize_escrow ix.
    */
-  async lockEscrow(tradeId: string) {
+  async lockEscrow(tradeId: string, walletAddress?: string) {
     const trade = await this.prisma.p2PTrade.findUnique({
       where: { id: tradeId },
       include: { offer: true, seller: true, buyer: true },
     });
     if (!trade) throw new NotFoundException('Trade not found');
+    if (walletAddress && trade.seller.walletAddress !== walletAddress) {
+      throw new ForbiddenException('Only the seller can initiate escrow lock');
+    }
     if (trade.status !== 'PENDING') {
       throw new BadRequestException('Trade is not in PENDING status');
     }
@@ -561,7 +564,7 @@ export class P2PService {
    * On-chain mode: verifies the escrow PDA account exists and has correct state.
    * Legacy mode: verifies SPL transfer to treasury wallet.
    */
-  async confirmEscrowLock(tradeId: string, signature: string) {
+  async confirmEscrowLock(tradeId: string, signature: string, walletAddress?: string) {
     return this.prisma.$transaction(
       async (tx) => {
         // Lock the trade row to prevent concurrent confirmations
@@ -577,6 +580,11 @@ export class P2PService {
           FOR UPDATE
         `;
         if (!trade) throw new NotFoundException('Trade not found');
+
+        // Verify caller is the seller
+        if (walletAddress && trade.sellerAddress !== walletAddress) {
+          throw new ForbiddenException('Only the seller can confirm escrow lock');
+        }
 
         if (trade.status !== 'PENDING') {
           // Idempotent: if already locked with this signature, return success
@@ -740,7 +748,8 @@ export class P2PService {
   async confirmOnChainAction(
     tradeId: string,
     signature: string,
-    expectedStatus: 'COMPLETED' | 'REFUNDED'
+    expectedStatus: 'COMPLETED' | 'REFUNDED',
+    walletAddress?: string
   ) {
     return this.prisma.$transaction(
       async (tx) => {
@@ -756,6 +765,15 @@ export class P2PService {
           FOR UPDATE
         `;
         if (!trade) throw new NotFoundException('Trade not found');
+
+        // Verify caller is a trade participant
+        if (
+          walletAddress &&
+          trade.buyerAddress !== walletAddress &&
+          trade.sellerAddress !== walletAddress
+        ) {
+          throw new ForbiddenException('Only trade participants can confirm on-chain actions');
+        }
 
         // Idempotent
         if (trade.releaseTx === signature) {
