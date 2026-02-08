@@ -81,48 +81,78 @@ export default function BankingPage() {
       ) : (
         <>
           {/* Dollar Account Hero */}
-          <div className="relative overflow-hidden rounded-xl border border-green-500/30 bg-gradient-to-br from-green-600/20 via-emerald-600/10 to-teal-600/5 p-6">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl" />
-            <div className="absolute bottom-0 left-0 w-24 h-24 bg-emerald-500/10 rounded-full translate-y-1/2 -translate-x-1/2 blur-2xl" />
-            <div className="relative">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="w-8 h-8 bg-green-500/20 border border-green-500/30 rounded-full flex items-center justify-center text-green-400 text-sm font-bold">
-                  $
-                </span>
-                <div>
-                  <p className="text-sm font-medium text-white">{t('banking.title')}</p>
-                  <p className="text-xs text-green-400/80">{t('banking.dollarAccountTag')}</p>
+          <div className="relative overflow-hidden rounded-2xl border border-green-500/20 p-[1px]">
+            {/* Gradient border shimmer */}
+            <div className="absolute inset-0 bg-gradient-to-br from-green-500/30 via-transparent to-emerald-500/20 rounded-2xl" />
+            <div className="relative bg-gradient-to-br from-[#0a1a0f] via-[#0d1117] to-[#0a0f14] rounded-2xl p-6 overflow-hidden">
+              {/* Background glow effects */}
+              <div className="absolute top-[-40%] right-[-20%] w-48 h-48 bg-green-500/8 rounded-full blur-3xl" />
+              <div className="absolute bottom-[-30%] left-[-10%] w-36 h-36 bg-emerald-500/6 rounded-full blur-3xl" />
+
+              <div className="relative">
+                {/* Header */}
+                <div className="flex items-center justify-between mb-5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-green-400 to-emerald-500 rounded-xl flex items-center justify-center shadow-lg shadow-green-500/20">
+                      <span className="text-black text-lg font-black">$</span>
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-white">{t('banking.title')}</p>
+                      <p className="text-[11px] text-green-400/70 font-medium tracking-wide">
+                        {t('banking.dollarAccountTag')}
+                      </p>
+                    </div>
+                  </div>
+                  {currentApy > 0 && (
+                    <span className="text-[11px] font-semibold text-green-400 bg-green-500/10 border border-green-500/20 px-2.5 py-1 rounded-full">
+                      {currentApy.toFixed(1)}% APY
+                    </span>
+                  )}
                 </div>
-              </div>
-              <p className="text-4xl font-bold tracking-tight">{formatUsd(stablecoinUsd)}</p>
-              <div className="flex gap-4 mt-3">
-                {usdcBalance && (
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-blue-400" />
-                    <span className="text-xs text-gray-300">
-                      {usdcBalance.balance.toLocaleString()} USDC
+
+                {/* Balance */}
+                <p className="text-[42px] font-extrabold tracking-tight leading-none">
+                  {formatUsd(stablecoinUsd)}
+                </p>
+
+                {/* Token breakdown */}
+                <div className="flex gap-4 mt-3">
+                  {usdcBalance && (
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                      <span className="text-xs text-gray-400 font-mono">
+                        {usdcBalance.balance.toLocaleString()} USDC
+                      </span>
+                    </div>
+                  )}
+                  {usdtBalance && (
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-teal-400" />
+                      <span className="text-xs text-gray-400 font-mono">
+                        {usdtBalance.balance.toLocaleString()} USDT
+                      </span>
+                    </div>
+                  )}
+                  {!usdcBalance && !usdtBalance && (
+                    <span className="text-xs text-gray-500">0.00 USDC</span>
+                  )}
+                </div>
+
+                {/* Earnings footer */}
+                {projectedMonthly > 0 && (
+                  <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between">
+                    <span className="text-xs text-gray-500">{t('banking.projectedMonthly')}</span>
+                    <span className="text-xs font-semibold text-green-400">
+                      +{formatUsd(projectedMonthly)}/mo
                     </span>
                   </div>
                 )}
-                {usdtBalance && (
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                    <span className="text-xs text-gray-300">
-                      {usdtBalance.balance.toLocaleString()} USDT
-                    </span>
-                  </div>
-                )}
+
+                {/* Tagline */}
+                <p className="text-[10px] text-gray-600 mt-2 tracking-wide uppercase">
+                  {t('banking.protectedFromInflation')}
+                </p>
               </div>
-              {currentApy > 0 && (
-                <div className="mt-3 pt-3 border-t border-white/5 flex items-center justify-between">
-                  <span className="text-xs text-gray-400">
-                    {t('banking.protectedFromInflation')}
-                  </span>
-                  <span className="text-xs font-medium text-green-400">
-                    {currentApy.toFixed(1)}% APY
-                  </span>
-                </div>
-              )}
             </div>
           </div>
 
