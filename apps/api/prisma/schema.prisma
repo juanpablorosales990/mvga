@@ -712,3 +712,35 @@ enum PaymentRequestStatus {
   EXPIRED
   CANCELLED
 }
+
+// ============================================================================
+// Mobile Top-Ups (Reloadly)
+// ============================================================================
+
+model TopUp {
+  id                String       @id @default(uuid())
+  userId            String       // Wallet address of the sender
+  recipientPhone    String       // Full phone number (e.g. 584121234567)
+  countryCode       String       // ISO country code (VE)
+  operatorId        Int          // Reloadly operator ID
+  operatorName      String       // e.g. "Movistar Venezuela"
+  amountUsd         Float        // Amount charged in USD
+  deliveredAmount   Float?       // Amount delivered in local currency
+  deliveredCurrency String?      // e.g. VES
+  status            TopUpStatus  @default(PENDING)
+  reloadlyTxId      String?      @unique // Reloadly transaction ID
+  customIdentifier  String       @unique // Idempotency key
+  errorMessage      String?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+enum TopUpStatus {
+  PENDING
+  SUCCESSFUL
+  FAILED
+  REFUNDED
+}

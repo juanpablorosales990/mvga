@@ -20,6 +20,8 @@ import { TiersModule } from './modules/tiers/tiers.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { SavingsModule } from './modules/savings/savings.module';
 import { PaymentsModule } from './modules/payments/payments.module';
+import { TopUpModule } from './modules/topup/topup.module';
+import { OnrampModule } from './modules/onramp/onramp.module';
 import { HealthController } from './health.controller';
 
 @Module({
@@ -51,6 +53,8 @@ import { HealthController } from './health.controller';
     NotificationsModule,
     SavingsModule,
     PaymentsModule,
+    TopUpModule,
+    OnrampModule,
   ],
   controllers: [HealthController],
   providers: [

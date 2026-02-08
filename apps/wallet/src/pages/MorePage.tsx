@@ -10,6 +10,7 @@ export default function MorePage() {
     { labelKey: 'more.send', path: '/send', icon: '↑', color: 'bg-blue-500' },
     { labelKey: 'more.receive', path: '/receive', icon: '↓', color: 'bg-green-500' },
     { labelKey: 'more.charge', path: '/charge', icon: '₿', color: 'bg-gold-500' },
+    { labelKey: 'more.topup', path: '/topup', icon: '📱', color: 'bg-teal-500' },
     { labelKey: 'more.history', path: '/history', icon: '↺', color: 'bg-indigo-500' },
     { labelKey: 'more.grants', path: '/grants', icon: '🏦', color: 'bg-amber-500' },
     { labelKey: 'more.referral', path: '/referral', icon: '🎁', color: 'bg-pink-500' },

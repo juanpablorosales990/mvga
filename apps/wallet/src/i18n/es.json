@@ -282,7 +282,8 @@
     "notifications": "Notificaciones",
     "settings": "Ajustes",
     "help": "Ayuda",
-    "charge": "Cobrar"
+    "charge": "Cobrar",
+    "topup": "Recarga"
   },
   "grants": {
     "title": "Subvenciones",
@@ -721,7 +722,16 @@
     "poweredBy": "Impulsado por Onramper. Pagos procesados por proveedores externos. MVGA no retiene ni transmite moneda fiat.",
     "p2pExchange": "Intercambio P2P",
     "p2pDescription": "Compra con PagoMóvil, Zelle o transferencia bancaria",
-    "quickAmounts": "Montos rápidos"
+    "quickAmounts": "Montos rápidos",
+    "cardBank": "Tarjeta / Banco",
+    "coinbaseTab": "Coinbase",
+    "coinbaseTitle": "Comprar con Coinbase",
+    "coinbaseError": "Error al cargar Coinbase Onramp",
+    "coinbaseUnavailable": "Coinbase Onramp no disponible",
+    "coinbaseNote": "Coinbase Onramp requiere claves API. Contacta al administrador.",
+    "coinbasePoweredBy": "Impulsado por Coinbase. Compras de USDC sin comisión.",
+    "phoneTopup": "Recarga Telefónica",
+    "phoneTopupDesc": "Recarga líneas venezolanas al instante"
   },
   "charge": {
     "title": "Cobrar",
@@ -757,5 +767,26 @@
     "paySuccess": "¡Pago enviado!",
     "notFound": "Solicitud de pago no encontrada",
     "loading": "Cargando solicitud de pago..."
+  },
+  "topup": {
+    "title": "Recarga Telefónica",
+    "subtitle": "Recarga cualquier línea venezolana al instante con tu billetera MVGA",
+    "rechargeTab": "Recargar",
+    "historyTab": "Historial",
+    "phone": "Número de Teléfono",
+    "detectCarrier": "Detectar Operador",
+    "detectFailed": "No se pudo detectar el operador. Verifica el número.",
+    "carrier": "Operador",
+    "amount": "Monto (USD)",
+    "recharge": "Recargar ${{amount}}",
+    "success": "¡Recarga exitosa! {{amount}} {{currency}} entregados",
+    "failed": "Recarga fallida",
+    "noHistory": "Sin recargas aún",
+    "status_PENDING": "Pendiente",
+    "status_SUCCESSFUL": "Exitosa",
+    "status_FAILED": "Fallida",
+    "status_REFUNDED": "Reembolsada",
+    "poweredBy": "Impulsado por Reloadly. Compatible con Movistar, Movilnet y Digitel.",
+    "connectPrompt": "Conecta tu billetera para recargar teléfonos"
   }
 }

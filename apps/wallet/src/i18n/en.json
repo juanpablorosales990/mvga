@@ -282,7 +282,8 @@
     "notifications": "Notifications",
     "settings": "Settings",
     "help": "Help",
-    "charge": "Charge"
+    "charge": "Charge",
+    "topup": "Top-Up"
   },
   "grants": {
     "title": "Grants",
@@ -721,7 +722,16 @@
     "poweredBy": "Powered by Onramper. Payments processed by third-party providers. MVGA does not hold or transmit fiat currency.",
     "p2pExchange": "P2P Exchange",
     "p2pDescription": "Buy with PagoMóvil, Zelle, or bank transfer",
-    "quickAmounts": "Quick amounts"
+    "quickAmounts": "Quick amounts",
+    "cardBank": "Card / Bank",
+    "coinbaseTab": "Coinbase",
+    "coinbaseTitle": "Buy with Coinbase",
+    "coinbaseError": "Failed to load Coinbase Onramp",
+    "coinbaseUnavailable": "Coinbase Onramp unavailable",
+    "coinbaseNote": "Coinbase Onramp requires API keys. Contact admin to enable.",
+    "coinbasePoweredBy": "Powered by Coinbase. Zero-fee USDC purchases.",
+    "phoneTopup": "Phone Top-Up",
+    "phoneTopupDesc": "Recharge Venezuelan phone lines instantly"
   },
   "charge": {
     "title": "Charge",
@@ -757,5 +767,26 @@
     "paySuccess": "Payment sent!",
     "notFound": "Payment request not found",
     "loading": "Loading payment request..."
+  },
+  "topup": {
+    "title": "Phone Top-Up",
+    "subtitle": "Recharge any Venezuelan phone line instantly with your MVGA wallet",
+    "rechargeTab": "Recharge",
+    "historyTab": "History",
+    "phone": "Phone Number",
+    "detectCarrier": "Detect Carrier",
+    "detectFailed": "Could not detect carrier. Check the number.",
+    "carrier": "Carrier",
+    "amount": "Amount (USD)",
+    "recharge": "Recharge ${{amount}}",
+    "success": "Top-up successful! {{amount}} {{currency}} delivered",
+    "failed": "Top-up failed",
+    "noHistory": "No top-ups yet",
+    "status_PENDING": "Pending",
+    "status_SUCCESSFUL": "Successful",
+    "status_FAILED": "Failed",
+    "status_REFUNDED": "Refunded",
+    "poweredBy": "Powered by Reloadly. Supports Movistar, Movilnet & Digitel.",
+    "connectPrompt": "Connect your wallet to recharge phones"
   }
 }

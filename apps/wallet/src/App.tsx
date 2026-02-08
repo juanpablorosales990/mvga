@@ -35,6 +35,7 @@ const CardPage = lazy(() => import('./pages/CardPage'));
 const DepositPage = lazy(() => import('./pages/DepositPage'));
 const ChargePage = lazy(() => import('./pages/ChargePage'));
 const PayPage = lazy(() => import('./pages/PayPage'));
+const TopUpPage = lazy(() => import('./pages/TopUpPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
 // Components
@@ -101,6 +102,7 @@ function AppShell() {
                 <Route path="/deposit" element={<DepositPage />} />
                 <Route path="/charge" element={<ChargePage />} />
                 <Route path="/pay/:id" element={<PayPage />} />
+                <Route path="/topup" element={<TopUpPage />} />
                 <Route path="*" element={<NotFoundPage />} />
               </Routes>
             </Suspense>
