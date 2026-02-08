@@ -5,7 +5,11 @@ import { PublicKey } from '@solana/web3.js';
 import { PrismaService } from '../../common/prisma.service';
 import { TransactionLoggerService } from '../../common/transaction-logger.service';
 import { CronLockService } from '../../common/cron-lock.service';
+import { SolanaService } from '../wallet/solana.service';
 import { KaminoAdapter, YieldRate } from './kamino.adapter';
+
+// Kamino Lending program ID (mainnet)
+const KLEND_PROGRAM_ID = 'KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD';
 
 @Injectable()
 export class SavingsService {
@@ -15,7 +19,8 @@ export class SavingsService {
     private readonly prisma: PrismaService,
     private readonly txLogger: TransactionLoggerService,
     private readonly kamino: KaminoAdapter,
-    private readonly cronLock: CronLockService
+    private readonly cronLock: CronLockService,
+    private readonly solana: SolanaService
   ) {}
 
   /** Get current yield rates from all protocols. */
@@ -113,6 +118,9 @@ export class SavingsService {
 
   /** Confirm a deposit after the user has signed the transaction. */
   async confirmDeposit(walletAddress: string, signature: string) {
+    // Verify on-chain BEFORE touching DB — prevents fake positions
+    await this.verifyOnChainTransaction(signature, walletAddress, 'deposit');
+
     const result = await this.prisma.$transaction(async (tx) => {
       // Check for signature replay — reject if already used
       const existing = await tx.savingsPosition.findFirst({
@@ -212,6 +220,9 @@ export class SavingsService {
 
   /** Confirm a withdrawal after the user has signed the transaction. */
   async confirmWithdraw(walletAddress: string, positionId: string, signature: string) {
+    // Verify on-chain BEFORE touching DB
+    await this.verifyOnChainTransaction(signature, walletAddress, 'withdraw');
+
     const position = await this.prisma.$transaction(async (tx) => {
       // Check for signature replay — reject if already used
       const existingWithdraw = await tx.savingsPosition.findFirst({
@@ -251,6 +262,50 @@ export class SavingsService {
     });
 
     return { success: true };
+  }
+
+  /**
+   * Verify an on-chain transaction for savings operations.
+   * Checks: tx exists, succeeded, signer matches wallet, Kamino program invoked.
+   */
+  private async verifyOnChainTransaction(
+    signature: string,
+    walletAddress: string,
+    operation: 'deposit' | 'withdraw'
+  ) {
+    const connection = this.solana.getConnection();
+    const parsedTx = await connection.getParsedTransaction(signature, {
+      commitment: 'confirmed',
+      maxSupportedTransactionVersion: 0,
+    });
+
+    if (!parsedTx) {
+      throw new BadRequestException('Transaction not found. It may not be confirmed yet.');
+    }
+
+    if (parsedTx.meta?.err) {
+      throw new BadRequestException('Transaction failed on-chain');
+    }
+
+    // Verify the signer matches the authenticated wallet
+    const signers = parsedTx.transaction.message.accountKeys
+      .filter((k: { signer: boolean }) => k.signer)
+      .map((k: { pubkey: { toBase58(): string } }) => k.pubkey.toBase58());
+
+    if (!signers.includes(walletAddress)) {
+      throw new BadRequestException(`Transaction signer does not match authenticated wallet`);
+    }
+
+    // Verify Kamino lending program was invoked
+    const programInvoked = parsedTx.transaction.message.accountKeys.some(
+      (k: { pubkey: { toBase58(): string } }) => k.pubkey.toBase58() === KLEND_PROGRAM_ID
+    );
+
+    if (!programInvoked) {
+      throw new BadRequestException(
+        `Transaction did not invoke the Kamino lending program (expected for ${operation})`
+      );
+    }
   }
 
   /** Cron: Fetch and store yield rates every hour. */

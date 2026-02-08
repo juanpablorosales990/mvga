@@ -8,6 +8,22 @@ describe('SavingsService', () => {
   let mockTxLogger: any;
   let mockKamino: any;
   let mockCronLock: any;
+  let mockSolana: any;
+
+  // Helper to create a mock parsed transaction for on-chain verification
+  const makeMockParsedTx = (signer: string, programIds: string[] = []) => ({
+    meta: { err: null },
+    transaction: {
+      message: {
+        accountKeys: [
+          { pubkey: { toBase58: () => signer }, signer: true },
+          ...programIds.map((id) => ({ pubkey: { toBase58: () => id }, signer: false })),
+        ],
+      },
+    },
+  });
+
+  const KLEND_ID = 'KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD';
 
   beforeEach(() => {
     mockPrisma = {
@@ -46,7 +62,13 @@ describe('SavingsService', () => {
       releaseLock: jest.fn().mockResolvedValue(undefined),
     };
 
-    service = new SavingsService(mockPrisma, mockTxLogger, mockKamino, mockCronLock);
+    mockSolana = {
+      getConnection: jest.fn().mockReturnValue({
+        getParsedTransaction: jest.fn().mockResolvedValue(null),
+      }),
+    };
+
+    service = new SavingsService(mockPrisma, mockTxLogger, mockKamino, mockCronLock, mockSolana);
   });
 
   describe('initiateDeposit', () => {
@@ -84,6 +106,13 @@ describe('SavingsService', () => {
   });
 
   describe('confirmDeposit', () => {
+    beforeEach(() => {
+      // Default: valid on-chain tx with Kamino program invoked
+      mockSolana.getConnection.mockReturnValue({
+        getParsedTransaction: jest.fn().mockResolvedValue(makeMockParsedTx('wallet1', [KLEND_ID])),
+      });
+    });
+
     it('activates a PENDING position and sets depositTx', async () => {
       const pendingPosition = {
         id: 'pos-1',
@@ -145,6 +174,55 @@ describe('SavingsService', () => {
         })
       );
     });
+
+    it('rejects if transaction not found on-chain', async () => {
+      mockSolana.getConnection.mockReturnValue({
+        getParsedTransaction: jest.fn().mockResolvedValue(null),
+      });
+
+      await expect(service.confirmDeposit('wallet1', 'bad-sig')).rejects.toThrow(
+        'Transaction not found'
+      );
+    });
+
+    it('rejects if transaction failed on-chain', async () => {
+      mockSolana.getConnection.mockReturnValue({
+        getParsedTransaction: jest.fn().mockResolvedValue({
+          ...makeMockParsedTx('wallet1', [KLEND_ID]),
+          meta: { err: { InstructionError: [0, 'Custom'] } },
+        }),
+      });
+
+      await expect(service.confirmDeposit('wallet1', 'failed-sig')).rejects.toThrow(
+        'Transaction failed on-chain'
+      );
+    });
+
+    it('rejects if signer does not match wallet', async () => {
+      mockSolana.getConnection.mockReturnValue({
+        getParsedTransaction: jest
+          .fn()
+          .mockResolvedValue(makeMockParsedTx('other-wallet', [KLEND_ID])),
+      });
+
+      await expect(service.confirmDeposit('wallet1', 'wrong-signer')).rejects.toThrow(
+        'signer does not match'
+      );
+    });
+
+    it('rejects if Kamino program not invoked', async () => {
+      mockSolana.getConnection.mockReturnValue({
+        getParsedTransaction: jest
+          .fn()
+          .mockResolvedValue(
+            makeMockParsedTx('wallet1', ['SomeOtherProgram111111111111111111111111111'])
+          ),
+      });
+
+      await expect(service.confirmDeposit('wallet1', 'no-kamino')).rejects.toThrow(
+        'Kamino lending program'
+      );
+    });
   });
 
   describe('initiateWithdraw', () => {
@@ -194,6 +272,13 @@ describe('SavingsService', () => {
   });
 
   describe('confirmWithdraw', () => {
+    beforeEach(() => {
+      // Default: valid on-chain tx with Kamino program invoked
+      mockSolana.getConnection.mockReturnValue({
+        getParsedTransaction: jest.fn().mockResolvedValue(makeMockParsedTx('wallet1', [KLEND_ID])),
+      });
+    });
+
     it('closes position and sets withdrawTx', async () => {
       mockPrisma.savingsPosition.findFirst.mockResolvedValue(null); // replay check
       mockPrisma.savingsPosition.findUnique.mockResolvedValue({
@@ -221,6 +306,18 @@ describe('SavingsService', () => {
 
       await expect(service.confirmWithdraw('wallet1', 'pos-1', 'sig-w1')).rejects.toThrow(
         BadRequestException
+      );
+    });
+
+    it('rejects if signer does not match wallet', async () => {
+      mockSolana.getConnection.mockReturnValue({
+        getParsedTransaction: jest
+          .fn()
+          .mockResolvedValue(makeMockParsedTx('attacker-wallet', [KLEND_ID])),
+      });
+
+      await expect(service.confirmWithdraw('wallet1', 'pos-1', 'sig-bad')).rejects.toThrow(
+        'signer does not match'
       );
     });
   });
