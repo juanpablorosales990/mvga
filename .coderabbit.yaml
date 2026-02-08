@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: en-US
+tone_instructions: "Be concise and direct. Focus on security, correctness, and Solana best practices."
+
+reviews:
+  profile: assertive
+  high_level_summary: true
+  collapse_walkthrough: true
+  request_changes_workflow: true
+  auto_review:
+    enabled: true
+    drafts: false
+  path_filters:
+    - "!**/node_modules/**"
+    - "!**/dist/**"
+    - "!**/target/**"
+    - "!**/.turbo/**"
+    - "!**/coverage/**"
+  path_instructions:
+    - path: "apps/api/**"
+      instructions: |
+        NestJS backend. Check for auth guard usage, Prisma query safety,
+        proper error handling, and input validation with class-validator.
+        Verify all endpoints use AuthGuard and wallet ownership checks.
+    - path: "apps/wallet/**"
+      instructions: |
+        React PWA wallet app. Check for XSS vectors, proper state management,
+        and that no secrets are exposed in client-side code. Verify private
+        keys are zeroed when no longer needed.
+    - path: "packages/contracts/**"
+      instructions: |
+        Anchor/Solana smart contracts. Check for account validation,
+        signer checks, PDA seed correctness, and proper error handling.
+        Pay attention to CPI safety and token account ownership.
+    - path: "packages/sdk/**"
+      instructions: |
+        Shared SDK. Ensure type safety and that no server-side secrets
+        leak into client-importable code.
+  tools:
+    eslint:
+      enabled: true
+    semgrep:
+      enabled: true
+    gitleaks:
+      enabled: true
+
+chat:
+  auto_reply: true
+
+knowledge_base:
+  opt_out: false
+  learnings:
+    scope: auto
