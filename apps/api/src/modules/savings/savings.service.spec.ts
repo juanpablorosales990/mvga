@@ -149,6 +149,7 @@ describe('SavingsService', () => {
 
   describe('initiateWithdraw', () => {
     it('rejects withdraw on non-ACTIVE position', async () => {
+      mockPrisma.savingsPosition.updateMany = jest.fn().mockResolvedValue({ count: 0 });
       mockPrisma.savingsPosition.findUnique.mockResolvedValue({
         id: 'pos-1',
         walletAddress: 'wallet1',
@@ -162,6 +163,7 @@ describe('SavingsService', () => {
     });
 
     it('rejects withdraw from wrong wallet', async () => {
+      mockPrisma.savingsPosition.updateMany = jest.fn().mockResolvedValue({ count: 0 });
       mockPrisma.savingsPosition.findUnique.mockResolvedValue({
         id: 'pos-1',
         walletAddress: 'other-wallet',
@@ -173,19 +175,19 @@ describe('SavingsService', () => {
     });
 
     it('allows full withdrawal on ACTIVE position', async () => {
+      mockPrisma.savingsPosition.updateMany = jest.fn().mockResolvedValue({ count: 1 });
       mockPrisma.savingsPosition.findUnique.mockResolvedValue({
         id: 'pos-1',
         walletAddress: 'wallet1',
-        status: 'ACTIVE',
+        status: 'WITHDRAWING',
         currentAmount: 100000000n,
         token: 'USDC',
       });
-      mockPrisma.savingsPosition.update.mockResolvedValue({});
 
       const result = await service.initiateWithdraw('wallet1', 'pos-1');
       expect(result.amount).toBe(100);
-      expect(mockPrisma.savingsPosition.update).toHaveBeenCalledWith({
-        where: { id: 'pos-1' },
+      expect(mockPrisma.savingsPosition.updateMany).toHaveBeenCalledWith({
+        where: { id: 'pos-1', walletAddress: 'wallet1', status: 'ACTIVE' },
         data: { status: 'WITHDRAWING' },
       });
     });

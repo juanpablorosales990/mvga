@@ -153,28 +153,37 @@ export class SavingsService {
 
   /** Initiate a withdrawal from a savings position. */
   async initiateWithdraw(walletAddress: string, positionId: string, amount?: number) {
+    // Atomic check-and-update: only transition ACTIVE → WITHDRAWING
+    const { count } = await this.prisma.savingsPosition.updateMany({
+      where: { id: positionId, walletAddress, status: 'ACTIVE' },
+      data: { status: 'WITHDRAWING' },
+    });
+
+    if (count === 0) {
+      // Determine the specific error
+      const position = await this.prisma.savingsPosition.findUnique({
+        where: { id: positionId },
+      });
+      if (!position || position.walletAddress !== walletAddress) {
+        throw new NotFoundException('Position not found');
+      }
+      throw new BadRequestException('Position is not active');
+    }
+
     const position = await this.prisma.savingsPosition.findUnique({
       where: { id: positionId },
     });
 
-    if (!position || position.walletAddress !== walletAddress) {
-      throw new NotFoundException('Position not found');
-    }
-    if (position.status !== 'ACTIVE') {
-      throw new BadRequestException('Position is not active');
-    }
+    const withdrawAmount = amount ? BigInt(Math.round(amount * 1e6)) : position!.currentAmount;
 
-    const withdrawAmount = amount ? BigInt(Math.round(amount * 1e6)) : position.currentAmount;
-
-    if (withdrawAmount > position.currentAmount) {
+    if (withdrawAmount > position!.currentAmount) {
+      // Revert status back since we can't fulfill the withdraw
+      await this.prisma.savingsPosition.update({
+        where: { id: positionId },
+        data: { status: 'ACTIVE' },
+      });
       throw new BadRequestException('Insufficient balance');
     }
-
-    // Mark as withdrawing
-    await this.prisma.savingsPosition.update({
-      where: { id: positionId },
-      data: { status: 'WITHDRAWING' },
-    });
 
     // Build the Kamino withdraw transaction for the client to sign
     let transaction: string | undefined;
@@ -182,7 +191,7 @@ export class SavingsService {
       const tx = await this.kamino.buildWithdrawTx(
         new PublicKey(walletAddress),
         withdrawAmount,
-        position.token
+        position!.token
       );
       if (tx.instructions.length > 0) {
         transaction = tx
@@ -196,7 +205,7 @@ export class SavingsService {
     return {
       positionId,
       amount: Number(withdrawAmount) / 1e6,
-      token: position.token,
+      token: position!.token,
       transaction,
     };
   }

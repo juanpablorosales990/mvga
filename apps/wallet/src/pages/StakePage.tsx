@@ -14,7 +14,7 @@ import { useWalletStore } from '../stores/walletStore';
 import FiatValue from '../components/FiatValue';
 import TransactionPreviewModal from '../components/TransactionPreviewModal';
 import { showToast } from '../hooks/useToast';
-import { API_URL } from '../config';
+import { API_URL, KNOWN_STAKING_VAULT } from '../config';
 
 const MVGA_MINT = 'DRX65kM2n5CLTpdjJCemZvkUwE98ou4RpHrd8Z3GH5Qh';
 const MVGA_DECIMALS = 9;
@@ -204,6 +204,9 @@ export default function StakePage() {
       const { vaultAddress } = await stakeRes.json();
       if (!vaultAddress || typeof vaultAddress !== 'string') {
         throw new Error('Invalid vault address from server');
+      }
+      if (KNOWN_STAKING_VAULT && vaultAddress !== KNOWN_STAKING_VAULT) {
+        throw new Error('Vault address mismatch — please contact support');
       }
       const mint = new PublicKey(MVGA_MINT);
       let vaultPubkey: PublicKey;

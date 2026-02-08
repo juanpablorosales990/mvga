@@ -635,6 +635,7 @@ model SavingsPosition {
 }
 
 enum SavingsStatus {
+  PENDING
   ACTIVE
   WITHDRAWING
   CLOSED

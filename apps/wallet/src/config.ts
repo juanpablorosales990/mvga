@@ -9,5 +9,9 @@ export const KNOWN_ESCROW_WALLET = import.meta.env.VITE_ESCROW_WALLET || '';
 export const ESCROW_PROGRAM_ID =
   import.meta.env.VITE_ESCROW_PROGRAM_ID || '6GXdYCDckUVEFBaQSgfQGX95gZSNN7FWN19vRDSyTJ5E';
 
+// Known staking vault address — must match the API's STAKING_VAULT_WALLET.
+// Used for client-side validation before sending MVGA tokens.
+export const KNOWN_STAKING_VAULT = import.meta.env.VITE_STAKING_VAULT || '';
+
 // VAPID public key for Web Push subscriptions (safe for client-side use)
 export const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || '';
