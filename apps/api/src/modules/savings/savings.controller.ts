@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, UseGuards } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { SavingsService } from './savings.service';
 import { AuthGuard } from '../auth/auth.guard';
@@ -17,8 +17,9 @@ export class SavingsController {
   }
 
   /** Get a user's savings positions and earnings. */
-  @Get(':wallet')
-  async getPositions(@Param('wallet') wallet: string) {
+  @Get('positions')
+  @UseGuards(AuthGuard)
+  async getPositions(@CurrentUser('wallet') wallet: string) {
     return this.savingsService.getPositions(wallet);
   }
 

@@ -980,28 +980,30 @@ export class P2PService {
     let loserAddress: string;
 
     if (resolution === 'RELEASE_TO_BUYER') {
-      // Buyer wins - release escrow to buyer
       signature = await this.releaseEscrow(tradeId);
       finalStatus = 'COMPLETED';
       winnerAddress = trade.buyer.walletAddress;
       loserAddress = trade.seller.walletAddress;
     } else {
-      // Seller wins - refund escrow to seller
       signature = await this.refundEscrow(tradeId);
       finalStatus = 'REFUNDED';
       winnerAddress = trade.seller.walletAddress;
       loserAddress = trade.buyer.walletAddress;
     }
 
-    // Update trade with resolution details
-    await this.prisma.p2PTrade.update({
-      where: { id: tradeId },
+    // Atomically update only if still DISPUTED — prevents concurrent resolution
+    const claimed = await this.prisma.p2PTrade.updateMany({
+      where: { id: tradeId, status: 'DISPUTED' },
       data: {
         status: finalStatus,
         disputeResolution: resolutionNotes,
         completedAt: new Date(),
       },
     });
+
+    if (claimed.count === 0) {
+      throw new BadRequestException('Trade was already resolved by another admin');
+    }
 
     // Update reputations - winner gets positive, loser gets negative
     await this.updateReputation(winnerAddress, true);

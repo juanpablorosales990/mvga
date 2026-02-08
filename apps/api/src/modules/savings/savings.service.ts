@@ -198,12 +198,24 @@ export class SavingsService {
 
   /** Confirm a withdrawal after the user has signed the transaction. */
   async confirmWithdraw(walletAddress: string, positionId: string, signature: string) {
+    // Check for signature replay — reject if already used
+    const existingWithdraw = await this.prisma.savingsPosition.findFirst({
+      where: { withdrawTx: signature },
+    });
+    if (existingWithdraw) {
+      throw new BadRequestException('Withdraw signature already used');
+    }
+
     const position = await this.prisma.savingsPosition.findUnique({
       where: { id: positionId },
     });
 
     if (!position || position.walletAddress !== walletAddress) {
       throw new NotFoundException('Position not found');
+    }
+
+    if (position.status !== 'ACTIVE') {
+      throw new BadRequestException('Position is not active');
     }
 
     await this.prisma.savingsPosition.update({

@@ -122,7 +122,7 @@ export async function getCardDetails(): Promise<CardDetails | null> {
   if (!wallet) return null;
 
   try {
-    return await apiFetchLocal<CardDetails>(`/banking/card/${wallet}`);
+    return await apiFetchLocal<CardDetails>('/banking/card');
   } catch {
     await delay(300);
     return { ...MOCK_CARD, status: mockCardStatus };
@@ -134,7 +134,7 @@ export async function getCardBalance(): Promise<CardBalance> {
   if (!wallet) return { available: 0, pending: 0 };
 
   try {
-    return await apiFetchLocal<CardBalance>(`/banking/card/${wallet}/balance`);
+    return await apiFetchLocal<CardBalance>('/banking/card/balance');
   } catch {
     await delay(200);
     return { ...mockBalance };
@@ -146,7 +146,7 @@ export async function getCardTransactions(): Promise<CardTransaction[]> {
   if (!wallet) return [];
 
   try {
-    return await apiFetchLocal<CardTransaction[]>(`/banking/card/${wallet}/transactions`);
+    return await apiFetchLocal<CardTransaction[]>('/banking/card/transactions');
   } catch {
     await delay(400);
     return [...MOCK_TRANSACTIONS];
@@ -163,7 +163,7 @@ export async function freezeCard(): Promise<CardDetails> {
   const wallet = getWalletAddress();
   if (wallet) {
     try {
-      return await apiFetchLocal<CardDetails>(`/banking/card/${wallet}/freeze`, { method: 'POST' });
+      return await apiFetchLocal<CardDetails>('/banking/card/freeze', { method: 'POST' });
     } catch {
       // fall through to mock
     }
@@ -177,7 +177,7 @@ export async function unfreezeCard(): Promise<CardDetails> {
   const wallet = getWalletAddress();
   if (wallet) {
     try {
-      return await apiFetchLocal<CardDetails>(`/banking/card/${wallet}/unfreeze`, {
+      return await apiFetchLocal<CardDetails>('/banking/card/unfreeze', {
         method: 'POST',
       });
     } catch {
@@ -202,7 +202,7 @@ export async function fundCard(
   if (wallet) {
     try {
       return await apiFetchLocal<{ success: boolean; newBalance: CardBalance }>(
-        `/banking/card/${wallet}/fund`,
+        '/banking/card/fund',
         { method: 'POST', body: JSON.stringify({ amount: amountUsdc }) }
       );
     } catch {
@@ -251,7 +251,7 @@ export async function getUserStatus(_userId: string): Promise<{ status: CardStat
   const wallet = getWalletAddress();
   if (wallet) {
     try {
-      return await apiFetchLocal<{ status: CardStatus }>(`/banking/kyc/status/${wallet}`);
+      return await apiFetchLocal<{ status: CardStatus }>('/banking/kyc/status');
     } catch {
       // fall through to mock
     }

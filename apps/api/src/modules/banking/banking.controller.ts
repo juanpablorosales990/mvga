@@ -42,7 +42,7 @@ export class BankingController {
     });
   }
 
-  @Get('kyc/status/:wallet')
+  @Get('kyc/status')
   @UseGuards(AuthGuard)
   async getKycStatus(@CurrentUser('wallet') wallet: string) {
     return this.bankingService.getKycStatus(wallet);
@@ -57,37 +57,37 @@ export class BankingController {
     return this.bankingService.issueCard(wallet);
   }
 
-  @Get('card/:wallet')
+  @Get('card')
   @UseGuards(AuthGuard)
   async getCard(@CurrentUser('wallet') wallet: string) {
     return this.bankingService.getCard(wallet);
   }
 
-  @Get('card/:wallet/balance')
+  @Get('card/balance')
   @UseGuards(AuthGuard)
   async getCardBalance(@CurrentUser('wallet') wallet: string) {
     return this.bankingService.getCardBalance(wallet);
   }
 
-  @Get('card/:wallet/transactions')
+  @Get('card/transactions')
   @UseGuards(AuthGuard)
   async getCardTransactions(@CurrentUser('wallet') wallet: string) {
     return this.bankingService.getCardTransactions(wallet);
   }
 
-  @Post('card/:wallet/freeze')
+  @Post('card/freeze')
   @UseGuards(AuthGuard)
   async freezeCard(@CurrentUser('wallet') wallet: string) {
     return this.bankingService.freezeCard(wallet);
   }
 
-  @Post('card/:wallet/unfreeze')
+  @Post('card/unfreeze')
   @UseGuards(AuthGuard)
   async unfreezeCard(@CurrentUser('wallet') wallet: string) {
     return this.bankingService.unfreezeCard(wallet);
   }
 
-  @Post('card/:wallet/fund')
+  @Post('card/fund')
   @UseGuards(AuthGuard)
   async getFundingAddress(@CurrentUser('wallet') wallet: string) {
     return this.bankingService.getFundingAddress(wallet);

@@ -1,10 +1,10 @@
-import { Controller, Post, Delete, Get, Put, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Post, Delete, Get, Put, Body, UseGuards } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { NotificationsService } from './notifications.service';
 import { SubscribeDto, UnsubscribeDto } from './dto/subscribe.dto';
 import { UpdatePreferencesDto } from './dto/preferences.dto';
 import { AuthGuard } from '../auth/auth.guard';
-import { ParseSolanaAddressPipe } from '../../common/validators/solana-address.validator';
+import { CurrentUser } from '../auth/auth.decorator';
 
 @ApiTags('notifications')
 @Controller('notifications')
@@ -25,15 +25,16 @@ export class NotificationsController {
     return { ok: true };
   }
 
-  @Get('preferences/:wallet')
-  async getPreferences(@Param('wallet', ParseSolanaAddressPipe) wallet: string) {
+  @Get('preferences')
+  @UseGuards(AuthGuard)
+  async getPreferences(@CurrentUser('wallet') wallet: string) {
     return this.notificationsService.getPreferences(wallet);
   }
 
-  @Put('preferences/:wallet')
+  @Put('preferences')
   @UseGuards(AuthGuard)
   async updatePreferences(
-    @Param('wallet', ParseSolanaAddressPipe) wallet: string,
+    @CurrentUser('wallet') wallet: string,
     @Body() dto: UpdatePreferencesDto
   ) {
     return this.notificationsService.updatePreferences(wallet, dto);

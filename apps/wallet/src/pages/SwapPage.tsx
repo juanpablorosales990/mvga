@@ -185,7 +185,7 @@ export default function SwapPage() {
       // Send transaction
       const rawTransaction = signedTransaction.serialize();
       const signature = await connection.sendRawTransaction(rawTransaction, {
-        skipPreflight: true,
+        skipPreflight: false,
         maxRetries: 2,
       });
 

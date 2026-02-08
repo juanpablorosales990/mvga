@@ -90,7 +90,7 @@ export default function NotificationsPage() {
   useEffect(() => {
     if (!connected || !publicKey || !isSubscribed) return;
     const addr = publicKey.toBase58();
-    fetch(`${API_URL}/notifications/preferences/${addr}`)
+    fetch(`${API_URL}/notifications/preferences`, { credentials: 'include' })
       .then((r) => r.json())
       .then((data) =>
         setPrefs({
@@ -109,7 +109,7 @@ export default function NotificationsPage() {
       const updated = { ...prefs, [key]: !prefs[key] };
       setPrefs(updated);
       try {
-        await fetch(`${API_URL}/notifications/preferences/${publicKey.toBase58()}`, {
+        await fetch(`${API_URL}/notifications/preferences`, {
           method: 'PUT',
           credentials: 'include',
           headers: {

@@ -83,7 +83,7 @@ export function useSavings(walletAddress: string | null) {
     }
     const controller = new AbortController();
     setLoadingPositions(true);
-    fetch(`${API_URL}/savings/${walletAddress}`, { signal: controller.signal })
+    fetch(`${API_URL}/savings/positions`, { signal: controller.signal, credentials: 'include' })
       .then((r) => r.json())
       .then((data: SavingsData) => setPositions(data))
       .catch(() => {
@@ -97,7 +97,7 @@ export function useSavings(walletAddress: string | null) {
 
   const refresh = useCallback(() => {
     if (!walletAddress) return;
-    fetch(`${API_URL}/savings/${walletAddress}`)
+    fetch(`${API_URL}/savings/positions`, { credentials: 'include' })
       .then((r) => r.json())
       .then((data: SavingsData) => setPositions(data))
       .catch(() => {});
