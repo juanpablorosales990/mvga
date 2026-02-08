@@ -449,15 +449,28 @@ export class StakingService {
 
         const sig = await sendAndConfirmTransaction(connection, solanaTx, [this.vaultKeypair]);
 
-        // Update stake in database
-        await tx.stake.update({
-          where: { id: stake.id },
-          data: {
-            status: 'UNSTAKED',
-            unstakeTx: sig,
-            unstakedAt: new Date(),
-          },
-        });
+        // Update stake in database — handle partial vs full unstake
+        const stakeAmount = Number(stake.amount) / 10 ** MVGA_DECIMALS;
+        if (requestedAmount >= stakeAmount) {
+          // Full unstake — mark entire position as UNSTAKED
+          await tx.stake.update({
+            where: { id: stake.id },
+            data: {
+              status: 'UNSTAKED',
+              unstakeTx: sig,
+              unstakedAt: new Date(),
+            },
+          });
+        } else {
+          // Partial unstake — reduce the existing position's amount
+          const remainingRaw = BigInt(
+            Math.round((stakeAmount - requestedAmount) * 10 ** MVGA_DECIMALS)
+          );
+          await tx.stake.update({
+            where: { id: stake.id },
+            data: { amount: remainingRaw },
+          });
+        }
 
         // Log the transaction (non-blocking)
         this.txLogger

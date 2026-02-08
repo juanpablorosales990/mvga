@@ -204,10 +204,14 @@ export class P2PService {
       throw new BadRequestException('Only the seller can cancel this offer');
     }
 
-    await this.prisma.p2POffer.update({
-      where: { id },
+    // Atomic status check to prevent TOCTOU race with concurrent acceptOffer
+    const { count } = await this.prisma.p2POffer.updateMany({
+      where: { id, status: 'ACTIVE' },
       data: { status: 'CANCELLED' },
     });
+    if (count === 0) {
+      throw new BadRequestException('Offer is no longer active and cannot be cancelled');
+    }
   }
 
   // ============ TRADES ============
@@ -1067,64 +1071,70 @@ export class P2PService {
     adminAddress: string,
     resolutionNotes: string
   ) {
-    // Lock the trade row FIRST to prevent concurrent dispute resolution
-    const [trade] = await this.prisma.$queryRaw<
-      Array<{
-        id: string;
-        status: string;
-        buyerAddress: string;
-        sellerAddress: string;
-        escrowTx: string | null;
-        cryptoAmount: bigint;
-        cryptoCurrency: string;
-      }>
-    >`
-      SELECT t.*, b."walletAddress" as "buyerAddress", s."walletAddress" as "sellerAddress"
-      FROM "P2PTrade" t
-      JOIN "User" b ON t."buyerId" = b."id"
-      JOIN "User" s ON t."sellerId" = s."id"
-      WHERE t."id" = ${tradeId}
-      FOR UPDATE
-    `;
+    // Atomically claim the dispute — processingAt acts as a lock
+    const claimed = await this.prisma.p2PTrade.updateMany({
+      where: { id: tradeId, status: 'DISPUTED', processingAt: null },
+      data: {
+        processingAt: new Date(),
+        disputeResolution: resolutionNotes,
+      },
+    });
 
-    if (!trade) {
-      throw new NotFoundException('Trade not found');
+    if (claimed.count === 0) {
+      const existing = await this.prisma.p2PTrade.findUnique({
+        where: { id: tradeId },
+      });
+      if (!existing) throw new NotFoundException('Trade not found');
+      if (existing.status !== 'DISPUTED') {
+        throw new BadRequestException(
+          `Trade is not in disputed status (current: ${existing.status})`
+        );
+      }
+      throw new BadRequestException('Trade is already being resolved by another admin');
     }
 
-    if (trade.status !== 'DISPUTED') {
-      throw new BadRequestException('Trade is not in disputed status');
-    }
+    // Get trade details for escrow operation
+    const trade = await this.prisma.p2PTrade.findUnique({
+      where: { id: tradeId },
+      include: { buyer: true, seller: true },
+    });
+    if (!trade) throw new NotFoundException('Trade not found');
 
     let signature: string;
     let finalStatus: P2PTradeStatus;
     let winnerAddress: string;
     let loserAddress: string;
 
-    if (resolution === 'RELEASE_TO_BUYER') {
-      signature = await this.releaseEscrow(tradeId);
-      finalStatus = 'COMPLETED';
-      winnerAddress = trade.buyerAddress;
-      loserAddress = trade.sellerAddress;
-    } else {
-      signature = await this.refundEscrow(tradeId);
-      finalStatus = 'REFUNDED';
-      winnerAddress = trade.sellerAddress;
-      loserAddress = trade.buyerAddress;
+    try {
+      if (resolution === 'RELEASE_TO_BUYER') {
+        signature = await this.releaseEscrow(tradeId);
+        finalStatus = 'COMPLETED';
+        winnerAddress = trade.buyer.walletAddress;
+        loserAddress = trade.seller.walletAddress;
+      } else {
+        signature = await this.refundEscrow(tradeId);
+        finalStatus = 'REFUNDED';
+        winnerAddress = trade.seller.walletAddress;
+        loserAddress = trade.buyer.walletAddress;
+      }
+    } catch (error) {
+      // Escrow operation failed — release the lock so admin can retry
+      await this.prisma.p2PTrade.updateMany({
+        where: { id: tradeId, status: 'DISPUTED' },
+        data: { processingAt: null },
+      });
+      throw error;
     }
 
-    // Atomically update only if still DISPUTED — prevents concurrent resolution
-    const claimed = await this.prisma.p2PTrade.updateMany({
-      where: { id: tradeId, status: 'DISPUTED' },
+    // Mark as final status
+    await this.prisma.p2PTrade.update({
+      where: { id: tradeId },
       data: {
         status: finalStatus,
-        disputeResolution: resolutionNotes,
         completedAt: new Date(),
+        processingAt: null,
       },
     });
-
-    if (claimed.count === 0) {
-      throw new BadRequestException('Trade was already resolved by another admin');
-    }
 
     // Update reputations - winner gets positive, loser gets negative
     await this.updateReputation(winnerAddress, true);

@@ -42,11 +42,14 @@ export class P2PTimeoutService {
 
     for (const trade of stalePending) {
       try {
-        await this.prisma.p2PTrade.update({
-          where: { id: trade.id },
+        // Atomic status check to prevent canceling trades that transitioned since query
+        const { count } = await this.prisma.p2PTrade.updateMany({
+          where: { id: trade.id, status: 'PENDING' },
           data: { status: 'CANCELLED' },
         });
-        this.logger.log(`Auto-cancelled stale PENDING trade ${trade.id}`);
+        if (count > 0) {
+          this.logger.log(`Auto-cancelled stale PENDING trade ${trade.id}`);
+        }
       } catch (e) {
         this.logger.error(`Failed to cancel trade ${trade.id}: ${(e as Error).message}`);
       }
@@ -99,14 +102,17 @@ export class P2PTimeoutService {
 
     for (const trade of stalePaid) {
       try {
-        await this.prisma.p2PTrade.update({
-          where: { id: trade.id },
+        // Atomic status check to prevent disputing trades that were already confirmed
+        const { count } = await this.prisma.p2PTrade.updateMany({
+          where: { id: trade.id, status: 'PAID' },
           data: {
             status: 'DISPUTED',
             disputeReason: 'Auto-disputed: seller did not confirm payment within 24 hours',
           },
         });
-        this.logger.log(`Auto-disputed stale PAID trade ${trade.id}`);
+        if (count > 0) {
+          this.logger.log(`Auto-disputed stale PAID trade ${trade.id}`);
+        }
       } catch (e) {
         this.logger.error(`Failed to dispute trade ${trade.id}: ${(e as Error).message}`);
       }
