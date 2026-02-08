@@ -31,7 +31,7 @@ export class CreateTopUpDto {
   @ApiProperty({ description: 'Amount in USD' })
   @IsNumber()
   @IsPositive()
-  @Min(1)
+  @Min(0.01)
   @Max(50)
   amount: number;
 }

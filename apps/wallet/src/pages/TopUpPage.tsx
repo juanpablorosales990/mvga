@@ -284,7 +284,7 @@ export default function TopUpPage() {
               {/* Confirm button */}
               <button
                 onClick={handleTopUp}
-                disabled={!finalAmount || finalAmount < 1 || finalAmount > 50 || sending}
+                disabled={!finalAmount || finalAmount < 0.01 || finalAmount > 50 || sending}
                 className="btn-primary w-full"
               >
                 {sending
