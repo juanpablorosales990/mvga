@@ -10,8 +10,8 @@ declare_id!("6GXdYCDckUVEFBaQSgfQGX95gZSNN7FWN19vRDSyTJ5E");
 
 /// Authorized admin for dispute resolution.
 /// Only this pubkey can be passed as the `admin` account during initialization.
-/// Update this constant before mainnet deploy to the production admin keypair.
-pub const AUTHORIZED_ADMIN: Pubkey = pubkey!("H9j1W4u5LEiw8AZdui6c8AmN6t4tKkPQCAULPW8eMiTE");
+/// This is the Squads Vault 2 (Admin) address — requires 2-of-3 multisig approval.
+pub const AUTHORIZED_ADMIN: Pubkey = pubkey!("C3KbfmtHrUiWunbsVhpeT1G6MqtyU8kK5mmVaByTUXF8");
 
 #[program]
 pub mod mvga_escrow {

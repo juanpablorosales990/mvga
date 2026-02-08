@@ -100,7 +100,7 @@ export class P2PService {
     this.escrowMode = (this.config.get<string>('ESCROW_MODE') || 'legacy') as EscrowMode;
     this.escrowAdminPubkey = this.config.get<string>(
       'ESCROW_ADMIN_PUBKEY',
-      'H9j1W4u5LEiw8AZdui6c8AmN6t4tKkPQCAULPW8eMiTE'
+      'C3KbfmtHrUiWunbsVhpeT1G6MqtyU8kK5mmVaByTUXF8'
     );
     this.logger.log(`Escrow mode: ${this.escrowMode}`);
 
