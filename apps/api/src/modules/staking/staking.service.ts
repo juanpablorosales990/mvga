@@ -3,6 +3,7 @@ import * as Sentry from '@sentry/node';
 import { ConfigService } from '@nestjs/config';
 import { Cron } from '@nestjs/schedule';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../common/prisma.service';
 import { TransactionLoggerService } from '../../common/transaction-logger.service';
 import { CronLockService } from '../../common/cron-lock.service';
@@ -811,6 +812,13 @@ export class StakingService {
           const rewardRaw = BigInt(Math.round(totalRewards * 10 ** MVGA_DECIMALS));
 
           await this.prisma.$transaction(async (tx) => {
+            // Lock the stake rows to prevent race with manual claim
+            await tx.$queryRaw`
+              SELECT id FROM "Stake"
+              WHERE id IN (${Prisma.join(stakes.map((s) => s.id))})
+              FOR UPDATE
+            `;
+
             await tx.stake.update({
               where: { id: primaryStake.id },
               data: {

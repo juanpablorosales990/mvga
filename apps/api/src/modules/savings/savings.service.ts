@@ -46,7 +46,7 @@ export class SavingsService {
   /** Get a user's savings positions and earnings. */
   async getPositions(walletAddress: string) {
     const positions = await this.prisma.savingsPosition.findMany({
-      where: { walletAddress, status: { not: 'CLOSED' } },
+      where: { walletAddress, status: { notIn: ['CLOSED'] } },
       orderBy: { createdAt: 'desc' },
     });
 
@@ -85,7 +85,7 @@ export class SavingsService {
         token,
         depositedAmount: rawAmount,
         currentAmount: rawAmount,
-        status: 'ACTIVE',
+        status: 'PENDING',
       },
     });
 
@@ -124,16 +124,16 @@ export class SavingsService {
 
       // Find the most recent unconfirmed position for this wallet
       const position = await tx.savingsPosition.findFirst({
-        where: { walletAddress, depositTx: null, status: 'ACTIVE' },
+        where: { walletAddress, depositTx: null, status: 'PENDING' },
         orderBy: { createdAt: 'desc' },
       });
 
       if (!position) throw new NotFoundException('No pending deposit found');
 
-      // Update with tx signature
+      // Update with tx signature and activate the position
       await tx.savingsPosition.update({
         where: { id: position.id },
-        data: { depositTx: signature },
+        data: { depositTx: signature, status: 'ACTIVE' },
       });
 
       return position;

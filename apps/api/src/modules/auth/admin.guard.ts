@@ -51,13 +51,17 @@ export class AdminGuard implements CanActivate {
       throw new ForbiddenException('Invalid role');
     }
 
-    // If admin wallet whitelist is configured, enforce it for ADMIN role
-    if (
-      roles.includes('ADMIN') &&
-      this.adminWalletWhitelist.length > 0 &&
-      !this.adminWalletWhitelist.includes(user.wallet)
-    ) {
-      throw new ForbiddenException('Wallet not authorized for admin access');
+    // Enforce admin wallet whitelist in production
+    if (roles.includes('ADMIN')) {
+      if (this.adminWalletWhitelist.length === 0) {
+        // No whitelist configured — block all admin access in production
+        const nodeEnv = this.config.get<string>('NODE_ENV', 'development');
+        if (nodeEnv === 'production') {
+          throw new ForbiddenException('Admin wallet whitelist not configured');
+        }
+      } else if (!this.adminWalletWhitelist.includes(user.wallet)) {
+        throw new ForbiddenException('Wallet not authorized for admin access');
+      }
     }
 
     return true;

@@ -332,7 +332,7 @@ export default function TransparencyPage() {
             >
               <div className="w-full border border-white/10 p-6 text-center">
                 <p className="text-xs tracking-[0.3em] uppercase text-white/30 mb-1">
-                  Swap &amp; Trade Fees (3%)
+                  Swap &amp; Trade Fees (0.1%)
                 </p>
                 <p className="text-xl font-bold">Protocol Revenue</p>
               </div>
