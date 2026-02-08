@@ -1,7 +1,12 @@
+const { withSentryConfig } = require('@sentry/nextjs');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
   transpilePackages: ['@mvga/sdk', '@mvga/ui'],
+  experimental: {
+    instrumentationHook: true,
+  },
   images: {
     formats: ['image/avif', 'image/webp'],
   },
@@ -16,4 +21,9 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+module.exports = withSentryConfig(nextConfig, {
+  silent: true,
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  disableSourceMapUpload: !process.env.SENTRY_AUTH_TOKEN,
+});
