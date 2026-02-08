@@ -139,6 +139,9 @@ export class KaminoAdapter {
       );
 
       tx.add(...kaminoAction.setupIxs, ...kaminoAction.lendingIxs);
+      const { blockhash } = await this.connection.getLatestBlockhash('confirmed');
+      tx.recentBlockhash = blockhash;
+      tx.feePayer = wallet;
     } catch (err) {
       this.logger.error(`Failed to build Kamino deposit tx: ${err}`);
     }
@@ -170,6 +173,9 @@ export class KaminoAdapter {
       );
 
       tx.add(...kaminoAction.setupIxs, ...kaminoAction.lendingIxs);
+      const { blockhash } = await this.connection.getLatestBlockhash('confirmed');
+      tx.recentBlockhash = blockhash;
+      tx.feePayer = wallet;
     } catch (err) {
       this.logger.error(`Failed to build Kamino withdraw tx: ${err}`);
     }
