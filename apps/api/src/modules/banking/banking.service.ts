@@ -1,7 +1,7 @@
 import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { CardAppStatus } from '@prisma/client';
 import { PrismaService } from '../../common/prisma.service';
-import { RainAdapter, KycData } from './rain.adapter';
+import { RainAdapter, KycData, RainTransaction } from './rain.adapter';
 
 @Injectable()
 export class BankingService {
@@ -158,6 +158,46 @@ export class BankingService {
     }
     const balance = await this.rain.getBalance(app.rainUserId);
     return { available: balance.spendingPower / 100, pending: balance.balanceDue / 100 };
+  }
+
+  async getCardTransactions(walletAddress: string, limit = 20) {
+    const app = await this.prisma.cardApplication.findFirst({
+      where: { walletAddress, status: { in: ['CARD_ISSUED', 'FROZEN'] } },
+    });
+    if (!app?.rainUserId || !this.rain.isEnabled) {
+      return [];
+    }
+
+    const txs = await this.rain.getTransactions(app.rainUserId, limit);
+    return txs.map((tx: RainTransaction) => ({
+      id: tx.id,
+      merchantName: tx.merchantName || 'Unknown',
+      merchantCategory: this.mapMerchantCategory(tx.merchantCategory),
+      amount: tx.amount / 100,
+      currency: tx.currency || 'USD',
+      date: tx.createdAt,
+      status: this.mapTxStatus(tx.status),
+    }));
+  }
+
+  private mapMerchantCategory(
+    category?: string
+  ): 'online' | 'restaurant' | 'transport' | 'entertainment' | 'grocery' | 'other' {
+    if (!category) return 'other';
+    const lower = category.toLowerCase();
+    if (lower.includes('restaurant') || lower.includes('food')) return 'restaurant';
+    if (lower.includes('transport') || lower.includes('travel')) return 'transport';
+    if (lower.includes('entertainment') || lower.includes('media')) return 'entertainment';
+    if (lower.includes('grocery') || lower.includes('supermarket')) return 'grocery';
+    if (lower.includes('online') || lower.includes('ecommerce')) return 'online';
+    return 'other';
+  }
+
+  private mapTxStatus(status: string): 'completed' | 'pending' | 'declined' {
+    const lower = status.toLowerCase();
+    if (lower === 'settled' || lower === 'completed' || lower === 'approved') return 'completed';
+    if (lower === 'declined' || lower === 'reversed' || lower === 'failed') return 'declined';
+    return 'pending';
   }
 
   async freezeCard(walletAddress: string) {

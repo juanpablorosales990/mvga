@@ -69,6 +69,12 @@ export class BankingController {
     return this.bankingService.getCardBalance(wallet);
   }
 
+  @Get('card/:wallet/transactions')
+  @UseGuards(AuthGuard)
+  async getCardTransactions(@CurrentUser('wallet') wallet: string) {
+    return this.bankingService.getCardTransactions(wallet);
+  }
+
   @Post('card/:wallet/freeze')
   @UseGuards(AuthGuard)
   async freezeCard(@CurrentUser('wallet') wallet: string) {

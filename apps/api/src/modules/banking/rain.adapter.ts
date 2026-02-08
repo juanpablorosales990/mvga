@@ -33,6 +33,17 @@ export interface RainContract {
   tokens: Array<{ address: string; balance: string }>;
 }
 
+export interface RainTransaction {
+  id: string;
+  cardId: string;
+  merchantName?: string;
+  merchantCategory?: string;
+  amount: number;
+  currency: string;
+  status: string;
+  createdAt: string;
+}
+
 export interface KycData {
   firstName: string;
   lastName: string;
@@ -157,5 +168,12 @@ export class RainAdapter {
   /** Get collateral contracts for a user. */
   async getContracts(userId: string): Promise<RainContract[]> {
     return this.fetch<RainContract[]>(`/issuing/users/${userId}/contracts`);
+  }
+
+  /** Get card transactions for a user. */
+  async getTransactions(userId: string, limit = 20): Promise<RainTransaction[]> {
+    return this.fetch<RainTransaction[]>(
+      `/issuing/transactions?userId=${userId}&limit=${limit}&sort=desc`
+    );
   }
 }
