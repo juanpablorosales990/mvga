@@ -112,38 +112,42 @@ export class SavingsService {
 
   /** Confirm a deposit after the user has signed the transaction. */
   async confirmDeposit(walletAddress: string, signature: string) {
-    // Check for signature replay — reject if already used
-    const existing = await this.prisma.savingsPosition.findFirst({
-      where: { depositTx: signature },
+    const result = await this.prisma.$transaction(async (tx) => {
+      // Check for signature replay — reject if already used
+      const existing = await tx.savingsPosition.findFirst({
+        where: { depositTx: signature },
+      });
+      if (existing) {
+        throw new BadRequestException('Transaction signature already used');
+      }
+
+      // Find the most recent unconfirmed position for this wallet
+      const position = await tx.savingsPosition.findFirst({
+        where: { walletAddress, depositTx: null, status: 'ACTIVE' },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      if (!position) throw new NotFoundException('No pending deposit found');
+
+      // Update with tx signature
+      await tx.savingsPosition.update({
+        where: { id: position.id },
+        data: { depositTx: signature },
+      });
+
+      return position;
     });
-    if (existing) {
-      throw new BadRequestException('Transaction signature already used');
-    }
 
-    // Find the most recent unconfirmed position for this wallet
-    const position = await this.prisma.savingsPosition.findFirst({
-      where: { walletAddress, depositTx: null, status: 'ACTIVE' },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    if (!position) throw new NotFoundException('No pending deposit found');
-
-    // Update with tx signature
-    await this.prisma.savingsPosition.update({
-      where: { id: position.id },
-      data: { depositTx: signature },
-    });
-
-    // Log the transaction
+    // Log the transaction (outside tx — non-critical)
     await this.txLogger.log({
       walletAddress,
       type: 'TRANSFER',
       signature,
-      amount: Number(position.depositedAmount) / 1e6,
-      token: position.token,
+      amount: Number(result.depositedAmount) / 1e6,
+      token: result.token,
     });
 
-    return { success: true, positionId: position.id };
+    return { success: true, positionId: result.id };
   }
 
   /** Initiate a withdrawal from a savings position. */
@@ -198,31 +202,36 @@ export class SavingsService {
 
   /** Confirm a withdrawal after the user has signed the transaction. */
   async confirmWithdraw(walletAddress: string, positionId: string, signature: string) {
-    // Check for signature replay — reject if already used
-    const existingWithdraw = await this.prisma.savingsPosition.findFirst({
-      where: { withdrawTx: signature },
+    const position = await this.prisma.$transaction(async (tx) => {
+      // Check for signature replay — reject if already used
+      const existingWithdraw = await tx.savingsPosition.findFirst({
+        where: { withdrawTx: signature },
+      });
+      if (existingWithdraw) {
+        throw new BadRequestException('Withdraw signature already used');
+      }
+
+      const pos = await tx.savingsPosition.findUnique({
+        where: { id: positionId },
+      });
+
+      if (!pos || pos.walletAddress !== walletAddress) {
+        throw new NotFoundException('Position not found');
+      }
+
+      if (pos.status !== 'WITHDRAWING') {
+        throw new BadRequestException('Position is not in withdrawing state');
+      }
+
+      await tx.savingsPosition.update({
+        where: { id: positionId },
+        data: { status: 'CLOSED', withdrawTx: signature },
+      });
+
+      return pos;
     });
-    if (existingWithdraw) {
-      throw new BadRequestException('Withdraw signature already used');
-    }
 
-    const position = await this.prisma.savingsPosition.findUnique({
-      where: { id: positionId },
-    });
-
-    if (!position || position.walletAddress !== walletAddress) {
-      throw new NotFoundException('Position not found');
-    }
-
-    if (position.status !== 'ACTIVE') {
-      throw new BadRequestException('Position is not active');
-    }
-
-    await this.prisma.savingsPosition.update({
-      where: { id: positionId },
-      data: { status: 'CLOSED', withdrawTx: signature },
-    });
-
+    // Log the transaction (outside tx — non-critical)
     await this.txLogger.log({
       walletAddress,
       type: 'TRANSFER',

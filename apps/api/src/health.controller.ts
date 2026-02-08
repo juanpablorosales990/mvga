@@ -47,14 +47,9 @@ export class HealthController {
     const totalLatency = Date.now() - start;
     const isHealthy = dbStatus === 'ok';
 
+    // Public endpoint — only expose status, not internal latencies or uptime
     return {
       status: isHealthy ? 'healthy' : 'unhealthy',
-      timestamp: new Date().toISOString(),
-      service: 'mvga-api',
-      uptime: Math.floor(process.uptime()),
-      database: { status: dbStatus, latency: `${dbLatency}ms` },
-      rpc: { status: rpcStatus, latency: `${rpcLatency}ms` },
-      latency: `${totalLatency}ms`,
     };
   }
 

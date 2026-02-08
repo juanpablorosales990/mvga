@@ -1,4 +1,10 @@
-import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+  ForbiddenException,
+  Logger,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../../common/prisma.service';
@@ -475,8 +481,11 @@ export class GrantsService {
 
   // Manual disbursement endpoint (admin use)
   async manualDisburse(proposalId: string, adminAddress: string) {
-    // For now, any authenticated user can trigger disbursement
-    // In production, add admin role check
+    // Defense in depth: verify admin role at service level (controller also checks)
+    const user = await this.prisma.user.findUnique({ where: { walletAddress: adminAddress } });
+    if (!user || user.role !== 'ADMIN') {
+      throw new ForbiddenException('Admin role required for manual disbursement');
+    }
     this.logger.log(`Manual disbursement triggered by ${adminAddress} for proposal ${proposalId}`);
     return this.disburseGrant(proposalId);
   }

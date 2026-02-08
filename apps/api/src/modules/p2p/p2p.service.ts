@@ -1,4 +1,10 @@
-import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+  Logger,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../../common/prisma.service';
@@ -220,6 +226,9 @@ export class P2PService {
         if (offer.status !== 'ACTIVE') {
           throw new BadRequestException('Offer is not active');
         }
+        if (offer.sellerAddress === dto.buyerAddress) {
+          throw new BadRequestException('Cannot accept your own offer');
+        }
 
         const minAmount = Number(offer.minAmount) / AMOUNT_SCALE;
         const maxAmount = Number(offer.maxAmount) / AMOUNT_SCALE;
@@ -269,12 +278,19 @@ export class P2PService {
     return this.formatTrade(trade);
   }
 
-  async getTrade(id: string) {
+  async getTrade(id: string, walletAddress?: string) {
     const trade = await this.prisma.p2PTrade.findUnique({
       where: { id },
       include: { buyer: true, seller: true, offer: true },
     });
     if (!trade) throw new NotFoundException('Trade not found');
+    if (
+      walletAddress &&
+      trade.buyer.walletAddress !== walletAddress &&
+      trade.seller.walletAddress !== walletAddress
+    ) {
+      throw new ForbiddenException('Access denied');
+    }
     return this.formatTrade(trade);
   }
 
@@ -314,6 +330,11 @@ export class P2PService {
       FOR UPDATE
     `;
     if (!trade) throw new NotFoundException('Trade not found');
+
+    // All status transitions require the caller to be a trade participant
+    if (trade.buyerAddress !== walletAddress && trade.sellerAddress !== walletAddress) {
+      throw new ForbiddenException('Only trade participants can update trade status');
+    }
 
     if (dto.status === 'PAID' && trade.buyerAddress !== walletAddress) {
       throw new BadRequestException('Only buyer can mark as paid');
@@ -603,6 +624,41 @@ export class P2PService {
           );
           if (!programInvoked) {
             throw new BadRequestException('Transaction did not invoke the escrow program');
+          }
+
+          // Also verify SPL transfer amount in on-chain mode (defense in depth)
+          const currency = trade.cryptoCurrency;
+          const decimals = TOKEN_DECIMALS[currency] || 9;
+          const expectedAmount = Number(trade.cryptoAmount) / AMOUNT_SCALE;
+          const expectedRaw = Math.round(expectedAmount * 10 ** decimals);
+
+          const innerIxs = parsedTx.meta?.innerInstructions ?? [];
+          const allIxs = [
+            ...parsedTx.transaction.message.instructions,
+            ...innerIxs.flatMap((ix: { instructions: unknown[] }) => ix.instructions),
+          ];
+
+          let onchainTransferFound = false;
+          for (const ix of allIxs) {
+            const parsed = (ix as Record<string, unknown>).parsed as
+              | Record<string, unknown>
+              | undefined;
+            if (!parsed) continue;
+            if ((parsed.type === 'transfer' || parsed.type === 'transferChecked') && parsed.info) {
+              const info = parsed.info as Record<string, unknown>;
+              const tokenAmount = info.tokenAmount as Record<string, unknown> | undefined;
+              const transferAmount = Number(info.amount || tokenAmount?.amount || 0);
+              if (Math.abs(transferAmount - expectedRaw) / expectedRaw < 0.01) {
+                onchainTransferFound = true;
+                break;
+              }
+            }
+          }
+
+          if (!onchainTransferFound) {
+            throw new BadRequestException(
+              'On-chain escrow transfer amount does not match expected trade amount'
+            );
           }
         } else {
           // Legacy mode: verify SPL transfer amount
@@ -961,10 +1017,25 @@ export class P2PService {
     adminAddress: string,
     resolutionNotes: string
   ) {
-    const trade = await this.prisma.p2PTrade.findUnique({
-      where: { id: tradeId },
-      include: { offer: true, buyer: true, seller: true },
-    });
+    // Lock the trade row FIRST to prevent concurrent dispute resolution
+    const [trade] = await this.prisma.$queryRaw<
+      Array<{
+        id: string;
+        status: string;
+        buyerAddress: string;
+        sellerAddress: string;
+        escrowTx: string | null;
+        cryptoAmount: bigint;
+        cryptoCurrency: string;
+      }>
+    >`
+      SELECT t.*, b."walletAddress" as "buyerAddress", s."walletAddress" as "sellerAddress"
+      FROM "P2PTrade" t
+      JOIN "User" b ON t."buyerId" = b."id"
+      JOIN "User" s ON t."sellerId" = s."id"
+      WHERE t."id" = ${tradeId}
+      FOR UPDATE
+    `;
 
     if (!trade) {
       throw new NotFoundException('Trade not found');
@@ -982,13 +1053,13 @@ export class P2PService {
     if (resolution === 'RELEASE_TO_BUYER') {
       signature = await this.releaseEscrow(tradeId);
       finalStatus = 'COMPLETED';
-      winnerAddress = trade.buyer.walletAddress;
-      loserAddress = trade.seller.walletAddress;
+      winnerAddress = trade.buyerAddress;
+      loserAddress = trade.sellerAddress;
     } else {
       signature = await this.refundEscrow(tradeId);
       finalStatus = 'REFUNDED';
-      winnerAddress = trade.seller.walletAddress;
-      loserAddress = trade.buyer.walletAddress;
+      winnerAddress = trade.sellerAddress;
+      loserAddress = trade.buyerAddress;
     }
 
     // Atomically update only if still DISPUTED — prevents concurrent resolution

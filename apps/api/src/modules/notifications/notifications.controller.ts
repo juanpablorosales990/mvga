@@ -13,8 +13,8 @@ export class NotificationsController {
 
   @Post('subscribe')
   @UseGuards(AuthGuard)
-  async subscribe(@Body() dto: SubscribeDto) {
-    await this.notificationsService.subscribe(dto);
+  async subscribe(@Body() dto: SubscribeDto, @CurrentUser('wallet') wallet: string) {
+    await this.notificationsService.subscribe({ ...dto, walletAddress: wallet });
     return { ok: true };
   }
 

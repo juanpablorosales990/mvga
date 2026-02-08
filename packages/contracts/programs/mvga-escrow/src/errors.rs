@@ -24,4 +24,8 @@ pub enum EscrowError {
     TimeoutOverflow,
     #[msg("Timeout exceeds maximum allowed (30 days)")]
     TimeoutTooLong,
+    #[msg("Buyer and seller cannot be the same account")]
+    BuyerCannotBeSeller,
+    #[msg("Admin cannot be the buyer or seller")]
+    InvalidAdmin,
 }

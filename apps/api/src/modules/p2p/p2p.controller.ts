@@ -8,6 +8,7 @@ import {
   Param,
   Query,
   UseGuards,
+  ForbiddenException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
@@ -92,14 +93,24 @@ export class P2PController {
   }
 
   @Get('trades/:id')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Get trade details' })
-  async getTrade(@Param('id') id: string) {
-    return this.p2pService.getTrade(id);
+  async getTrade(@Param('id') id: string, @CurrentUser('wallet') wallet: string) {
+    return this.p2pService.getTrade(id, wallet);
   }
 
   @Get('users/:walletAddress/trades')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Get user trade history' })
-  async getUserTrades(@Param('walletAddress') walletAddress: string) {
+  async getUserTrades(
+    @Param('walletAddress') walletAddress: string,
+    @CurrentUser('wallet') wallet: string
+  ) {
+    if (walletAddress !== wallet) {
+      throw new ForbiddenException("Cannot view other users' trades");
+    }
     return this.p2pService.getUserTrades(walletAddress);
   }
 

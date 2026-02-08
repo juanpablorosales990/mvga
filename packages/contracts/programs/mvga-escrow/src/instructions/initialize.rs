@@ -66,6 +66,15 @@ pub fn handle_initialize(
     require!(amount > 0, EscrowError::ZeroAmount);
     require!(timeout_seconds > 0, EscrowError::ZeroTimeout);
     require!(timeout_seconds <= 30 * 24 * 3600, EscrowError::TimeoutTooLong); // Max 30 days
+    require!(
+        ctx.accounts.buyer.key() != ctx.accounts.seller.key(),
+        EscrowError::BuyerCannotBeSeller
+    );
+    require!(
+        ctx.accounts.admin.key() != ctx.accounts.seller.key()
+            && ctx.accounts.admin.key() != ctx.accounts.buyer.key(),
+        EscrowError::InvalidAdmin
+    );
 
     let clock = Clock::get()?;
 

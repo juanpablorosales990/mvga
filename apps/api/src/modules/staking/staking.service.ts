@@ -303,6 +303,50 @@ export class StakingService {
       throw new BadRequestException('Transaction signer does not match authenticated wallet');
     }
 
+    // Verify the SPL transfer: correct recipient (vault), amount, and token mint
+    const expectedRaw = Math.round(amount * 10 ** MVGA_DECIMALS);
+    const vaultAta = this.vaultKeypair
+      ? await getAssociatedTokenAddress(this.mintPubkey, this.vaultKeypair.publicKey)
+      : null;
+
+    const innerInstructions = tx.meta?.innerInstructions ?? [];
+    const allInstructions = [
+      ...tx.transaction.message.instructions,
+      ...innerInstructions.flatMap((ix: { instructions: unknown[] }) => ix.instructions),
+    ];
+
+    let transferVerified = false;
+    for (const ix of allInstructions) {
+      const parsed = (ix as Record<string, unknown>).parsed as Record<string, unknown> | undefined;
+      if (!parsed) continue;
+      if ((parsed.type === 'transfer' || parsed.type === 'transferChecked') && parsed.info) {
+        const info = parsed.info as Record<string, unknown>;
+        const tokenAmount = info.tokenAmount as Record<string, unknown> | undefined;
+        const transferAmount = Number(info.amount || tokenAmount?.amount || 0);
+        const dest = String(info.destination || '');
+        const mint = String(info.mint || tokenAmount?.mint || '');
+
+        // Verify amount matches (1% tolerance for rounding)
+        const amountMatch =
+          expectedRaw > 0 && Math.abs(transferAmount - expectedRaw) / expectedRaw < 0.01;
+        // Verify destination is the vault ATA (if known)
+        const destMatch = !vaultAta || dest === vaultAta.toBase58();
+        // Verify mint is MVGA (if present in parsed data)
+        const mintMatch = !mint || mint === this.mintPubkey.toBase58();
+
+        if (amountMatch && destMatch && mintMatch) {
+          transferVerified = true;
+          break;
+        }
+      }
+    }
+
+    if (!transferVerified) {
+      throw new BadRequestException(
+        'Transaction does not contain a valid transfer to the staking vault with the expected amount'
+      );
+    }
+
     // Upsert user + create stake record
     const user = await this.prisma.user.upsert({
       where: { walletAddress },
@@ -449,7 +493,7 @@ export class StakingService {
           throw new BadRequestException('No active stakes found');
         }
 
-        // Check cooldown: 1 hour minimum between claims
+        // Check cooldown: 24 hour minimum between claims
         const lastClaim = await tx.stakingClaim.findFirst({
           where: { userId: user.id },
           orderBy: { claimedAt: 'desc' },
@@ -500,6 +544,18 @@ export class StakingService {
           this.mintPubkey,
           this.vaultKeypair.publicKey
         );
+
+        // Pre-check vault balance to avoid failed transactions
+        try {
+          const vaultAccount = await getAccount(connection, vaultAta);
+          if (BigInt(vaultAccount.amount.toString()) < rawRewards) {
+            throw new BadRequestException('Reward pool temporarily depleted. Try again later.');
+          }
+        } catch (e) {
+          if (e instanceof BadRequestException) throw e;
+          throw new BadRequestException('Could not verify reward pool balance');
+        }
+
         const userAta = await getAssociatedTokenAddress(this.mintPubkey, userPubkey);
 
         const solanaTx = new Transaction().add(
