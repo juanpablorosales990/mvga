@@ -21,6 +21,7 @@
     "@metaplex-foundation/umi-bundle-defaults": "^1.4.1",
     "@metaplex-foundation/umi-uploader-irys": "^1.4.2",
     "@raydium-io/raydium-sdk-v2": "^0.2.32-alpha",
+    "@sqds/multisig": "^2.1.4",
     "@types/cookie-parser": "^1.4.10",
     "bn.js": "^5.2.2",
     "bs58": "^6.0.0",

@@ -53,6 +53,7 @@ dev-dist/
 *.json.backup
 *-keypair.json
 *-wallet.json
+squad-member-*.json
 .keys/
 
 # Supabase
