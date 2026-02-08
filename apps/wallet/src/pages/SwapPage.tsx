@@ -169,8 +169,17 @@ export default function SwapPage() {
 
       const { swapTransaction } = await swapResponse.json();
 
+      if (!swapTransaction || typeof swapTransaction !== 'string') {
+        throw new Error(t('swap.swapTxError'));
+      }
+
       // Deserialize and sign
-      const swapTransactionBuf = Uint8Array.from(atob(swapTransaction), (c) => c.charCodeAt(0));
+      let swapTransactionBuf: Uint8Array;
+      try {
+        swapTransactionBuf = Uint8Array.from(atob(swapTransaction), (c) => c.charCodeAt(0));
+      } catch {
+        throw new Error(t('swap.swapTxError'));
+      }
       const transaction = VersionedTransaction.deserialize(swapTransactionBuf);
 
       let signedTransaction: VersionedTransaction;

@@ -11,6 +11,18 @@ import {
 } from '@solana/spl-token';
 import BN from 'bn.js';
 import { useTranslation } from 'react-i18next';
+/** Validate and parse a public key string — throws a clear error on invalid input. */
+function toPublicKey(value: unknown, label: string): PublicKey {
+  if (!value || typeof value !== 'string') {
+    throw new Error(`Invalid ${label}: missing or not a string`);
+  }
+  try {
+    return new PublicKey(value);
+  } catch {
+    throw new Error(`Invalid ${label}: not a valid Solana address`);
+  }
+}
+
 import TransactionPreviewModal from '../components/TransactionPreviewModal';
 import ConfirmModal from '../components/ConfirmModal';
 import { API_URL, KNOWN_ESCROW_WALLET } from '../config';
@@ -130,14 +142,14 @@ export default function TradePage() {
 
       if (escrowInfo.mode === 'onchain') {
         // On-chain mode: build initialize_escrow program instruction
-        const mintPubkey = new PublicKey(escrowInfo.mintAddress);
+        const mintPubkey = toPublicKey(escrowInfo.mintAddress, 'mint address');
         const rawAmount = Math.round(escrowInfo.amount * 10 ** escrowInfo.decimals);
         const tradeIdBytes = uuidToTradeId(trade.id);
 
         const ix = buildInitializeEscrowIx({
           seller: publicKey,
-          buyer: new PublicKey(escrowInfo.buyerAddress),
-          admin: new PublicKey(escrowInfo.adminPubkey),
+          buyer: toPublicKey(escrowInfo.buyerAddress, 'buyer address'),
+          admin: toPublicKey(escrowInfo.adminPubkey, 'admin address'),
           mint: mintPubkey,
           tradeId: tradeIdBytes,
           amount: new BN(rawAmount),
@@ -155,8 +167,8 @@ export default function TradePage() {
           throw new Error('Escrow wallet address mismatch — please contact support');
         }
 
-        const mintPubkey = new PublicKey(mintAddress);
-        const escrowPubkey = new PublicKey(escrowWallet);
+        const mintPubkey = toPublicKey(mintAddress, 'mint address');
+        const escrowPubkey = toPublicKey(escrowWallet, 'escrow wallet');
         const rawAmount = BigInt(Math.round(amount * 10 ** decimals));
 
         const senderAta = await getAssociatedTokenAddress(mintPubkey, publicKey);
@@ -251,13 +263,13 @@ export default function TradePage() {
 
           if (escrowInfo.mode === 'onchain') {
             const tradeIdBytes = uuidToTradeId(trade.id);
-            const sellerPubkey = new PublicKey(trade.sellerAddress);
+            const sellerPubkey = toPublicKey(trade.sellerAddress, 'seller address');
             const [escrowState] = findEscrowPDA(tradeIdBytes, sellerPubkey);
-            const mintPubkey = new PublicKey(escrowInfo.mintAddress);
+            const mintPubkey = toPublicKey(escrowInfo.mintAddress, 'mint address');
 
             const ix = buildReleaseEscrowIx({
               seller: publicKey,
-              buyer: new PublicKey(trade.buyerAddress),
+              buyer: toPublicKey(trade.buyerAddress, 'buyer address'),
               mint: mintPubkey,
               escrowState,
             });

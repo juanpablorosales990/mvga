@@ -286,4 +286,32 @@ export class SavingsService {
       await this.cronLock.releaseLock(lock);
     }
   }
+
+  /** Cron: Clean up stale PENDING deposits older than 30 minutes. */
+  @Cron('*/10 * * * *') // Every 10 minutes
+  async cleanupStalePending() {
+    const lock = await this.cronLock.acquireLock('cleanup-stale-pending', 60_000);
+    if (!lock) return;
+
+    try {
+      const cutoff = new Date(Date.now() - 30 * 60 * 1000); // 30 minutes ago
+
+      const { count } = await this.prisma.savingsPosition.deleteMany({
+        where: {
+          status: 'PENDING',
+          depositTx: null,
+          createdAt: { lt: cutoff },
+        },
+      });
+
+      if (count > 0) {
+        this.logger.log(`Cleaned up ${count} stale PENDING deposit(s)`);
+      }
+    } catch (err) {
+      this.logger.error('Stale PENDING cleanup failed', err);
+      Sentry.captureException(err, { tags: { job: 'cleanup-stale-pending' } });
+    } finally {
+      await this.cronLock.releaseLock(lock);
+    }
+  }
 }

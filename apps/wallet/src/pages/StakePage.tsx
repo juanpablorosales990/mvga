@@ -202,8 +202,16 @@ export default function StakePage() {
       }
 
       const { vaultAddress } = await stakeRes.json();
+      if (!vaultAddress || typeof vaultAddress !== 'string') {
+        throw new Error('Invalid vault address from server');
+      }
       const mint = new PublicKey(MVGA_MINT);
-      const vaultPubkey = new PublicKey(vaultAddress);
+      let vaultPubkey: PublicKey;
+      try {
+        vaultPubkey = new PublicKey(vaultAddress);
+      } catch {
+        throw new Error('Invalid vault address: not a valid Solana address');
+      }
 
       const userAta = await getAssociatedTokenAddress(mint, publicKey);
       const vaultAta = await getAssociatedTokenAddress(mint, vaultPubkey);
