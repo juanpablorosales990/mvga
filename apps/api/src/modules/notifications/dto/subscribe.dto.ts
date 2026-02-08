@@ -1,4 +1,4 @@
-import { IsString, IsOptional, MaxLength } from 'class-validator';
+import { IsString, IsOptional, IsUrl, MaxLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsSolanaAddress } from '../../../common/validators/solana-address.validator';
 
@@ -8,15 +8,18 @@ export class SubscribeDto {
   walletAddress: string;
 
   @ApiProperty({ description: 'Push subscription endpoint URL' })
-  @IsString()
+  @IsUrl({ protocols: ['https'], require_protocol: true })
+  @MaxLength(2048)
   endpoint: string;
 
   @ApiProperty({ description: 'Push encryption key (p256dh)' })
   @IsString()
+  @MaxLength(128)
   p256dh: string;
 
   @ApiProperty({ description: 'Push auth secret' })
   @IsString()
+  @MaxLength(64)
   auth: string;
 
   @ApiProperty({ description: 'User agent string', required: false })
@@ -28,6 +31,7 @@ export class SubscribeDto {
 
 export class UnsubscribeDto {
   @ApiProperty({ description: 'Push subscription endpoint URL to remove' })
-  @IsString()
+  @IsUrl({ protocols: ['https'], require_protocol: true })
+  @MaxLength(2048)
   endpoint: string;
 }

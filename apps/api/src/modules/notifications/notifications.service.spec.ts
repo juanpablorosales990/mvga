@@ -85,11 +85,11 @@ describe('NotificationsService', () => {
   });
 
   describe('unsubscribe', () => {
-    it('deletes subscriptions by endpoint', async () => {
-      await service.unsubscribe('https://push.example.com/1');
+    it('deletes subscriptions by endpoint and wallet', async () => {
+      await service.unsubscribe('https://push.example.com/1', 'wallet-1');
 
       expect(prismaService.pushSubscription.deleteMany).toHaveBeenCalledWith({
-        where: { endpoint: 'https://push.example.com/1' },
+        where: { endpoint: 'https://push.example.com/1', walletAddress: 'wallet-1' },
       });
     });
   });

@@ -39,6 +39,7 @@ export class CreateProposalDto {
   @ApiProperty({ description: 'Requested amount in USD' })
   @IsNumber()
   @IsPositive()
+  @Max(1_000_000)
   requestedAmount: number;
 
   @ApiProperty({ description: 'Video URL (optional, YouTube or Vimeo)', required: false })

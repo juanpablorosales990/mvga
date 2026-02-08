@@ -78,9 +78,9 @@ export class NotificationsService {
     });
   }
 
-  async unsubscribe(endpoint: string) {
+  async unsubscribe(endpoint: string, walletAddress: string) {
     return this.prisma.pushSubscription.deleteMany({
-      where: { endpoint },
+      where: { endpoint, walletAddress },
     });
   }
 

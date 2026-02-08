@@ -20,8 +20,8 @@ export class NotificationsController {
 
   @Delete('subscribe')
   @UseGuards(AuthGuard)
-  async unsubscribe(@Body() dto: UnsubscribeDto) {
-    await this.notificationsService.unsubscribe(dto.endpoint);
+  async unsubscribe(@Body() dto: UnsubscribeDto, @CurrentUser('wallet') wallet: string) {
+    await this.notificationsService.unsubscribe(dto.endpoint, wallet);
     return { ok: true };
   }
 

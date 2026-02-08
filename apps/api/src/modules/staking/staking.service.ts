@@ -349,6 +349,14 @@ export class StakingService {
       );
     }
 
+    // Check for signature replay — reject if already used
+    const existingStake = await this.prisma.stake.findFirst({
+      where: { stakeTx: signature },
+    });
+    if (existingStake) {
+      throw new BadRequestException('Transaction signature already used');
+    }
+
     // Upsert user + create stake record
     const user = await this.prisma.user.upsert({
       where: { walletAddress },
@@ -726,15 +734,12 @@ export class StakingService {
     const user = await this.prisma.user.findUnique({ where: { walletAddress } });
     if (!user) throw new NotFoundException('User not found');
 
-    const stake = await this.prisma.stake.findFirst({
+    // Atomic check-and-update to prevent TOCTOU race
+    const { count } = await this.prisma.stake.updateMany({
       where: { id: stakeId, userId: user.id, status: 'ACTIVE' },
-    });
-    if (!stake) throw new NotFoundException('Stake not found');
-
-    await this.prisma.stake.update({
-      where: { id: stakeId },
       data: { autoCompound: enabled },
     });
+    if (count === 0) throw new NotFoundException('Stake not found');
 
     return { stakeId, autoCompound: enabled };
   }

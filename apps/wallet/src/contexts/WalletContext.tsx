@@ -286,7 +286,10 @@ export function SelfCustodyWalletProvider({ children }: { children: ReactNode })
 
   const deleteWallet = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY);
-    setKeypair(null);
+    setKeypair((prev) => {
+      if (prev) prev.secretKey.fill(0);
+      return null;
+    });
     setHasMnemonic(false);
     setWalletState('NO_WALLET');
     storeDisconnect();
