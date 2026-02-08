@@ -110,7 +110,7 @@ export default function SwapPage() {
       const amount = Math.floor(parseFloat(fromAmount) * Math.pow(10, fromToken.decimals));
 
       const response = await fetch(
-        `https://quote-api.jup.ag/v6/quote?inputMint=${fromToken.mint}&outputMint=${toToken.mint}&amount=${amount}&slippageBps=${slippageBps}`
+        `https://lite-api.jup.ag/swap/v1/quote?inputMint=${fromToken.mint}&outputMint=${toToken.mint}&amount=${amount}&slippageBps=${slippageBps}`
       );
 
       if (!response.ok) {
@@ -151,7 +151,7 @@ export default function SwapPage() {
 
     try {
       // Get swap transaction
-      const swapResponse = await fetch('https://quote-api.jup.ag/v6/swap', {
+      const swapResponse = await fetch('https://lite-api.jup.ag/swap/v1/swap', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

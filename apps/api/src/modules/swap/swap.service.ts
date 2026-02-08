@@ -46,7 +46,7 @@ export interface SwapExecuteRequest {
 @Injectable()
 export class SwapService {
   private readonly logger = new Logger(SwapService.name);
-  private readonly JUPITER_QUOTE_API = 'https://quote-api.jup.ag/v6';
+  private readonly JUPITER_QUOTE_API = 'https://lite-api.jup.ag/swap/v1';
   private readonly feeAccount: string;
 
   constructor(
