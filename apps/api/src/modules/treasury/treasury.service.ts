@@ -332,7 +332,11 @@ export class TreasuryService {
           this.logger.warn(
             'STAKING step did not complete — skipping FEE_SNAPSHOT to prevent phantom credits'
           );
-          break;
+          await this.prisma.distributionStep.update({
+            where: { id: step.id },
+            data: { status: 'SKIPPED', completedAt: new Date() },
+          });
+          return;
         }
 
         const feeShare = (distribution.stakingAmount * BigInt(FEE_SHARE_PERCENT)) / BigInt(100);

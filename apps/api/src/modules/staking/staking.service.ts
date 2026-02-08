@@ -242,7 +242,7 @@ export class StakingService {
       where: { userId: user.id },
       orderBy: { claimedAt: 'desc' },
     });
-    const feeRewards = await this.calculateFeeRewards(user.id, stakes, lastClaim?.claimedAt);
+    const feeRewards = await this.calculateFeeRewards(stakes, lastClaim?.claimedAt);
 
     const tier = this.getTierForAmount(totalStaked);
     const baseApy = dynamicBase * tier.multiplier;
@@ -556,7 +556,6 @@ export class StakingService {
 
         // Calculate unclaimed fee rewards (only snapshots since last claim)
         const feeRewards = await this.calculateFeeRewards(
-          user.id,
           stakes.map((s: RawStakeRow) => ({
             amount: s.amount,
             lockPeriod: s.lockPeriod,
@@ -718,7 +717,6 @@ export class StakingService {
    * Only counts snapshots after the user's last claim to prevent double-claiming.
    */
   private async calculateFeeRewards(
-    userId: string,
     stakes: { amount: bigint; lockPeriod: number; createdAt: Date }[],
     lastClaimDate?: Date | null
   ): Promise<number> {
@@ -899,10 +897,26 @@ export class StakingService {
             }
 
             // Create StakingClaim record to prevent double-claim with manual claims
+            // Include feeRewards so fee snapshots are properly marked as claimed
+            const lastClaim = await tx.stakingClaim.findFirst({
+              where: { userId: stakes[0].userId },
+              orderBy: { claimedAt: 'desc' },
+            });
+            const compoundFeeRewards = await this.calculateFeeRewards(
+              stakes.map((s) => ({
+                amount: s.amount,
+                lockPeriod: s.lockPeriod,
+                createdAt: s.createdAt,
+              })),
+              lastClaim?.claimedAt
+            );
+            const rawFeeRewards = BigInt(Math.round(compoundFeeRewards * 10 ** MVGA_DECIMALS));
+
             await tx.stakingClaim.create({
               data: {
                 userId: stakes[0].userId,
                 amount: rewardRaw,
+                feeRewards: rawFeeRewards,
                 signature: `auto-compound-${Date.now()}-${stakes[0].userId.slice(0, 8)}`,
               },
             });
