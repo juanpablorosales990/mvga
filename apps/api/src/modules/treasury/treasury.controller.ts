@@ -31,7 +31,8 @@ export class TreasuryController {
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiResponse({ status: 200, type: [DistributionHistoryDto] })
   async getDistributions(@Query('limit') limit?: number) {
-    return this.treasuryService.getDistributionHistory(limit || 10);
+    const safeLimit = Math.min(Math.max(Number(limit) || 10, 1), 100);
+    return this.treasuryService.getDistributionHistory(safeLimit);
   }
 
   /**

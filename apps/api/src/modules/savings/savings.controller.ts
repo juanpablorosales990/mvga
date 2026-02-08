@@ -12,6 +12,7 @@ export class SavingsController {
 
   /** Get current yield rates from all protocols. */
   @Get('rates')
+  @Throttle({ default: { ttl: 60000, limit: 10 } })
   async getRates() {
     return this.savingsService.getRates();
   }

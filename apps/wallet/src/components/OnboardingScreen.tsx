@@ -140,9 +140,9 @@ export default function OnboardingScreen() {
     navigator.clipboard.writeText(mnemonicWords.join(' '));
     setCopied(true);
     setTimeout(() => {
-      navigator.clipboard.writeText('');
+      navigator.clipboard.writeText('').catch(() => {});
       setCopied(false);
-    }, 30000);
+    }, 5000);
   };
 
   const goBack = (target: Step) => {

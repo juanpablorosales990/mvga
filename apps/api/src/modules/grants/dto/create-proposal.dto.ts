@@ -4,6 +4,7 @@ import {
   IsPositive,
   IsOptional,
   IsUrl,
+  Matches,
   MinLength,
   MaxLength,
   Min,
@@ -40,9 +41,13 @@ export class CreateProposalDto {
   @IsPositive()
   requestedAmount: number;
 
-  @ApiProperty({ description: 'Video URL (optional)', required: false })
+  @ApiProperty({ description: 'Video URL (optional, YouTube or Vimeo)', required: false })
   @IsOptional()
-  @IsUrl()
+  @IsUrl({ protocols: ['https'], require_protocol: true })
+  @MaxLength(500)
+  @Matches(/^https:\/\/(www\.)?(youtube\.com|youtu\.be|vimeo\.com)\//, {
+    message: 'Only YouTube and Vimeo URLs are allowed',
+  })
   videoUrl?: string;
 
   @ApiProperty({ description: 'Voting duration in days (3-30)', default: 7 })

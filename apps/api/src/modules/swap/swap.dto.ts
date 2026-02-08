@@ -10,14 +10,15 @@ import {
 import { JupiterQuote } from './swap.service';
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
+import { IsSolanaAddress } from '../../common/validators/solana-address.validator';
 
 export class QuoteDto {
   @ApiProperty({ description: 'Input token mint address' })
-  @IsString()
+  @IsSolanaAddress()
   inputMint: string;
 
   @ApiProperty({ description: 'Output token mint address' })
-  @IsString()
+  @IsSolanaAddress()
   outputMint: string;
 
   @ApiProperty({ description: 'Amount in smallest unit' })
@@ -39,13 +40,13 @@ export class SwapDto {
   quoteResponse: JupiterQuote;
 
   @ApiProperty({ description: 'User wallet public key' })
-  @IsString()
+  @IsSolanaAddress()
   userPublicKey: string;
 }
 
 export class RecordSwapDto {
   @ApiProperty({ description: 'User wallet address' })
-  @IsString()
+  @IsSolanaAddress()
   walletAddress: string;
 
   @ApiProperty({ description: 'Transaction signature' })
@@ -55,18 +56,20 @@ export class RecordSwapDto {
   signature: string;
 
   @ApiProperty({ description: 'Input token mint address' })
-  @IsString()
+  @IsSolanaAddress()
   inputMint: string;
 
   @ApiProperty({ description: 'Output token mint address' })
-  @IsString()
+  @IsSolanaAddress()
   outputMint: string;
 
   @ApiProperty({ description: 'Input amount in smallest unit' })
   @IsString()
+  @MaxLength(30)
   inputAmount: string;
 
   @ApiProperty({ description: 'Output amount in smallest unit' })
   @IsString()
+  @MaxLength(30)
   outputAmount: string;
 }

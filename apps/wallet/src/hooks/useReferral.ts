@@ -13,7 +13,7 @@ export function useReferral() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const ref = params.get('ref');
-    if (ref && ref.length === 6) {
+    if (ref && /^[A-Za-z0-9]{6}$/.test(ref)) {
       localStorage.setItem(REF_STORAGE_KEY, ref);
       // Clean URL
       const url = new URL(window.location.href);

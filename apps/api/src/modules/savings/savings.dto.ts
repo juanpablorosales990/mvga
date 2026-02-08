@@ -8,13 +8,8 @@ import {
   MinLength,
   MaxLength,
 } from 'class-validator';
-import { IsSolanaAddress } from '../../common/validators/solana-address.validator';
 
 export class DepositDto {
-  @IsString()
-  @IsSolanaAddress()
-  walletAddress: string;
-
   @IsNumber()
   @IsPositive()
   amount: number; // In token units (e.g. 100.5 USDC)
@@ -27,20 +22,12 @@ export class DepositDto {
 
 export class ConfirmDepositDto {
   @IsString()
-  @IsSolanaAddress()
-  walletAddress: string;
-
-  @IsString()
   @MinLength(64)
   @MaxLength(128)
   signature: string;
 }
 
 export class WithdrawDto {
-  @IsString()
-  @IsSolanaAddress()
-  walletAddress: string;
-
   @IsString()
   @IsUUID()
   positionId: string;
@@ -52,10 +39,6 @@ export class WithdrawDto {
 }
 
 export class ConfirmWithdrawDto {
-  @IsString()
-  @IsSolanaAddress()
-  walletAddress: string;
-
   @IsString()
   @IsUUID()
   positionId: string;

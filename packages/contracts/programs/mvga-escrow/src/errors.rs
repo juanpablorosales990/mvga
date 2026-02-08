@@ -28,4 +28,8 @@ pub enum EscrowError {
     BuyerCannotBeSeller,
     #[msg("Admin cannot be the buyer or seller")]
     InvalidAdmin,
+    #[msg("Token mint must not have a freeze authority")]
+    MintHasFreezeAuthority,
+    #[msg("Invalid token program")]
+    InvalidTokenProgram,
 }

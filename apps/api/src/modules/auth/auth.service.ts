@@ -25,7 +25,10 @@ export class AuthService {
     try {
       const result = await this.prisma.authNonce.deleteMany({
         where: {
-          OR: [{ expiresAt: { lt: new Date() } }, { used: true }],
+          OR: [
+            { expiresAt: { lt: new Date() } },
+            { used: true, updatedAt: { lt: new Date(Date.now() - 60_000) } },
+          ],
         },
       });
       if (result.count > 0) {

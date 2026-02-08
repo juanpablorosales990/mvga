@@ -1,6 +1,7 @@
 import { Controller, Get, Param } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { TiersService } from './tiers.service';
+import { ParseSolanaAddressPipe } from '../../common/validators/solana-address.validator';
 
 @ApiTags('Tiers')
 @Controller('tiers')
@@ -15,7 +16,7 @@ export class TiersController {
 
   @Get(':address')
   @ApiOperation({ summary: 'Get user tier info by wallet address' })
-  async getUserTier(@Param('address') address: string) {
+  async getUserTier(@Param('address', ParseSolanaAddressPipe) address: string) {
     return this.tiersService.getUserTier(address);
   }
 }

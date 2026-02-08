@@ -1,4 +1,4 @@
-import { IsString, IsIn } from 'class-validator';
+import { IsString, IsIn, MinLength, MaxLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsSolanaAddress } from '../../../common/validators/solana-address.validator';
 
@@ -15,9 +15,13 @@ export class CastVoteDto {
 export class PostUpdateDto {
   @ApiProperty({ description: 'Update title' })
   @IsString()
+  @MinLength(3)
+  @MaxLength(200)
   title: string;
 
   @ApiProperty({ description: 'Update content' })
   @IsString()
+  @MinLength(10)
+  @MaxLength(10000)
   content: string;
 }

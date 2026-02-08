@@ -7,6 +7,7 @@ use anchor_spl::token_interface::{
 
 use crate::errors::EscrowError;
 use crate::state::{DisputeResolved, EscrowState, EscrowStatus};
+use crate::AUTHORIZED_ADMIN;
 
 /// Resolution: 0 = release to buyer, 1 = refund to seller
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, PartialEq, Eq)]
@@ -50,6 +51,7 @@ pub struct ResolveDispute<'info> {
         mut,
         token::mint = mint,
         token::authority = escrow_state,
+        token::token_program = token_program,
         seeds = [b"vault", escrow_state.key().as_ref()],
         bump,
     )]
@@ -75,6 +77,12 @@ pub struct ResolveDispute<'info> {
 }
 
 pub fn handle_resolve(ctx: Context<ResolveDispute>, resolution: Resolution) -> Result<()> {
+    // Redundant admin check — verifies against hardcoded constant, not just stored state
+    require!(
+        ctx.accounts.admin.key() == AUTHORIZED_ADMIN,
+        EscrowError::UnauthorizedAdmin
+    );
+
     let escrow = &ctx.accounts.escrow_state;
 
     // Admin can only resolve disputed escrows

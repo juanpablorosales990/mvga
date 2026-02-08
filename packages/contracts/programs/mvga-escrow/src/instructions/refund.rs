@@ -32,6 +32,7 @@ pub struct RefundEscrow<'info> {
         mut,
         token::mint = mint,
         token::authority = escrow_state,
+        token::token_program = token_program,
         seeds = [b"vault", escrow_state.key().as_ref()],
         bump,
     )]

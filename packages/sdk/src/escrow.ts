@@ -10,9 +10,17 @@ import BN from 'bn.js';
 // Program ID — replace with actual deployed program ID
 // ---------------------------------------------------------------------------
 
-export const ESCROW_PROGRAM_ID = new PublicKey(
-  process.env.ESCROW_PROGRAM_ID || '6GXdYCDckUVEFBaQSgfQGX95gZSNN7FWN19vRDSyTJ5E'
-);
+const FALLBACK_PROGRAM_ID = '6GXdYCDckUVEFBaQSgfQGX95gZSNN7FWN19vRDSyTJ5E';
+
+export const ESCROW_PROGRAM_ID = (() => {
+  const envId = process.env.ESCROW_PROGRAM_ID;
+  if (!envId) return new PublicKey(FALLBACK_PROGRAM_ID);
+  try {
+    return new PublicKey(envId);
+  } catch {
+    throw new Error(`Invalid ESCROW_PROGRAM_ID: "${envId}". Must be a valid base58 public key.`);
+  }
+})();
 
 // ---------------------------------------------------------------------------
 // Types (mirroring on-chain state)
@@ -132,6 +140,20 @@ export function buildInitializeEscrowIx(params: {
   timeoutSeconds: BN;
   programId?: PublicKey;
 }): TransactionInstruction {
+  // Client-side validation to prevent wasted transaction fees
+  if (params.amount.lte(new BN(0))) {
+    throw new Error('Amount must be greater than zero');
+  }
+  if (params.timeoutSeconds.gt(new BN(30 * 24 * 3600))) {
+    throw new Error('Timeout exceeds maximum (30 days)');
+  }
+  if (params.timeoutSeconds.lte(new BN(0))) {
+    throw new Error('Timeout must be greater than zero');
+  }
+  if (params.seller.equals(params.buyer)) {
+    throw new Error('Buyer and seller cannot be the same account');
+  }
+
   const programId = params.programId ?? ESCROW_PROGRAM_ID;
   const [escrowState] = findEscrowPDA(params.tradeId, params.seller, programId);
   const [vault] = findVaultPDA(escrowState, programId);

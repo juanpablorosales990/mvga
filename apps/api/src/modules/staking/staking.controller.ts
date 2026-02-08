@@ -5,6 +5,7 @@ import { StakingService } from './staking.service';
 import { StakeDto, UnstakeDto, ConfirmStakeDto, ToggleAutoCompoundDto } from './staking.dto';
 import { AuthGuard } from '../auth/auth.guard';
 import { CurrentUser } from '../auth/auth.decorator';
+import { ParseSolanaAddressPipe } from '../../common/validators/solana-address.validator';
 
 @ApiTags('Staking')
 @Controller('staking')
@@ -24,9 +25,10 @@ export class StakingController {
   }
 
   @Get(':address')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @ApiOperation({ summary: 'Get staking position for a wallet' })
   @ApiParam({ name: 'address', description: 'Wallet address' })
-  async getStakingPosition(@Param('address') address: string) {
+  async getStakingPosition(@Param('address', ParseSolanaAddressPipe) address: string) {
     return this.stakingService.getStakingPosition(address);
   }
 

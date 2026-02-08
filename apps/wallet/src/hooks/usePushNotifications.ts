@@ -76,7 +76,7 @@ export function usePushNotifications() {
 
       setIsSubscribed(true);
     } catch (err) {
-      console.error('Push subscription failed:', err);
+      if (import.meta.env.DEV) console.error('Push subscription failed:', err);
     } finally {
       setLoading(false);
     }
@@ -104,7 +104,7 @@ export function usePushNotifications() {
 
       setIsSubscribed(false);
     } catch (err) {
-      console.error('Push unsubscribe failed:', err);
+      if (import.meta.env.DEV) console.error('Push unsubscribe failed:', err);
     } finally {
       setLoading(false);
     }

@@ -16,6 +16,8 @@ export class BurnController {
   @Get('history')
   @ApiOperation({ summary: 'Get burn transaction history' })
   getBurnHistory(@Query('limit') limit?: string) {
-    return this.burnService.getBurnHistory(limit ? parseInt(limit, 10) : 10);
+    const parsed = limit ? parseInt(limit, 10) : 10;
+    const safeLimit = Math.min(Math.max(parsed || 10, 1), 100);
+    return this.burnService.getBurnHistory(safeLimit);
   }
 }

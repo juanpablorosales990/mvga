@@ -75,6 +75,11 @@ pub fn handle_initialize(
         ctx.accounts.admin.key() == AUTHORIZED_ADMIN,
         EscrowError::InvalidAdmin
     );
+    // Reject mints with freeze authority — prevents funds from being frozen in vault
+    require!(
+        ctx.accounts.mint.freeze_authority.is_none(),
+        EscrowError::MintHasFreezeAuthority
+    );
 
     let clock = Clock::get()?;
 
