@@ -11,3 +11,9 @@ CREATE INDEX IF NOT EXISTS "TransactionLog_walletAddress_confirmedAt_idx" ON "Tr
 ALTER TABLE "P2PTrade" DROP CONSTRAINT IF EXISTS "P2PTrade_offerId_fkey";
 ALTER TABLE "P2PTrade" ADD CONSTRAINT "P2PTrade_offerId_fkey"
   FOREIGN KEY ("offerId") REFERENCES "P2POffer"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- 3. CronLock partial unique index — ensures only ONE active lock per job
+--    This is critical for preventing concurrent cron runs at scale.
+CREATE UNIQUE INDEX IF NOT EXISTS "CronLock_jobName_active_idx"
+  ON "CronLock" ("jobName")
+  WHERE "completedAt" IS NULL;

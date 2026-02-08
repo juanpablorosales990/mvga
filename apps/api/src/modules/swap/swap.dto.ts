@@ -6,6 +6,7 @@ import {
   IsObject,
   MinLength,
   MaxLength,
+  Matches,
 } from 'class-validator';
 import { JupiterQuote } from './swap.service';
 import { ApiProperty } from '@nestjs/swagger';
@@ -65,11 +66,13 @@ export class RecordSwapDto {
 
   @ApiProperty({ description: 'Input amount in smallest unit' })
   @IsString()
-  @MaxLength(30)
+  @Matches(/^\d+$/, { message: 'inputAmount must be a numeric string' })
+  @MaxLength(20)
   inputAmount: string;
 
   @ApiProperty({ description: 'Output amount in smallest unit' })
   @IsString()
-  @MaxLength(30)
+  @Matches(/^\d+$/, { message: 'outputAmount must be a numeric string' })
+  @MaxLength(20)
   outputAmount: string;
 }

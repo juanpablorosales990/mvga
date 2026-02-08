@@ -37,6 +37,16 @@ export class CronLockService {
       // Non-critical: if cleanup fails, the insert will still work
     }
 
+    // Check for existing active lock before inserting (defense-in-depth
+    // even without the partial unique index deployed yet)
+    const existing = await this.prisma.cronLock.findFirst({
+      where: { jobName, completedAt: null, expiresAt: { gt: new Date() } },
+    });
+    if (existing) {
+      this.logger.debug(`Lock for ${jobName} already held by ${existing.lockedBy}`);
+      return null;
+    }
+
     // Attempt to insert — unique partial index prevents duplicates
     try {
       const lock = await this.prisma.cronLock.create({

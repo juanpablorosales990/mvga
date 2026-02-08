@@ -868,6 +868,17 @@ export class P2PService {
           });
         }
 
+        // Restore offer availability on refund so seller can accept new trades
+        if (expectedStatus === 'REFUNDED') {
+          await tx.p2POffer.update({
+            where: { id: trade.offerId },
+            data: {
+              availableAmount: { increment: trade.cryptoAmount },
+              status: 'ACTIVE',
+            },
+          });
+        }
+
         return { success: true, tradeId, signature };
       },
       { maxWait: 10000, timeout: 30000 }
@@ -1041,6 +1052,15 @@ export class P2PService {
         await tx.p2PTrade.update({
           where: { id: tradeId },
           data: { releaseTx: sig, status: 'REFUNDED', processingAt: null },
+        });
+
+        // Restore offer availability so seller can accept new trades
+        await tx.p2POffer.update({
+          where: { id: trade.offerId },
+          data: {
+            availableAmount: { increment: trade.cryptoAmount },
+            status: 'ACTIVE',
+          },
         });
 
         // Log the refund (non-blocking)

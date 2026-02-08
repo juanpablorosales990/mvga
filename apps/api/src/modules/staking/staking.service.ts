@@ -755,9 +755,12 @@ export class StakingService {
       if (activeStakes.length === 0) continue;
 
       if (snapshot.totalWeight > BigInt(0)) {
-        const share = Number(userWeight) / Number(snapshot.totalWeight);
-        const feeReward = (share * Number(snapshot.totalFees)) / 10 ** MVGA_DECIMALS;
-        totalFeeRewards += feeReward;
+        // Use BigInt multiplication before division to preserve precision
+        // at scale (avoids Number overflow when weights exceed 2^53)
+        const PRECISION = BigInt(10 ** 18);
+        const scaledShare = (userWeight * PRECISION) / snapshot.totalWeight;
+        const feeRewardRaw = (scaledShare * snapshot.totalFees) / PRECISION;
+        totalFeeRewards += Number(feeRewardRaw) / 10 ** MVGA_DECIMALS;
       }
     }
 
@@ -849,9 +852,25 @@ export class StakingService {
 
           if (totalRewards < AUTO_COMPOUND_MIN) continue;
 
+          // Calculate fee rewards to compound alongside APY rewards
+          const lastClaimForFees = await this.prisma.stakingClaim.findFirst({
+            where: { userId: stakes[0].userId },
+            orderBy: { claimedAt: 'desc' },
+          });
+          const compoundFeeRewards = await this.calculateFeeRewards(
+            stakes.map((s) => ({
+              amount: s.amount,
+              lockPeriod: s.lockPeriod,
+              createdAt: s.createdAt,
+            })),
+            lastClaimForFees?.claimedAt
+          );
+          const totalCompound = totalRewards + compoundFeeRewards;
+
           // Verify vault has sufficient reward surplus before compounding
           if (!this.vaultKeypair) continue;
-          const rewardRaw = BigInt(Math.round(totalRewards * 10 ** MVGA_DECIMALS));
+          const rewardRaw = BigInt(Math.round(totalCompound * 10 ** MVGA_DECIMALS));
+          const rawFeeRewards = BigInt(Math.round(compoundFeeRewards * 10 ** MVGA_DECIMALS));
 
           try {
             const connection = this.solana.getConnection();
@@ -897,21 +916,6 @@ export class StakingService {
             }
 
             // Create StakingClaim record to prevent double-claim with manual claims
-            // Include feeRewards so fee snapshots are properly marked as claimed
-            const lastClaim = await tx.stakingClaim.findFirst({
-              where: { userId: stakes[0].userId },
-              orderBy: { claimedAt: 'desc' },
-            });
-            const compoundFeeRewards = await this.calculateFeeRewards(
-              stakes.map((s) => ({
-                amount: s.amount,
-                lockPeriod: s.lockPeriod,
-                createdAt: s.createdAt,
-              })),
-              lastClaim?.claimedAt
-            );
-            const rawFeeRewards = BigInt(Math.round(compoundFeeRewards * 10 ** MVGA_DECIMALS));
-
             await tx.stakingClaim.create({
               data: {
                 userId: stakes[0].userId,
@@ -924,7 +928,7 @@ export class StakingService {
 
           compoundCount++;
           this.logger.log(
-            `Auto-compounded ${totalRewards.toFixed(2)} MVGA for ${walletAddress.slice(0, 8)}...`
+            `Auto-compounded ${totalCompound.toFixed(2)} MVGA (${totalRewards.toFixed(2)} APY + ${compoundFeeRewards.toFixed(2)} fees) for ${walletAddress.slice(0, 8)}...`
           );
         }
 
