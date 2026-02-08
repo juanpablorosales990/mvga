@@ -125,7 +125,7 @@ export default function SwapPage() {
     } finally {
       setLoading(false);
     }
-  }, [fromAmount, fromToken, toToken, slippageBps]);
+  }, [fromAmount, fromToken.mint, toToken.mint, slippageBps]);
 
   // Debounce quote fetching
   useEffect(() => {

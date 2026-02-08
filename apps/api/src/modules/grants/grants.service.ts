@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Cron } from '@nestjs/schedule';
+import * as Sentry from '@sentry/node';
 import { PrismaService } from '../../common/prisma.service';
 import { CronLockService } from '../../common/cron-lock.service';
 import { TransactionLoggerService } from '../../common/transaction-logger.service';
@@ -364,6 +365,7 @@ export class GrantsService {
         await this.disburseGrant(grant.id);
       } catch (e) {
         this.logger.error(`Failed to disburse grant ${grant.id}: ${(e as Error).message}`);
+        Sentry.captureException(e, { tags: { job: 'grant-disburse', grantId: grant.id } });
       }
     }
 

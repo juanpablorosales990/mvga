@@ -274,7 +274,10 @@ export function SelfCustodyWalletProvider({ children }: { children: ReactNode })
   );
 
   const lock = useCallback(() => {
-    setKeypair(null);
+    setKeypair((prev) => {
+      if (prev) prev.secretKey.fill(0);
+      return null;
+    });
     setWalletState('LOCKED');
     storeSetConnected(false);
     if (lockTimerRef.current) clearInterval(lockTimerRef.current);

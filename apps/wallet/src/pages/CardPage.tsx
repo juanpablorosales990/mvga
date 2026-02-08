@@ -684,9 +684,14 @@ function CardDashboardView() {
 
   const handleToggleFreeze = async () => {
     setFreezing(true);
-    await toggleFreeze();
-    showToast('success', isFrozen ? t('card.unfreezeSuccess') : t('card.freezeSuccess'));
-    setFreezing(false);
+    try {
+      await toggleFreeze();
+      showToast('success', isFrozen ? t('card.unfreezeSuccess') : t('card.freezeSuccess'));
+    } catch (err) {
+      showToast('error', err instanceof Error ? err.message : t('common.somethingWrong'));
+    } finally {
+      setFreezing(false);
+    }
   };
 
   return (

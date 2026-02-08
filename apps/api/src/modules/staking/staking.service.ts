@@ -1,4 +1,5 @@
 import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
+import * as Sentry from '@sentry/node';
 import { ConfigService } from '@nestjs/config';
 import { Cron } from '@nestjs/schedule';
 import { EventEmitter2 } from '@nestjs/event-emitter';
@@ -838,6 +839,7 @@ export class StakingService {
       this.logger.log(`Auto-compound complete: ${compoundCount} users compounded`);
     } catch (error) {
       this.logger.error('Auto-compound failed:', error);
+      Sentry.captureException(error, { tags: { job: 'auto-compound' } });
     } finally {
       await this.cronLockService.releaseLock(lockId);
     }

@@ -23,6 +23,11 @@
     "pageNotFound": "Page not found",
     "goHome": "Go Home"
   },
+  "error": {
+    "title": "Something went wrong",
+    "message": "An unexpected error occurred. Please try again.",
+    "retry": "Try Again"
+  },
   "wallet": {
     "title": "Welcome to MVGA",
     "connectPrompt": "Connect your wallet to view balances, send tokens, and participate in the Venezuelan financial revolution.",

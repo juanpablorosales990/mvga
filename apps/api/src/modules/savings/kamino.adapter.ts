@@ -78,7 +78,7 @@ export class KaminoAdapter {
     try {
       if (!this.apyCache || Date.now() > this.apyCacheExpiry) {
         const res = await fetch('https://yields.llama.fi/pools', {
-          signal: AbortSignal.timeout(15000),
+          signal: AbortSignal.timeout(5000),
         });
         if (!res.ok) {
           this.logger.warn(`DefiLlama API returned ${res.status}`);

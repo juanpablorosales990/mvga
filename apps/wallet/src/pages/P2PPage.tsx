@@ -110,23 +110,25 @@ export default function P2PPage() {
   useEffect(() => {
     const controller = new AbortController();
     const addresses = [...new Set(offers.map((o) => o.sellerAddress))];
-    addresses.forEach(async (addr) => {
-      if (reputations[addr]) return;
-      try {
-        const res = await fetch(`${API_URL}/p2p/users/${addr}/reputation`, {
-          signal: controller.signal,
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setReputations((prev) => ({
-            ...prev,
-            [addr]: { rating: data.rating, totalTrades: data.totalTrades },
-          }));
+    Promise.allSettled(
+      addresses.map(async (addr) => {
+        if (reputations[addr]) return;
+        try {
+          const res = await fetch(`${API_URL}/p2p/users/${addr}/reputation`, {
+            signal: controller.signal,
+          });
+          if (res.ok) {
+            const data = await res.json();
+            setReputations((prev) => ({
+              ...prev,
+              [addr]: { rating: data.rating, totalTrades: data.totalTrades },
+            }));
+          }
+        } catch {
+          /* ignore abort errors */
         }
-      } catch {
-        /* ignore */
-      }
-    });
+      })
+    );
     return () => controller.abort();
   }, [offers]);
 

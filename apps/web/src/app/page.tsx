@@ -1032,7 +1032,7 @@ export default function Home() {
                 },
                 {
                   q: 'Can I withdraw my staked tokens anytime?',
-                  a: 'Depends on your tier. Bronze has no lock period. Silver, Gold, and Diamond tiers offer higher APY in exchange for lock periods of 30, 90, and 180 days respectively.',
+                  a: 'Yes, if you choose the Flexible lock period (1x multiplier). You can also opt for 30, 90, or 180 day lock periods for bonus multipliers up to 2x. Your tier (Bronze/Silver/Gold/Diamond) is based on how much you stake, not the lock period.',
                 },
                 {
                   q: 'Is MVGA available outside Venezuela?',

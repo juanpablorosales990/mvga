@@ -1,5 +1,6 @@
 import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
+import * as Sentry from '@sentry/node';
 import { PublicKey } from '@solana/web3.js';
 import { PrismaService } from '../../common/prisma.service';
 import { TransactionLoggerService } from '../../common/transaction-logger.service';
@@ -280,6 +281,7 @@ export class SavingsService {
       );
     } catch (err) {
       this.logger.error('Yield snapshot failed', err);
+      Sentry.captureException(err, { tags: { job: 'yield-snapshot' } });
     } finally {
       await this.cronLock.releaseLock(lock);
     }
