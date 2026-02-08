@@ -319,6 +319,22 @@ export class TreasuryService {
         break;
 
       case 'FEE_SNAPSHOT': {
+        // Only create fee snapshot if STAKING step succeeded — prevents crediting
+        // stakers for fees that were never actually transferred to the vault
+        const stakingStep = await this.prisma.distributionStep.findFirst({
+          where: {
+            distributionId: distribution.id,
+            stepName: 'STAKING',
+            status: 'COMPLETED',
+          },
+        });
+        if (!stakingStep) {
+          this.logger.warn(
+            'STAKING step did not complete — skipping FEE_SNAPSHOT to prevent phantom credits'
+          );
+          break;
+        }
+
         const feeShare = (distribution.stakingAmount * BigInt(FEE_SHARE_PERCENT)) / BigInt(100);
         if (feeShare > BigInt(0)) {
           const totalWeight = await this.stakingService.getTotalStakeWeight();

@@ -237,8 +237,12 @@ export class StakingService {
       };
     });
 
-    // Calculate fee rewards
-    const feeRewards = await this.calculateFeeRewards(user.id, stakes);
+    // Calculate fee rewards (only unclaimed — since last claim)
+    const lastClaim = await this.prisma.stakingClaim.findFirst({
+      where: { userId: user.id },
+      orderBy: { claimedAt: 'desc' },
+    });
+    const feeRewards = await this.calculateFeeRewards(user.id, stakes, lastClaim?.claimedAt);
 
     const tier = this.getTierForAmount(totalStaked);
     const baseApy = dynamicBase * tier.multiplier;
@@ -535,7 +539,7 @@ export class StakingService {
           0
         );
 
-        let totalRewards = 0;
+        let baseRewards = 0;
         for (const stake of stakes) {
           const amount = Number(stake.amount) / 10 ** MVGA_DECIMALS;
           const tier = this.getTierForAmount(totalStaked);
@@ -547,8 +551,21 @@ export class StakingService {
             ? new Date(stake.lastClaimedAt)
             : new Date(stake.createdAt);
           const daysSinceLast = (Date.now() - since.getTime()) / (1000 * 60 * 60 * 24);
-          totalRewards += amount * (effectiveApy / 100) * (daysSinceLast / 365);
+          baseRewards += amount * (effectiveApy / 100) * (daysSinceLast / 365);
         }
+
+        // Calculate unclaimed fee rewards (only snapshots since last claim)
+        const feeRewards = await this.calculateFeeRewards(
+          user.id,
+          stakes.map((s: RawStakeRow) => ({
+            amount: s.amount,
+            lockPeriod: s.lockPeriod,
+            createdAt: new Date(s.createdAt),
+          })),
+          lastClaim?.claimedAt
+        );
+
+        const totalRewards = baseRewards + feeRewards;
 
         if (totalRewards < 10) {
           throw new BadRequestException('Minimum claim amount is 10 MVGA');
@@ -587,11 +604,13 @@ export class StakingService {
 
         const sig = await sendAndConfirmTransaction(connection, solanaTx, [this.vaultKeypair]);
 
-        // Record the claim for idempotency and audit
+        // Record the claim for idempotency and audit (feeRewards prevents double-claiming)
+        const rawFeeRewards = BigInt(Math.round(feeRewards * 10 ** MVGA_DECIMALS));
         await tx.stakingClaim.create({
           data: {
             userId: user.id,
             amount: rawRewards,
+            feeRewards: rawFeeRewards,
             signature: sig,
           },
         });
@@ -695,18 +714,25 @@ export class StakingService {
   }
 
   /**
-   * Calculate a user's unclaimed fee rewards from FeeSnapshots
+   * Calculate a user's unclaimed fee rewards from FeeSnapshots.
+   * Only counts snapshots after the user's last claim to prevent double-claiming.
    */
   private async calculateFeeRewards(
     userId: string,
-    stakes: { amount: bigint; lockPeriod: number; createdAt: Date }[]
+    stakes: { amount: bigint; lockPeriod: number; createdAt: Date }[],
+    lastClaimDate?: Date | null
   ): Promise<number> {
     if (stakes.length === 0) return 0;
 
-    // Get all FeeSnapshots
+    // Only get snapshots AFTER the last claim — prevents double-claiming
+    const snapshotWhere: Prisma.FeeSnapshotWhereInput = lastClaimDate
+      ? { periodEnd: { gt: lastClaimDate } }
+      : {};
+
     const snapshots = await this.prisma.feeSnapshot.findMany({
+      where: snapshotWhere,
       orderBy: { periodEnd: 'desc' },
-      take: 52, // Up to 1 year of weekly snapshots
+      take: 52,
     });
 
     if (snapshots.length === 0) return 0;
@@ -825,9 +851,29 @@ export class StakingService {
 
           if (totalRewards < AUTO_COMPOUND_MIN) continue;
 
-          // Update the primary stake's amount and reset lastClaimedAt
-          const primaryStake = stakes[0];
+          // Verify vault has sufficient reward surplus before compounding
+          if (!this.vaultKeypair) continue;
           const rewardRaw = BigInt(Math.round(totalRewards * 10 ** MVGA_DECIMALS));
+
+          try {
+            const connection = this.solana.getConnection();
+            const vaultAta = await getAssociatedTokenAddress(
+              this.mintPubkey,
+              this.vaultKeypair.publicKey
+            );
+            const vaultAccount = await getAccount(connection, vaultAta);
+            if (BigInt(vaultAccount.amount.toString()) < rewardRaw) {
+              this.logger.warn(
+                `Auto-compound skipped for ${walletAddress.slice(0, 8)}...: vault balance insufficient`
+              );
+              continue;
+            }
+          } catch {
+            this.logger.warn('Auto-compound: could not verify vault balance, skipping');
+            continue;
+          }
+
+          const primaryStake = stakes[0];
 
           await this.prisma.$transaction(async (tx) => {
             // Lock the stake rows to prevent race with manual claim
@@ -851,6 +897,15 @@ export class StakingService {
                 data: { lastClaimedAt: new Date() },
               });
             }
+
+            // Create StakingClaim record to prevent double-claim with manual claims
+            await tx.stakingClaim.create({
+              data: {
+                userId: stakes[0].userId,
+                amount: rewardRaw,
+                signature: `auto-compound-${Date.now()}-${stakes[0].userId.slice(0, 8)}`,
+              },
+            });
           });
 
           compoundCount++;
