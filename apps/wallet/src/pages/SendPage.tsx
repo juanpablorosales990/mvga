@@ -1,4 +1,5 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useConnection } from '@solana/wallet-adapter-react';
 import { useSelfCustodyWallet } from '../contexts/WalletContext';
 import { PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
@@ -25,9 +26,16 @@ export default function SendPage() {
   const { connection } = useConnection();
   const invalidateBalances = useWalletStore((s) => s.invalidateBalances);
 
+  const [searchParams] = useSearchParams();
   const [recipient, setRecipient] = useState('');
   const [amount, setAmount] = useState('');
   const [token, setToken] = useState('SOL');
+
+  // Pre-fill recipient from ?to= query param (e.g., from Contacts page)
+  useEffect(() => {
+    const to = searchParams.get('to');
+    if (to) setRecipient(to);
+  }, [searchParams]);
   const [sending, setSending] = useState(false);
   const sendingRef = useRef(false);
   const [txSignature, setTxSignature] = useState<string | null>(null);
@@ -102,11 +110,9 @@ export default function SendPage() {
           const requiredSol = recipientAtaInfo ? 5000 : 2_039_280 + 5000; // rent-exempt minimum + tx fee
           if (solBalance < requiredSol) {
             setError(
-              t('send.insufficientSolForFee', {
-                defaultValue:
-                  'Not enough SOL for transaction fee' +
-                  (recipientAtaInfo ? '' : ' + token account creation (~0.002 SOL)'),
-              })
+              recipientAtaInfo
+                ? t('send.insufficientSolForFee')
+                : t('send.insufficientSolForFeeAndAta')
             );
             return;
           }

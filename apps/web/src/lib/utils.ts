@@ -10,7 +10,10 @@ export function toApiBase(input: string) {
   return trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`;
 }
 
-export const API_BASE = toApiBase(process.env.NEXT_PUBLIC_API_URL || 'https://api.mvga.io');
+export const API_BASE = toApiBase(
+  process.env.NEXT_PUBLIC_API_URL ||
+    (process.env.NODE_ENV === 'production' ? 'https://api.mvga.io' : 'http://localhost:3001')
+);
 
 export function formatNumber(num: number) {
   if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(1)}M`;

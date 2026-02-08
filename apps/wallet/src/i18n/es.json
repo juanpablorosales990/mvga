@@ -3,7 +3,7 @@
     "wallet": "Billetera",
     "swap": "Cambiar",
     "stake": "Staking",
-    "bank": "Banco",
+    "bank": "Dólar",
     "p2p": "P2P",
     "more": "Más"
   },
@@ -62,6 +62,8 @@
     "connectFirst": "Por favor conecta tu billetera primero",
     "unsupportedToken": "Token no soportado",
     "txFailed": "Transacción fallida",
+    "insufficientSolForFee": "No hay suficiente SOL para la comisión de transacción",
+    "insufficientSolForFeeAndAta": "No hay suficiente SOL para la comisión + creación de cuenta de token (~0.002 SOL)",
     "solLabel": "SOL - Solana",
     "usdcLabel": "USDC - USD Coin",
     "mvgaLabel": "MVGA - Make Venezuela Great Again"
@@ -283,7 +285,9 @@
     "settings": "Ajustes",
     "help": "Ayuda",
     "charge": "Cobrar",
-    "topup": "Recarga"
+    "topup": "Recarga",
+    "contacts": "Contactos",
+    "priceAlerts": "Alertas de Precio"
   },
   "grants": {
     "title": "Subvenciones",
@@ -572,9 +576,11 @@
     "connectPrompt": "Conecta tu billetera para ver tu portafolio"
   },
   "banking": {
-    "title": "Banco",
-    "stablecoinBalance": "Balance en Stablecoins",
-    "connectPrompt": "Conecta tu billetera para acceder a funciones bancarias",
+    "title": "Cuenta en Dólares",
+    "dollarAccountTag": "Tu cuenta digital en dólares",
+    "protectedFromInflation": "Protegido de la inflación. Genera intereses. Gasta donde quieras.",
+    "stablecoinBalance": "Balance en Dólares",
+    "connectPrompt": "Conecta tu billetera para acceder a tu cuenta en dólares",
     "deposit": "Depositar",
     "withdraw": "Retirar",
     "card": "Tarjeta",
@@ -585,7 +591,7 @@
     "virtualCard": "Tarjeta Virtual MVGA",
     "comingSoon": "Próximamente",
     "joinWaitlist": "Unirse a la Lista",
-    "earnTitle": "Gana con Stablecoins",
+    "earnTitle": "Genera Intereses con tus Dólares",
     "recentStablecoinTx": "Actividad Reciente en Stablecoins",
     "noStablecoinTx": "Sin transacciones de stablecoins aún",
     "savingsTitle": "Ahorros",
@@ -767,6 +773,41 @@
     "paySuccess": "¡Pago enviado!",
     "notFound": "Solicitud de pago no encontrada",
     "loading": "Cargando solicitud de pago..."
+  },
+  "contacts": {
+    "title": "Contactos",
+    "subtitle": "Tus direcciones guardadas para transferencias rápidas",
+    "addContact": "Agregar Contacto",
+    "name": "Nombre",
+    "namePlaceholder": "ej. Mamá, Exchange, Amigo",
+    "address": "Dirección de Solana",
+    "addressPlaceholder": "Ingresa dirección de Solana...",
+    "save": "Guardar Contacto",
+    "delete": "Eliminar",
+    "send": "Enviar",
+    "confirmDelete": "¿Eliminar este contacto?",
+    "empty": "Sin contactos aún. Agrega uno para enviar tokens más rápido.",
+    "invalidAddress": "Dirección de Solana inválida",
+    "nameRequired": "El nombre del contacto es requerido",
+    "copied": "¡Dirección copiada!",
+    "searchPlaceholder": "Buscar contactos..."
+  },
+  "priceAlerts": {
+    "title": "Alertas de Precio",
+    "subtitle": "Recibe notificaciones cuando los tokens lleguen a tu precio objetivo",
+    "addAlert": "Agregar Alerta",
+    "token": "Token",
+    "condition": "Condición",
+    "above": "Sube por encima de",
+    "below": "Baja por debajo de",
+    "targetPrice": "Precio Objetivo (USD)",
+    "create": "Crear Alerta",
+    "active": "Alertas Activas",
+    "triggered": "Activada",
+    "noAlerts": "Sin alertas de precio aún. Crea una para recibir notificaciones.",
+    "alertTriggered": "{{token}} está ahora en ${{price}} (objetivo: ${{target}})",
+    "delete": "Eliminar",
+    "currentPrice": "Actual: ${{price}}"
   },
   "topup": {
     "title": "Recarga Telefónica",

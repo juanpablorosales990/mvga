@@ -1,5 +1,6 @@
 import { Controller, Post, Body, Get, Query, UseGuards, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { SwapService } from './swap.service';
 import { QuoteDto, SwapDto, RecordSwapDto } from './swap.dto';
 import { AuthGuard } from '../auth/auth.guard';
@@ -7,6 +8,7 @@ import { CurrentUser } from '../auth/auth.decorator';
 
 @ApiTags('Swap')
 @Controller('swap')
+@Throttle({ default: { limit: 20, ttl: 60000 } })
 export class SwapController {
   constructor(private readonly swapService: SwapService) {}
 

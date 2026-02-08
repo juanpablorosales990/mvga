@@ -1,4 +1,13 @@
-import { IsString, IsNumber, IsPositive, IsIn, IsOptional, MaxLength } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsPositive,
+  IsIn,
+  IsOptional,
+  MaxLength,
+  MinLength,
+  Matches,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreatePaymentRequestDto {
@@ -19,7 +28,10 @@ export class CreatePaymentRequestDto {
 }
 
 export class VerifyPaymentDto {
-  @ApiProperty({ description: 'On-chain transaction signature' })
+  @ApiProperty({ description: 'On-chain transaction signature (base58, 64-88 chars)' })
   @IsString()
+  @MinLength(64)
+  @MaxLength(88)
+  @Matches(/^[1-9A-HJ-NP-Za-km-z]+$/, { message: 'Invalid base58 signature' })
   signature: string;
 }

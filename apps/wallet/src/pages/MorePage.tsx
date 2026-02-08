@@ -17,7 +17,9 @@ export default function MorePage() {
     { labelKey: 'more.transparency', path: '/transparency', icon: '✓', color: 'bg-emerald-500' },
     { labelKey: 'more.metrics', path: '/metrics', icon: '📊', color: 'bg-cyan-500' },
     { labelKey: 'more.portfolio', path: '/portfolio', icon: '📈', color: 'bg-purple-500' },
-    { labelKey: 'more.notifications', path: '/notifications', icon: '🔔', color: 'bg-orange-500' },
+    { labelKey: 'more.contacts', path: '/contacts', icon: '👤', color: 'bg-sky-500' },
+    { labelKey: 'more.priceAlerts', path: '/price-alerts', icon: '🔔', color: 'bg-orange-500' },
+    { labelKey: 'more.notifications', path: '/notifications', icon: '📬', color: 'bg-rose-500' },
     { labelKey: 'more.settings', path: '/settings', icon: '⚙️', color: 'bg-gray-500' },
     { labelKey: 'more.help', path: '/help', icon: '❓', color: 'bg-blue-400' },
   ];

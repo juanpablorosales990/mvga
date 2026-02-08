@@ -345,7 +345,7 @@ export default function Home() {
             </p>
             <h2 className="text-3xl md:text-5xl font-bold mb-4">Everything you need in one app.</h2>
             <p className="text-white/40 mb-16 max-w-2xl">
-              24 pages, 15+ features, 4 tokens, 2 languages, and zero middlemen. The most
+              30 pages, 15+ features, 4 tokens, 2 languages, and zero middlemen. The most
               comprehensive financial app for Venezuelans.
             </p>
 
@@ -384,7 +384,7 @@ export default function Home() {
                 {
                   num: '07',
                   title: 'Savings & Yield',
-                  desc: 'Earn interest on your USDC and USDT holdings. Track daily, monthly, and yearly interest projections. Set savings goals with progress tracking. Access DeFi yield opportunities from protocols like Kamino, MarginFi, and Drift — all from one dashboard.',
+                  desc: 'Earn interest on your USDC and USDT holdings. Track daily, monthly, and yearly interest projections. Set savings goals with progress tracking. Access DeFi yield opportunities powered by Kamino — all from one dashboard.',
                 },
                 {
                   num: '08',

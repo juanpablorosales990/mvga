@@ -3,7 +3,7 @@
     "wallet": "Wallet",
     "swap": "Swap",
     "stake": "Stake",
-    "bank": "Bank",
+    "bank": "Dollar",
     "p2p": "P2P",
     "more": "More"
   },
@@ -62,6 +62,8 @@
     "connectFirst": "Please connect your wallet first",
     "unsupportedToken": "Unsupported token",
     "txFailed": "Transaction failed",
+    "insufficientSolForFee": "Not enough SOL for transaction fee",
+    "insufficientSolForFeeAndAta": "Not enough SOL for transaction fee + token account creation (~0.002 SOL)",
     "solLabel": "SOL - Solana",
     "usdcLabel": "USDC - USD Coin",
     "mvgaLabel": "MVGA - Make Venezuela Great Again"
@@ -283,7 +285,9 @@
     "settings": "Settings",
     "help": "Help",
     "charge": "Charge",
-    "topup": "Top-Up"
+    "topup": "Top-Up",
+    "contacts": "Contacts",
+    "priceAlerts": "Price Alerts"
   },
   "grants": {
     "title": "Grants",
@@ -572,9 +576,11 @@
     "connectPrompt": "Connect your wallet to view your portfolio"
   },
   "banking": {
-    "title": "Banking",
-    "stablecoinBalance": "Stablecoin Balance",
-    "connectPrompt": "Connect your wallet to access banking features",
+    "title": "Dollar Account",
+    "dollarAccountTag": "Your digital dollar account",
+    "protectedFromInflation": "Protected from inflation. Earn yield. Spend anywhere.",
+    "stablecoinBalance": "Dollar Balance",
+    "connectPrompt": "Connect your wallet to access your dollar account",
     "deposit": "Deposit",
     "withdraw": "Withdraw",
     "card": "Card",
@@ -585,7 +591,7 @@
     "virtualCard": "MVGA Virtual Card",
     "comingSoon": "Coming Soon",
     "joinWaitlist": "Join Waitlist",
-    "earnTitle": "Earn with Stablecoins",
+    "earnTitle": "Earn Interest on Your Dollars",
     "recentStablecoinTx": "Recent Stablecoin Activity",
     "noStablecoinTx": "No stablecoin transactions yet",
     "savingsTitle": "Savings",
@@ -767,6 +773,41 @@
     "paySuccess": "Payment sent!",
     "notFound": "Payment request not found",
     "loading": "Loading payment request..."
+  },
+  "contacts": {
+    "title": "Contacts",
+    "subtitle": "Your saved addresses for quick transfers",
+    "addContact": "Add Contact",
+    "name": "Name",
+    "namePlaceholder": "e.g. Mom, Exchange, Friend",
+    "address": "Solana Address",
+    "addressPlaceholder": "Enter Solana address...",
+    "save": "Save Contact",
+    "delete": "Delete",
+    "send": "Send",
+    "confirmDelete": "Remove this contact?",
+    "empty": "No contacts yet. Add one to send tokens faster.",
+    "invalidAddress": "Invalid Solana address",
+    "nameRequired": "Contact name is required",
+    "copied": "Address copied!",
+    "searchPlaceholder": "Search contacts..."
+  },
+  "priceAlerts": {
+    "title": "Price Alerts",
+    "subtitle": "Get notified when tokens hit your target price",
+    "addAlert": "Add Alert",
+    "token": "Token",
+    "condition": "Condition",
+    "above": "Goes above",
+    "below": "Goes below",
+    "targetPrice": "Target Price (USD)",
+    "create": "Create Alert",
+    "active": "Active Alerts",
+    "triggered": "Triggered",
+    "noAlerts": "No price alerts yet. Create one to get notified.",
+    "alertTriggered": "{{token}} is now ${{price}} (target: ${{target}})",
+    "delete": "Delete",
+    "currentPrice": "Current: ${{price}}"
   },
   "topup": {
     "title": "Phone Top-Up",

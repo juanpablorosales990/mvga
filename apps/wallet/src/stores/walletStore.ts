@@ -18,6 +18,15 @@ export interface AddressBookEntry {
   createdAt: number;
 }
 
+export interface PriceAlert {
+  id: string;
+  token: string; // SOL, USDC, MVGA
+  condition: 'above' | 'below';
+  targetPrice: number;
+  triggered: boolean;
+  createdAt: number;
+}
+
 interface WalletState {
   // Wallet
   publicKey: string | null;
@@ -45,6 +54,9 @@ interface WalletState {
   savingsGoal: { targetAmount: number; label: string } | null;
   cardStatus: CardStatus;
 
+  // Price Alerts
+  priceAlerts: PriceAlert[];
+
   // Balance refresh trigger
   balanceVersion: number;
 
@@ -64,6 +76,9 @@ interface WalletState {
   invalidateBalances: () => void;
   addAddress: (entry: Omit<AddressBookEntry, 'createdAt'>) => void;
   removeAddress: (address: string) => void;
+  addPriceAlert: (alert: Omit<PriceAlert, 'id' | 'triggered' | 'createdAt'>) => void;
+  removePriceAlert: (id: string) => void;
+  triggerPriceAlert: (id: string) => void;
   disconnect: () => void;
 }
 
@@ -79,6 +94,7 @@ export const useWalletStore = create<WalletState>()(
       activeTab: 'wallet',
       preferredCurrency: 'USD',
       addressBook: [],
+      priceAlerts: [],
       autoCompoundDefault: false,
       readNotifications: [],
       savingsGoal: null,
@@ -122,6 +138,21 @@ export const useWalletStore = create<WalletState>()(
         set((state) => ({
           addressBook: state.addressBook.filter((a) => a.address !== address),
         })),
+      addPriceAlert: (alert) =>
+        set((state) => ({
+          priceAlerts: [
+            ...state.priceAlerts,
+            { ...alert, id: crypto.randomUUID(), triggered: false, createdAt: Date.now() },
+          ],
+        })),
+      removePriceAlert: (id) =>
+        set((state) => ({
+          priceAlerts: state.priceAlerts.filter((a) => a.id !== id),
+        })),
+      triggerPriceAlert: (id) =>
+        set((state) => ({
+          priceAlerts: state.priceAlerts.map((a) => (a.id === id ? { ...a, triggered: true } : a)),
+        })),
       disconnect: () =>
         set({
           publicKey: null,
@@ -136,6 +167,7 @@ export const useWalletStore = create<WalletState>()(
         publicKey: state.publicKey,
         preferredCurrency: state.preferredCurrency,
         addressBook: state.addressBook,
+        priceAlerts: state.priceAlerts,
         autoCompoundDefault: state.autoCompoundDefault,
         readNotifications: state.readNotifications,
         savingsGoal: state.savingsGoal,

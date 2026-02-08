@@ -51,7 +51,7 @@ describe('BottomNav', () => {
 
     expect(screen.getByText('Wallet')).toBeTruthy();
     expect(screen.getByText('Swap')).toBeTruthy();
-    expect(screen.getByText('Bank')).toBeTruthy();
+    expect(screen.getByText('Dollar')).toBeTruthy();
     expect(screen.getByText('P2P')).toBeTruthy();
     expect(screen.getByText('More')).toBeTruthy();
   });

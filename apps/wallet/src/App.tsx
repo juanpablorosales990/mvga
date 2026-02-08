@@ -36,6 +36,8 @@ const DepositPage = lazy(() => import('./pages/DepositPage'));
 const ChargePage = lazy(() => import('./pages/ChargePage'));
 const PayPage = lazy(() => import('./pages/PayPage'));
 const TopUpPage = lazy(() => import('./pages/TopUpPage'));
+const ContactsPage = lazy(() => import('./pages/ContactsPage'));
+const PriceAlertsPage = lazy(() => import('./pages/PriceAlertsPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
 // Components
@@ -47,10 +49,12 @@ import ToastContainer from './components/ToastContainer';
 // Auth & Referral
 import { useAuth } from './hooks/useAuth';
 import { useReferral } from './hooks/useReferral';
+import { usePriceAlerts } from './hooks/usePriceAlerts';
 
 function AuthProvider({ children }: { children: React.ReactNode }) {
   useAuth(); // auto-authenticates on wallet unlock
   useReferral(); // captures ?ref= and auto-claims on connect
+  usePriceAlerts(); // checks price alerts against live prices
   return <>{children}</>;
 }
 
@@ -103,6 +107,8 @@ function AppShell() {
                 <Route path="/charge" element={<ChargePage />} />
                 <Route path="/pay/:id" element={<PayPage />} />
                 <Route path="/topup" element={<TopUpPage />} />
+                <Route path="/contacts" element={<ContactsPage />} />
+                <Route path="/price-alerts" element={<PriceAlertsPage />} />
                 <Route path="*" element={<NotFoundPage />} />
               </Routes>
             </Suspense>

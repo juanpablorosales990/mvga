@@ -80,13 +80,49 @@ export default function BankingPage() {
         </div>
       ) : (
         <>
-          {/* Stablecoin Balance */}
-          <div className="card p-5 bg-gradient-to-br from-green-500/10 to-emerald-600/5 border-green-500/20">
-            <p className="text-sm text-gray-400">{t('banking.stablecoinBalance')}</p>
-            <p className="text-3xl font-bold mt-1">{formatUsd(stablecoinUsd)}</p>
-            <div className="flex gap-3 mt-2 text-xs text-gray-400">
-              {usdcBalance && <span>{usdcBalance.balance.toLocaleString()} USDC</span>}
-              {usdtBalance && <span>{usdtBalance.balance.toLocaleString()} USDT</span>}
+          {/* Dollar Account Hero */}
+          <div className="relative overflow-hidden rounded-xl border border-green-500/30 bg-gradient-to-br from-green-600/20 via-emerald-600/10 to-teal-600/5 p-6">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl" />
+            <div className="absolute bottom-0 left-0 w-24 h-24 bg-emerald-500/10 rounded-full translate-y-1/2 -translate-x-1/2 blur-2xl" />
+            <div className="relative">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="w-8 h-8 bg-green-500/20 border border-green-500/30 rounded-full flex items-center justify-center text-green-400 text-sm font-bold">
+                  $
+                </span>
+                <div>
+                  <p className="text-sm font-medium text-white">{t('banking.title')}</p>
+                  <p className="text-xs text-green-400/80">{t('banking.dollarAccountTag')}</p>
+                </div>
+              </div>
+              <p className="text-4xl font-bold tracking-tight">{formatUsd(stablecoinUsd)}</p>
+              <div className="flex gap-4 mt-3">
+                {usdcBalance && (
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-blue-400" />
+                    <span className="text-xs text-gray-300">
+                      {usdcBalance.balance.toLocaleString()} USDC
+                    </span>
+                  </div>
+                )}
+                {usdtBalance && (
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                    <span className="text-xs text-gray-300">
+                      {usdtBalance.balance.toLocaleString()} USDT
+                    </span>
+                  </div>
+                )}
+              </div>
+              {currentApy > 0 && (
+                <div className="mt-3 pt-3 border-t border-white/5 flex items-center justify-between">
+                  <span className="text-xs text-gray-400">
+                    {t('banking.protectedFromInflation')}
+                  </span>
+                  <span className="text-xs font-medium text-green-400">
+                    {currentApy.toFixed(1)}% APY
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -260,10 +296,10 @@ export default function BankingPage() {
           )}
 
           {/* Recent Stablecoin Transactions */}
-          {recentTxs.length > 0 && (
-            <div className="space-y-2">
-              <h2 className="font-semibold">{t('banking.recentStablecoinTx')}</h2>
-              {recentTxs.map((tx) => (
+          <div className="space-y-2">
+            <h2 className="font-semibold">{t('banking.recentStablecoinTx')}</h2>
+            {recentTxs.length > 0 ? (
+              recentTxs.map((tx) => (
                 <div key={tx.id} className="card p-3 flex items-center gap-3">
                   <span className="text-xs px-2 py-0.5 rounded bg-white/10 text-gray-400">
                     {tx.type}
@@ -275,9 +311,11 @@ export default function BankingPage() {
                     {new Date(tx.createdAt).toLocaleDateString()}
                   </span>
                 </div>
-              ))}
-            </div>
-          )}
+              ))
+            ) : (
+              <p className="text-sm text-gray-500">{t('banking.noStablecoinTx')}</p>
+            )}
+          </div>
 
           {/* Earn Section */}
           <div className="space-y-3">
