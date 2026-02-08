@@ -11,7 +11,7 @@ ENV NODE_ENV=development
 
 # Install dependencies
 COPY package.json ./
-RUN npm install
+RUN npm install --legacy-peer-deps
 
 # Copy prisma schema and generate client
 COPY prisma ./prisma
