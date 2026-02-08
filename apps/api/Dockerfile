@@ -17,10 +17,10 @@ RUN npm install --legacy-peer-deps
 COPY prisma ./prisma
 RUN npx prisma generate
 
-# Copy source and build using tsc (simpler than nest build)
+# Copy source and build with SWC (nest build uses SWC, avoids @solana/spl-token .d.ts issue)
 COPY tsconfig.json nest-cli.json ./
 COPY src ./src
-RUN npx tsc
+RUN npx nest build
 
 # ── Runtime stage ────────────────────────────────────────
 FROM node:20-slim
