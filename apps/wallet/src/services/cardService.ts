@@ -111,7 +111,10 @@ let mockCardStatus: CardDetails['status'] = 'active';
 function getWalletAddress(): string | null {
   try {
     const store = JSON.parse(localStorage.getItem('mvga-wallet-storage') || '{}');
-    return store?.state?.publicKey || null;
+    const pk = store?.state?.publicKey;
+    if (typeof pk !== 'string' || pk.length < 32 || pk.length > 44) return null;
+    if (!/^[1-9A-HJ-NP-Za-km-z]+$/.test(pk)) return null;
+    return pk;
   } catch {
     return null;
   }

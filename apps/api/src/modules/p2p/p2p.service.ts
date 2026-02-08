@@ -19,6 +19,10 @@ import { getAssociatedTokenAddress, createTransferInstruction } from '@solana/sp
 const ESCROW_PROGRAM_ID = '6GXdYCDckUVEFBaQSgfQGX95gZSNN7FWN19vRDSyTJ5E';
 const DEFAULT_ESCROW_TIMEOUT = 7200; // 2 hours
 
+// Anchor instruction discriminators (first 8 bytes of SHA-256("global:<method_name>"))
+const RELEASE_DISCRIMINATOR = Buffer.from([146, 253, 129, 233, 20, 145, 181, 206]);
+const REFUND_DISCRIMINATOR = Buffer.from([107, 186, 89, 99, 26, 194, 23, 204]);
+
 type EscrowMode = 'onchain' | 'legacy';
 
 // Scale factor for storing decimal amounts as BigInt (6 decimal places)
@@ -778,6 +782,37 @@ export class P2PService {
         );
         if (!programInvoked) {
           throw new BadRequestException('Transaction did not invoke the escrow program');
+        }
+
+        // Verify the correct instruction was called (release vs refund)
+        const expectedDiscriminator =
+          expectedStatus === 'COMPLETED' ? RELEASE_DISCRIMINATOR : REFUND_DISCRIMINATOR;
+        let correctInstructionFound = false;
+
+        for (const ix of parsedTx.transaction.message.instructions) {
+          const programIdIndex = (ix as Record<string, unknown>).programIdIndex as
+            | number
+            | undefined;
+          if (programIdIndex !== undefined) {
+            const programKey = parsedTx.transaction.message.accountKeys[programIdIndex];
+            if (programKey?.pubkey?.toBase58() === ESCROW_PROGRAM_ID) {
+              const data = (ix as Record<string, unknown>).data as string | undefined;
+              if (data) {
+                const decoded = Buffer.from(data, 'base64');
+                if (decoded.length >= 8 && decoded.subarray(0, 8).equals(expectedDiscriminator)) {
+                  correctInstructionFound = true;
+                  break;
+                }
+              }
+            }
+          }
+        }
+
+        if (!correctInstructionFound) {
+          const expectedName = expectedStatus === 'COMPLETED' ? 'release_escrow' : 'refund_escrow';
+          throw new BadRequestException(
+            `Transaction does not contain the expected ${expectedName} instruction`
+          );
         }
 
         await tx.p2PTrade.update({
