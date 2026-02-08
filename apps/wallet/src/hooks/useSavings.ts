@@ -110,15 +110,15 @@ export function useSavings(walletAddress: string | null) {
         body: JSON.stringify({ amount, token }),
       });
 
-      let signature: string;
-      if (result.transaction && connected) {
-        // Deserialize the unsigned transaction from the API and sign+send it
-        const tx = Transaction.from(Buffer.from(result.transaction, 'base64'));
-        signature = await sendTransaction(tx, connection);
-      } else {
-        // Fallback: mock signature when no transaction available
-        signature = `mock_${Date.now()}`;
+      if (!result.transaction) {
+        throw new Error('Server did not return a transaction to sign');
       }
+      if (!connected) {
+        throw new Error('Wallet not connected');
+      }
+
+      const tx = Transaction.from(Buffer.from(result.transaction, 'base64'));
+      const signature = await sendTransaction(tx, connection);
 
       await apiFetch('/savings/confirm-deposit', {
         method: 'POST',
@@ -137,13 +137,15 @@ export function useSavings(walletAddress: string | null) {
         body: JSON.stringify({ positionId, amount }),
       });
 
-      let signature: string;
-      if (result.transaction && connected) {
-        const tx = Transaction.from(Buffer.from(result.transaction, 'base64'));
-        signature = await sendTransaction(tx, connection);
-      } else {
-        signature = `mock_${Date.now()}`;
+      if (!result.transaction) {
+        throw new Error('Server did not return a transaction to sign');
       }
+      if (!connected) {
+        throw new Error('Wallet not connected');
+      }
+
+      const tx = Transaction.from(Buffer.from(result.transaction, 'base64'));
+      const signature = await sendTransaction(tx, connection);
 
       await apiFetch('/savings/confirm-withdraw', {
         method: 'POST',

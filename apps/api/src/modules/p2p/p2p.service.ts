@@ -399,15 +399,12 @@ export class P2PService {
       include: { buyer: true, seller: true, offer: true },
     });
 
-    // Restore offer availability when a trade is cancelled
+    // Restore offer availability when a trade is cancelled (atomic increment to prevent race)
     if (requestedStatus === 'CANCELLED' && updated.offer) {
-      const restoredAmount =
-        Number(updated.offer.availableAmount) / AMOUNT_SCALE +
-        Number(updated.cryptoAmount) / AMOUNT_SCALE;
       await this.prisma.p2POffer.update({
         where: { id: updated.offerId },
         data: {
-          availableAmount: toBigInt(restoredAmount),
+          availableAmount: { increment: updated.cryptoAmount },
           status: 'ACTIVE',
         },
       });

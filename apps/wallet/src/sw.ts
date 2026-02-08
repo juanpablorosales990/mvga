@@ -24,7 +24,14 @@ self.addEventListener('push', (event) => {
 // Click handler — open/focus the app
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const url = event.notification.data?.url ?? '/';
+  const rawUrl = event.notification.data?.url ?? '/';
+
+  // Sanitize URL: only allow relative paths (starting with /) to prevent open redirect / phishing
+  let url = '/';
+  if (typeof rawUrl === 'string' && rawUrl.startsWith('/') && !rawUrl.startsWith('//')) {
+    url = rawUrl;
+  }
+
   event.waitUntil(
     self.clients.matchAll({ type: 'window' }).then((windowClients) => {
       for (const client of windowClients) {

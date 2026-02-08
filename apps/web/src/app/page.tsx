@@ -1016,7 +1016,7 @@ export default function Home() {
                 },
                 {
                   q: 'What fees does MVGA charge?',
-                  a: 'Zero founder fees. A small protocol fee (0.5%) applies to P2P trades and is distributed to stakers, the humanitarian fund, and token burns. On-chain transaction fees (~$0.01) go to the Solana network.',
+                  a: 'Zero founder fees. A 0.1% platform fee applies to token swaps and is distributed to stakers, the humanitarian fund, and token burns. P2P trades have no platform fee. On-chain transaction fees (~$0.01) go to the Solana network.',
                 },
                 {
                   q: 'Do I need KYC to use the wallet?',
