@@ -30,9 +30,9 @@ export class CreateOfferDto {
   @IsIn(['USDC', 'MVGA'])
   cryptoCurrency: 'USDC' | 'MVGA';
 
-  @ApiProperty({ enum: ['ZELLE', 'VENMO', 'PAYPAL', 'BANK_TRANSFER'] })
-  @IsIn(['ZELLE', 'VENMO', 'PAYPAL', 'BANK_TRANSFER'])
-  paymentMethod: 'ZELLE' | 'VENMO' | 'PAYPAL' | 'BANK_TRANSFER';
+  @ApiProperty({ enum: ['ZELLE', 'VENMO', 'PAYPAL', 'BANK_TRANSFER', 'PAGO_MOVIL', 'BINANCE_PAY'] })
+  @IsIn(['ZELLE', 'VENMO', 'PAYPAL', 'BANK_TRANSFER', 'PAGO_MOVIL', 'BINANCE_PAY'])
+  paymentMethod: 'ZELLE' | 'VENMO' | 'PAYPAL' | 'BANK_TRANSFER' | 'PAGO_MOVIL' | 'BINANCE_PAY';
 
   @ApiProperty({ description: 'Exchange rate (e.g., 0.99 = 1% below market)' })
   @IsNumber()

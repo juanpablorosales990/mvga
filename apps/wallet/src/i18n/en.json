@@ -39,7 +39,8 @@
     "stake": "Stake",
     "assets": "Assets",
     "viewAll": "View All",
-    "deposit": "Deposit"
+    "deposit": "Deposit",
+    "charge": "Charge"
   },
   "send": {
     "title": "Send",
@@ -74,7 +75,10 @@
     "step1": "Share your QR code or address with the sender",
     "step2": "They can send SOL, USDC, MVGA, or any Solana token",
     "step3": "Tokens will appear in your wallet within seconds",
-    "connectPrompt": "Connect your wallet to receive tokens"
+    "connectPrompt": "Connect your wallet to receive tokens",
+    "requestAmount": "Request specific amount",
+    "tokenSelect": "Token",
+    "amountInput": "Amount"
   },
   "swap": {
     "title": "Swap",
@@ -201,7 +205,9 @@
     "zelle": "Zelle",
     "venmo": "Venmo",
     "paypal": "PayPal",
-    "bankTransfer": "Bank Transfer"
+    "bankTransfer": "Bank Transfer",
+    "pagoMovil": "Pago Movil",
+    "binancePay": "Binance Pay"
   },
   "trade": {
     "title": "Trade",
@@ -275,7 +281,8 @@
     "portfolio": "Portfolio",
     "notifications": "Notifications",
     "settings": "Settings",
-    "help": "Help"
+    "help": "Help",
+    "charge": "Charge"
   },
   "grants": {
     "title": "Grants",
@@ -713,6 +720,42 @@
     "buyCrypto": "Buy Crypto",
     "poweredBy": "Powered by Onramper. Payments processed by third-party providers. MVGA does not hold or transmit fiat currency.",
     "p2pExchange": "P2P Exchange",
-    "p2pDescription": "Buy with PagoMóvil, Zelle, or bank transfer"
+    "p2pDescription": "Buy with PagoMóvil, Zelle, or bank transfer",
+    "quickAmounts": "Quick amounts"
+  },
+  "charge": {
+    "title": "Charge",
+    "subtitle": "Request a payment from anyone with a Solana wallet",
+    "token": "Token",
+    "amount": "Amount",
+    "memo": "Memo (optional)",
+    "memoPlaceholder": "e.g. Rent payment",
+    "generate": "Generate QR",
+    "copyLink": "Copy Link",
+    "copied": "Copied!",
+    "share": "Share",
+    "shareText": "Pay me {{amount}} {{token}} via MVGA Wallet",
+    "createPaymentLink": "Create Payment Link",
+    "paymentLinkCreated": "Payment link created!",
+    "noAmount": "Enter an amount to generate a payment request",
+    "connectPrompt": "Connect your wallet to create payment requests"
+  },
+  "pay": {
+    "title": "Payment Request",
+    "from": "Requested by",
+    "amount": "Amount",
+    "token": "Token",
+    "memo": "Memo",
+    "status": "Status",
+    "pending": "Awaiting Payment",
+    "paid": "Paid",
+    "expired": "Expired",
+    "cancelled": "Cancelled",
+    "scanQr": "Scan with any Solana wallet to pay",
+    "payNow": "Pay Now",
+    "paying": "Paying...",
+    "paySuccess": "Payment sent!",
+    "notFound": "Payment request not found",
+    "loading": "Loading payment request..."
   }
 }

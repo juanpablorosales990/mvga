@@ -2,19 +2,33 @@ import { useSelfCustodyWallet } from '../contexts/WalletContext';
 import { QRCodeSVG } from 'qrcode.react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { buildSolanaPayUrl, SUPPORTED_TOKENS } from '../utils/solana-pay';
+
+const TOKEN_OPTIONS = ['', ...Object.keys(SUPPORTED_TOKENS)];
 
 export default function ReceivePage() {
   const { t } = useTranslation();
   const { connected, publicKey } = useSelfCustodyWallet();
   const [copied, setCopied] = useState(false);
+  const [showAmountFields, setShowAmountFields] = useState(false);
+  const [requestToken, setRequestToken] = useState('');
+  const [requestAmount, setRequestAmount] = useState('');
 
   const address = publicKey?.toBase58() || '';
+  const hasRequestAmount = requestAmount && parseFloat(requestAmount) > 0;
+  const qrValue = hasRequestAmount
+    ? buildSolanaPayUrl(address, {
+        token: requestToken || 'SOL',
+        amount: requestAmount,
+      })
+    : address;
+  const copyValue = hasRequestAmount ? qrValue : address;
 
   const handleCopy = async () => {
-    if (!address) return;
+    if (!copyValue) return;
 
     try {
-      await navigator.clipboard.writeText(address);
+      await navigator.clipboard.writeText(copyValue);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -34,10 +48,55 @@ export default function ReceivePage() {
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">{t('receive.title')}</h1>
 
+      {/* Optional: request specific amount */}
+      <div className="card">
+        <button
+          onClick={() => setShowAmountFields(!showAmountFields)}
+          className="w-full flex items-center justify-between text-sm"
+        >
+          <span className="text-white/60">{t('receive.requestAmount')}</span>
+          <span className="text-gold-500">{showAmountFields ? '−' : '+'}</span>
+        </button>
+        {showAmountFields && (
+          <div className="mt-3 space-y-3">
+            <div>
+              <label className="text-xs text-white/40 mb-1 block">{t('receive.tokenSelect')}</label>
+              <select
+                value={requestToken}
+                onChange={(e) => setRequestToken(e.target.value)}
+                className="w-full bg-white/10 px-3 py-2 text-white text-sm"
+              >
+                <option value="" className="bg-gray-900">
+                  SOL
+                </option>
+                {Object.keys(SUPPORTED_TOKENS).map((tok) => (
+                  <option key={tok} value={tok} className="bg-gray-900">
+                    {tok}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs text-white/40 mb-1 block">{t('receive.amountInput')}</label>
+              <input
+                type="number"
+                inputMode="decimal"
+                value={requestAmount}
+                onChange={(e) => setRequestAmount(e.target.value)}
+                placeholder="0.00"
+                className="w-full bg-white/10 px-3 py-2 text-white text-sm"
+                min="0"
+                step="any"
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
       <div className="card flex flex-col items-center py-8">
         {/* QR Code */}
         <div className="bg-white p-4 mb-6">
-          <QRCodeSVG value={address} size={200} level="H" />
+          <QRCodeSVG value={qrValue} size={200} level="H" />
         </div>
 
         {/* Address Display */}

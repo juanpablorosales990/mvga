@@ -10,7 +10,7 @@ interface P2POffer {
   type: 'BUY' | 'SELL';
   cryptoAmount: number;
   cryptoCurrency: 'USDC' | 'MVGA';
-  paymentMethod: 'ZELLE' | 'VENMO' | 'PAYPAL' | 'BANK_TRANSFER';
+  paymentMethod: 'ZELLE' | 'VENMO' | 'PAYPAL' | 'BANK_TRANSFER' | 'PAGO_MOVIL' | 'BINANCE_PAY';
   rate: number;
   minAmount: number;
   maxAmount: number;
@@ -25,7 +25,14 @@ interface Reputation {
 
 import { API_URL } from '../config';
 
-const PAYMENT_METHODS = ['ZELLE', 'VENMO', 'PAYPAL', 'BANK_TRANSFER'] as const;
+const PAYMENT_METHODS = [
+  'ZELLE',
+  'VENMO',
+  'PAYPAL',
+  'BANK_TRANSFER',
+  'PAGO_MOVIL',
+  'BINANCE_PAY',
+] as const;
 const CRYPTO_OPTIONS = ['USDC', 'MVGA'] as const;
 
 export default function P2PPage() {
@@ -51,7 +58,7 @@ export default function P2PPage() {
     type: 'BUY' | 'SELL';
     cryptoAmount: string;
     cryptoCurrency: 'USDC' | 'MVGA';
-    paymentMethod: 'ZELLE' | 'VENMO' | 'PAYPAL' | 'BANK_TRANSFER';
+    paymentMethod: 'ZELLE' | 'VENMO' | 'PAYPAL' | 'BANK_TRANSFER' | 'PAGO_MOVIL' | 'BINANCE_PAY';
     rate: string;
     minAmount: string;
     maxAmount: string;
@@ -205,6 +212,8 @@ export default function P2PPage() {
       VENMO: t('p2p.venmo'),
       PAYPAL: t('p2p.paypal'),
       BANK_TRANSFER: t('p2p.bankTransfer'),
+      PAGO_MOVIL: t('p2p.pagoMovil'),
+      BINANCE_PAY: t('p2p.binancePay'),
     };
     return labels[method] || method;
   };

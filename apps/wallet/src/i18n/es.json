@@ -39,7 +39,8 @@
     "stake": "Staking",
     "assets": "Activos",
     "viewAll": "Ver Todo",
-    "deposit": "Depositar"
+    "deposit": "Depositar",
+    "charge": "Cobrar"
   },
   "send": {
     "title": "Enviar",
@@ -74,7 +75,10 @@
     "step1": "Comparte tu código QR o dirección con el remitente",
     "step2": "Pueden enviar SOL, USDC, MVGA o cualquier token de Solana",
     "step3": "Los tokens aparecerán en tu billetera en segundos",
-    "connectPrompt": "Conecta tu billetera para recibir tokens"
+    "connectPrompt": "Conecta tu billetera para recibir tokens",
+    "requestAmount": "Solicitar monto específico",
+    "tokenSelect": "Token",
+    "amountInput": "Monto"
   },
   "swap": {
     "title": "Cambiar",
@@ -201,7 +205,9 @@
     "zelle": "Zelle",
     "venmo": "Venmo",
     "paypal": "PayPal",
-    "bankTransfer": "Transferencia Bancaria"
+    "bankTransfer": "Transferencia Bancaria",
+    "pagoMovil": "Pago Móvil",
+    "binancePay": "Binance Pay"
   },
   "trade": {
     "title": "Operación",
@@ -275,7 +281,8 @@
     "portfolio": "Portafolio",
     "notifications": "Notificaciones",
     "settings": "Ajustes",
-    "help": "Ayuda"
+    "help": "Ayuda",
+    "charge": "Cobrar"
   },
   "grants": {
     "title": "Subvenciones",
@@ -713,6 +720,42 @@
     "buyCrypto": "Comprar Crypto",
     "poweredBy": "Impulsado por Onramper. Pagos procesados por proveedores externos. MVGA no retiene ni transmite moneda fiat.",
     "p2pExchange": "Intercambio P2P",
-    "p2pDescription": "Compra con PagoMóvil, Zelle o transferencia bancaria"
+    "p2pDescription": "Compra con PagoMóvil, Zelle o transferencia bancaria",
+    "quickAmounts": "Montos rápidos"
+  },
+  "charge": {
+    "title": "Cobrar",
+    "subtitle": "Solicita un pago de cualquier persona con billetera Solana",
+    "token": "Token",
+    "amount": "Monto",
+    "memo": "Memo (opcional)",
+    "memoPlaceholder": "ej. Pago de alquiler",
+    "generate": "Generar QR",
+    "copyLink": "Copiar Enlace",
+    "copied": "¡Copiado!",
+    "share": "Compartir",
+    "shareText": "Págame {{amount}} {{token}} por MVGA Wallet",
+    "createPaymentLink": "Crear Enlace de Pago",
+    "paymentLinkCreated": "¡Enlace de pago creado!",
+    "noAmount": "Ingresa un monto para generar solicitud de pago",
+    "connectPrompt": "Conecta tu billetera para crear solicitudes de pago"
+  },
+  "pay": {
+    "title": "Solicitud de Pago",
+    "from": "Solicitado por",
+    "amount": "Monto",
+    "token": "Token",
+    "memo": "Memo",
+    "status": "Estado",
+    "pending": "Esperando Pago",
+    "paid": "Pagado",
+    "expired": "Expirado",
+    "cancelled": "Cancelado",
+    "scanQr": "Escanea con cualquier billetera Solana para pagar",
+    "payNow": "Pagar Ahora",
+    "paying": "Pagando...",
+    "paySuccess": "¡Pago enviado!",
+    "notFound": "Solicitud de pago no encontrada",
+    "loading": "Cargando solicitud de pago..."
   }
 }

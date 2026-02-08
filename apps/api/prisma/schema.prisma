@@ -126,6 +126,8 @@ enum PaymentMethod {
   VENMO
   PAYPAL
   BANK_TRANSFER
+  PAGO_MOVIL
+  BINANCE_PAY
 }
 
 enum P2POfferStatus {
@@ -681,4 +683,32 @@ enum CardAppStatus {
   KYC_REJECTED
   CARD_ISSUED
   FROZEN
+}
+
+// ============================================================================
+// Payment Requests (Charge / Cobrar)
+// ============================================================================
+
+model PaymentRequest {
+  id               String               @id @default(uuid())
+  recipientAddress String
+  token            String               // USDC, USDT, MVGA
+  amount           BigInt               // In smallest units (6 or 9 decimals)
+  memo             String?
+  status           PaymentRequestStatus @default(PENDING)
+  paymentTx        String?              @unique  // On-chain tx that paid this
+  expiresAt        DateTime             // Default: 24h from creation
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+
+  @@index([recipientAddress])
+  @@index([status])
+  @@index([expiresAt])
+}
+
+enum PaymentRequestStatus {
+  PENDING
+  PAID
+  EXPIRED
+  CANCELLED
 }

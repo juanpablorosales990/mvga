@@ -202,12 +202,13 @@ export default function WalletPage() {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-4 gap-2">
+      <div className="grid grid-cols-5 gap-2">
         {[
           { label: t('wallet.send'), icon: '↑', href: '/send' },
           { label: t('wallet.receive'), icon: '↓', href: '/receive' },
           { label: t('wallet.swap'), icon: '⇄', href: '/swap' },
           { label: t('wallet.deposit'), icon: '$', href: '/deposit' },
+          { label: t('wallet.charge'), icon: '₿', href: '/charge' },
         ].map((action) => (
           <Link
             key={action.label}

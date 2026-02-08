@@ -19,6 +19,7 @@ import { BankingModule } from './modules/banking/banking.module';
 import { TiersModule } from './modules/tiers/tiers.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { SavingsModule } from './modules/savings/savings.module';
+import { PaymentsModule } from './modules/payments/payments.module';
 import { HealthController } from './health.controller';
 
 @Module({
@@ -49,6 +50,7 @@ import { HealthController } from './health.controller';
     TiersModule,
     NotificationsModule,
     SavingsModule,
+    PaymentsModule,
   ],
   controllers: [HealthController],
   providers: [
