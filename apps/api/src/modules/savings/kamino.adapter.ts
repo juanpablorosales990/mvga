@@ -138,7 +138,12 @@ export class KaminoAdapter {
         new VanillaObligation(KLEND_PROGRAM_ID)
       );
 
-      tx.add(...kaminoAction.setupIxs, ...kaminoAction.lendingIxs);
+      tx.add(
+        ...kaminoAction.setupIxs,
+        ...(kaminoAction.inBetweenIxs ?? []),
+        ...kaminoAction.lendingIxs,
+        ...(kaminoAction.cleanupIxs ?? [])
+      );
       const { blockhash } = await this.connection.getLatestBlockhash('confirmed');
       tx.recentBlockhash = blockhash;
       tx.feePayer = wallet;
@@ -172,7 +177,12 @@ export class KaminoAdapter {
         new VanillaObligation(KLEND_PROGRAM_ID)
       );
 
-      tx.add(...kaminoAction.setupIxs, ...kaminoAction.lendingIxs);
+      tx.add(
+        ...kaminoAction.setupIxs,
+        ...(kaminoAction.inBetweenIxs ?? []),
+        ...kaminoAction.lendingIxs,
+        ...(kaminoAction.cleanupIxs ?? [])
+      );
       const { blockhash } = await this.connection.getLatestBlockhash('confirmed');
       tx.recentBlockhash = blockhash;
       tx.feePayer = wallet;
