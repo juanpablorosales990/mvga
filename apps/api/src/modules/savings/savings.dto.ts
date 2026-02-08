@@ -1,4 +1,13 @@
-import { IsString, IsNumber, IsPositive, IsOptional, IsIn } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsPositive,
+  IsOptional,
+  IsIn,
+  IsUUID,
+  MinLength,
+  MaxLength,
+} from 'class-validator';
 import { IsSolanaAddress } from '../../common/validators/solana-address.validator';
 
 export class DepositDto {
@@ -22,6 +31,8 @@ export class ConfirmDepositDto {
   walletAddress: string;
 
   @IsString()
+  @MinLength(64)
+  @MaxLength(128)
   signature: string;
 }
 
@@ -31,6 +42,7 @@ export class WithdrawDto {
   walletAddress: string;
 
   @IsString()
+  @IsUUID()
   positionId: string;
 
   @IsNumber()
@@ -45,8 +57,11 @@ export class ConfirmWithdrawDto {
   walletAddress: string;
 
   @IsString()
+  @IsUUID()
   positionId: string;
 
   @IsString()
+  @MinLength(64)
+  @MaxLength(128)
   signature: string;
 }

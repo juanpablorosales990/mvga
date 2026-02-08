@@ -1,4 +1,12 @@
-import { IsString, IsNumber, IsPositive, IsOptional, IsObject } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsPositive,
+  IsOptional,
+  IsObject,
+  MinLength,
+  MaxLength,
+} from 'class-validator';
 import { JupiterQuote } from './swap.service';
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
@@ -42,6 +50,8 @@ export class RecordSwapDto {
 
   @ApiProperty({ description: 'Transaction signature' })
   @IsString()
+  @MinLength(64)
+  @MaxLength(128)
   signature: string;
 
   @ApiProperty({ description: 'Input token mint address' })

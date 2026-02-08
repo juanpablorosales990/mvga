@@ -1,4 +1,4 @@
-import { IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import { IsNumber, IsOptional, IsString, Min, MinLength, MaxLength } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class ManualDistributionDto {
@@ -98,10 +98,14 @@ export class RecordFeeDto {
   @ApiPropertyOptional({ description: 'Transaction signature' })
   @IsOptional()
   @IsString()
+  @MinLength(64)
+  @MaxLength(128)
   signature?: string;
 
   @ApiPropertyOptional({ description: 'Related transaction' })
   @IsOptional()
   @IsString()
+  @MinLength(64)
+  @MaxLength(128)
   relatedTx?: string;
 }

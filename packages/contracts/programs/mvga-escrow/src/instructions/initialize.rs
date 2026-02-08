@@ -5,6 +5,7 @@ use anchor_spl::token_interface::{
 
 use crate::errors::EscrowError;
 use crate::state::{EscrowInitialized, EscrowState, EscrowStatus};
+use crate::AUTHORIZED_ADMIN;
 
 #[derive(Accounts)]
 #[instruction(trade_id: [u8; 16])]
@@ -17,8 +18,8 @@ pub struct InitializeEscrow<'info> {
     /// CHECK: This is the buyer's pubkey stored in the escrow state. Validated off-chain.
     pub buyer: UncheckedAccount<'info>,
 
-    /// Admin authority for dispute resolution
-    /// CHECK: Admin pubkey stored for later dispute resolution. Validated off-chain.
+    /// Admin authority for dispute resolution — must match AUTHORIZED_ADMIN
+    /// CHECK: Validated against hardcoded AUTHORIZED_ADMIN constant in handler.
     pub admin: UncheckedAccount<'info>,
 
     /// Token mint being escrowed
@@ -71,8 +72,7 @@ pub fn handle_initialize(
         EscrowError::BuyerCannotBeSeller
     );
     require!(
-        ctx.accounts.admin.key() != ctx.accounts.seller.key()
-            && ctx.accounts.admin.key() != ctx.accounts.buyer.key(),
+        ctx.accounts.admin.key() == AUTHORIZED_ADMIN,
         EscrowError::InvalidAdmin
     );
 
