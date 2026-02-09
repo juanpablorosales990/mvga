@@ -16,6 +16,7 @@ export default function GettingStartedCard() {
   const balances = useWalletStore((s) => s.balances);
   const firstSendCompleted = useWalletStore((s) => s.firstSendCompleted);
   const cardStatus = useWalletStore((s) => s.cardStatus);
+  const kycStatus = useWalletStore((s) => s.kycStatus);
 
   const hasBalance = useMemo(() => balances.some((b) => b.balance > 0), [balances]);
 
@@ -24,10 +25,12 @@ export default function GettingStartedCard() {
       { labelKey: 'checklist.createWallet', completed: true, href: '/' },
       { labelKey: 'checklist.secureBiometrics', completed: false, href: '/settings' },
       { labelKey: 'checklist.firstDeposit', completed: hasBalance, href: '/deposit' },
+      { labelKey: 'checklist.verifyIdentity', completed: kycStatus === 'APPROVED', href: '/kyc' },
       { labelKey: 'checklist.firstSend', completed: firstSendCompleted, href: '/send' },
       { labelKey: 'checklist.joinCard', completed: cardStatus !== 'none', href: '/banking/card' },
+      { labelKey: 'checklist.inviteFriend', completed: false, href: '/referral' },
     ],
-    [hasBalance, firstSendCompleted, cardStatus]
+    [hasBalance, kycStatus, firstSendCompleted, cardStatus]
   );
 
   const completedCount = items.filter((i) => i.completed).length;

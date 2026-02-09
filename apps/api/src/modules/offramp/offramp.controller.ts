@@ -2,13 +2,14 @@ import { Controller, Post, Get, Body, Param, UseGuards } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthGuard } from '../auth/auth.guard';
+import { KycGuard } from '../kyc/kyc.guard';
 import { CurrentUser } from '../auth/auth.decorator';
 import { OfframpService } from './offramp.service';
 import { CreatePayoutDto, CommitPayoutDto } from './offramp.dto';
 
 @ApiTags('Offramp')
 @Controller('offramp')
-@UseGuards(AuthGuard)
+@UseGuards(AuthGuard, KycGuard)
 @ApiBearerAuth()
 export class OfframpController {
   constructor(private readonly offrampService: OfframpService) {}

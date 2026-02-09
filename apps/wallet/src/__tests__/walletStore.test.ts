@@ -24,6 +24,8 @@ describe('walletStore', () => {
       tourCompleted: false,
       checklistDismissed: false,
       firstSendCompleted: false,
+      kycStatus: 'UNVERIFIED',
+      kycTier: 0,
     });
   });
 
@@ -341,6 +343,21 @@ describe('walletStore', () => {
       useWalletStore.getState().markFirstSend();
       useWalletStore.getState().markFirstSend();
       expect(useWalletStore.getState().firstSendCompleted).toBe(true);
+    });
+
+    it('starts with KYC unverified', () => {
+      expect(useWalletStore.getState().kycStatus).toBe('UNVERIFIED');
+      expect(useWalletStore.getState().kycTier).toBe(0);
+    });
+
+    it('sets KYC status', () => {
+      useWalletStore.getState().setKycStatus('APPROVED');
+      expect(useWalletStore.getState().kycStatus).toBe('APPROVED');
+    });
+
+    it('sets KYC tier', () => {
+      useWalletStore.getState().setKycTier(2);
+      expect(useWalletStore.getState().kycTier).toBe(2);
     });
   });
 

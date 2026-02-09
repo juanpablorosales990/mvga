@@ -27,8 +27,39 @@ model User {
   sellerTrades  P2PTrade[]     @relation("SellerTrades")
   reputation    UserReputation?
   votes         Vote[]
+  kyc           UserKyc?
 
   @@index([walletAddress])
+}
+
+// ============================================================================
+// KYC Verification (Sumsub)
+// ============================================================================
+
+model UserKyc {
+  id              String    @id @default(uuid())
+  userId          String    @unique
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status          KycStatus @default(UNVERIFIED)
+  provider        String    @default("SUMSUB")
+  externalId      String?
+  tier            Int       @default(0)
+  rejectionReason String?
+  verifiedAt      DateTime?
+  expiresAt       DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+enum KycStatus {
+  UNVERIFIED
+  PENDING
+  APPROVED
+  REJECTED
+  EXPIRED
 }
 
 model UserReputation {

@@ -19,6 +19,7 @@ describe('GettingStartedCard', () => {
       firstSendCompleted: false,
       cardStatus: 'none',
       balances: [],
+      kycStatus: 'UNVERIFIED',
     });
   });
 
@@ -29,17 +30,19 @@ describe('GettingStartedCard', () => {
 
   it('shows progress text', () => {
     renderCard();
-    // 1 of 5 completed (create wallet is always checked)
-    expect(screen.getByText('1 of 5 completed')).toBeTruthy();
+    // 1 of 7 completed (create wallet is always checked)
+    expect(screen.getByText('1 of 7 completed')).toBeTruthy();
   });
 
-  it('renders all 5 checklist items', () => {
+  it('renders all 7 checklist items', () => {
     renderCard();
     expect(screen.getByText('Create your wallet')).toBeTruthy();
     expect(screen.getByText('Secure with biometrics')).toBeTruthy();
     expect(screen.getByText('Make your first deposit')).toBeTruthy();
+    expect(screen.getByText('Verify your identity')).toBeTruthy();
     expect(screen.getByText('Send your first payment')).toBeTruthy();
     expect(screen.getByText('Join the card waitlist')).toBeTruthy();
+    expect(screen.getByText('Invite a friend')).toBeTruthy();
   });
 
   it('create wallet item is always completed', () => {
@@ -68,20 +71,20 @@ describe('GettingStartedCard', () => {
       ],
     });
     renderCard();
-    // Should now show 2 of 5 completed
-    expect(screen.getByText('2 of 5 completed')).toBeTruthy();
+    // Should now show 2 of 7 completed
+    expect(screen.getByText('2 of 7 completed')).toBeTruthy();
   });
 
   it('marks first send as completed from store', () => {
     useWalletStore.setState({ firstSendCompleted: true });
     renderCard();
-    expect(screen.getByText('2 of 5 completed')).toBeTruthy();
+    expect(screen.getByText('2 of 7 completed')).toBeTruthy();
   });
 
   it('marks card waitlist as completed when cardStatus is not none', () => {
     useWalletStore.setState({ cardStatus: 'waitlisted' });
     renderCard();
-    expect(screen.getByText('2 of 5 completed')).toBeTruthy();
+    expect(screen.getByText('2 of 7 completed')).toBeTruthy();
   });
 
   it('returns null when all items completed', () => {
@@ -92,7 +95,7 @@ describe('GettingStartedCard', () => {
         { mint: 'x', symbol: 'SOL', name: 'Solana', balance: 1, decimals: 9, usdValue: 150 },
       ],
     });
-    // 4 of 5 completed (biometrics is hardcoded false, so this won't reach 5)
+    // 4 of 7 completed (biometrics + invite are hardcoded false, kyc unverified, so this won't reach 7)
     // Card should still render
     const { container } = renderCard();
     expect(container.innerHTML).not.toBe('');
@@ -104,8 +107,10 @@ describe('GettingStartedCard', () => {
     const hrefs = Array.from(links).map((l) => l.getAttribute('href'));
     expect(hrefs).toContain('/settings');
     expect(hrefs).toContain('/deposit');
+    expect(hrefs).toContain('/kyc');
     expect(hrefs).toContain('/send');
     expect(hrefs).toContain('/banking/card');
+    expect(hrefs).toContain('/referral');
   });
 
   it('completed items are non-interactive', () => {
@@ -121,8 +126,8 @@ describe('GettingStartedCard', () => {
     // Progress bar inner div with bg-gold-500
     const progressBar = container.querySelector('.bg-gold-500.transition-all');
     expect(progressBar).toBeTruthy();
-    // 1/5 = 20%
-    expect((progressBar as HTMLElement).style.width).toBe('20%');
+    // 1/7 ≈ 14.29%
+    expect((progressBar as HTMLElement).style.width).toBe(`${(1 / 7) * 100}%`);
   });
 
   it('updates progress bar width when more items completed', () => {
@@ -134,7 +139,7 @@ describe('GettingStartedCard', () => {
     });
     const { container } = renderCard();
     const progressBar = container.querySelector('.bg-gold-500.transition-all');
-    // 3/5 = 60%
-    expect((progressBar as HTMLElement).style.width).toBe('60%');
+    // 3/7 ≈ 42.86%
+    expect((progressBar as HTMLElement).style.width).toBe(`${(3 / 7) * 100}%`);
   });
 });

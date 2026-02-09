@@ -43,6 +43,7 @@ const ScheduledPaymentsPage = lazy(() => import('./pages/ScheduledPaymentsPage')
 const DCAPage = lazy(() => import('./pages/DCAPage'));
 const PendingScheduledPage = lazy(() => import('./pages/PendingScheduledPage'));
 const CashOutPage = lazy(() => import('./pages/CashOutPage'));
+const KycPage = lazy(() => import('./pages/KycPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 const WelcomeTour = lazy(() => import('./components/WelcomeTour'));
 
@@ -129,6 +130,7 @@ function AppShell() {
                 <Route path="/scheduled/payments" element={<ScheduledPaymentsPage />} />
                 <Route path="/scheduled/dca" element={<DCAPage />} />
                 <Route path="/cashout" element={<CashOutPage />} />
+                <Route path="/kyc" element={<KycPage />} />
                 <Route path="*" element={<NotFoundPage />} />
               </Routes>
             </Suspense>

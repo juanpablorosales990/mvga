@@ -40,7 +40,8 @@
     "assets": "Activos",
     "viewAll": "Ver Todo",
     "deposit": "Depositar",
-    "charge": "Cobrar"
+    "charge": "Cobrar",
+    "share": "Compartir"
   },
   "send": {
     "title": "Enviar",
@@ -494,7 +495,9 @@
     "enableBiometric": "Activar",
     "biometricEnabled": "Desbloqueo biometrico activado!",
     "biometricDisabled": "Desbloqueo biometrico desactivado",
-    "biometricFailed": "Error al configurar biometrico. Intenta de nuevo."
+    "biometricFailed": "Error al configurar biometrico. Intenta de nuevo.",
+    "kyc": "Estado de Verificación",
+    "kycDesc": "Verifica tu identidad para desbloquear todas las funciones"
   },
   "onboarding": {
     "tagline": "Tus llaves, tus monedas. Sin extensiones. Sin intermediarios.",
@@ -960,7 +963,9 @@
     "secureBiometrics": "Activar biométricos",
     "firstDeposit": "Hacer tu primer depósito",
     "firstSend": "Enviar tu primer pago",
-    "joinCard": "Unirse a la lista de tarjeta"
+    "joinCard": "Unirse a la lista de tarjeta",
+    "inviteFriend": "Invitar a un amigo",
+    "verifyIdentity": "Verificar tu identidad"
   },
   "cashout": {
     "title": "Retiro",
@@ -986,5 +991,20 @@
     "status_FAILED": "Fallido",
     "poweredBy": "Impulsado por Airtm. El destinatario recibe USD en su billetera Airtm.",
     "connectPrompt": "Conecta tu billetera para hacer retiros"
+  },
+  "kyc": {
+    "title": "Verifica tu Identidad",
+    "subtitle": "Completa la verificación para desbloquear P2P, retiros y tarjeta",
+    "verifyPrompt": "Verifica tu identidad",
+    "verifyDesc": "Desbloquea P2P, retiros y funciones de tarjeta",
+    "startVerification": "Iniciar Verificación",
+    "pending": "Verificación en Progreso",
+    "pendingDesc": "Estamos revisando tus documentos. Esto suele tomar unos minutos.",
+    "approved": "Verificado",
+    "approvedDesc": "Tu identidad ha sido verificada. Todas las funciones están desbloqueadas.",
+    "rejected": "Verificación Fallida",
+    "rejectedReason": "Razón: {{reason}}",
+    "tryAgain": "Intentar de Nuevo",
+    "requiredForFeature": "Verificación de identidad requerida"
   }
 }

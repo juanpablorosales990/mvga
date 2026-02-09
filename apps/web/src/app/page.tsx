@@ -48,11 +48,12 @@ export default function Home() {
   const marqueeItems = [
     { label: 'USERS', value: metrics ? formatNumber(metrics.totalUsers) : '---' },
     { label: 'TRANSFERS', value: '< 1 SECOND' },
-    { label: 'FEES', value: '$0 P2P' },
+    { label: 'PLATFORM FEES', value: '$0 ON P2P' },
     { label: 'CURRENCIES', value: 'USD & VES' },
     { label: 'LANGUAGES', value: 'EN / ES' },
-    { label: 'STATUS', value: 'OPEN SOURCE' },
+    { label: 'SELF-CUSTODY', value: 'YOUR KEYS' },
     { label: 'CARD', value: 'VISA DEBIT' },
+    { label: 'AUDIT ROUNDS', value: '14 COMPLETED' },
   ];
 
   return (
@@ -69,6 +70,9 @@ export default function Home() {
               </span>
               <span className="text-xs tracking-[0.25em] uppercase border border-white/20 px-3 py-1 text-white/50">
                 No Bank Required
+              </span>
+              <span className="text-xs tracking-[0.25em] uppercase border border-emerald-500/30 px-3 py-1 text-emerald-400">
+                Self-Custody
               </span>
             </div>
 
@@ -303,7 +307,7 @@ export default function Home() {
             </p>
 
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[640px]">
+              <table className="w-full min-w-[800px]">
                 <thead>
                   <tr className="border-b border-white/10">
                     <th className="text-left py-4 pr-4 text-sm text-white/30 font-mono uppercase tracking-wider">
@@ -320,6 +324,9 @@ export default function Home() {
                     <th className="py-4 px-4 text-center text-sm text-white/30 font-mono uppercase tracking-wider">
                       Zelle / PayPal
                     </th>
+                    <th className="py-4 px-4 text-center text-sm text-white/30 font-mono uppercase tracking-wider">
+                      Other Dollar Wallets
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
@@ -329,48 +336,77 @@ export default function Home() {
                       mvga: '$0',
                       wu: '$5-15',
                       zelle: '$0 (US only)',
+                      other: '1% crypto fee',
                     },
                     {
                       feature: 'Exchange Rate Markup',
                       mvga: '0%',
                       wu: '3-8%',
                       zelle: 'N/A',
+                      other: '0.5-1%',
                     },
                     {
                       feature: 'Transfer Speed',
                       mvga: '< 1 second',
                       wu: '1-3 days',
                       zelle: 'Instant (US)',
+                      other: '~5 seconds',
                     },
                     {
                       feature: 'Send $200 to Venezuela',
                       mvga: '$200 received',
                       wu: '~$170 received',
                       zelle: 'Not available',
+                      other: '~$197 received',
                     },
                     {
                       feature: 'Works in Venezuela',
                       mvga: 'Yes',
                       wu: 'Limited',
                       zelle: 'No',
+                      other: 'Limited',
                     },
                     {
                       feature: 'Debit Card',
                       mvga: 'Visa',
                       wu: 'No',
                       zelle: 'No',
+                      other: 'Select markets',
                     },
                     {
                       feature: 'Phone Top-Ups',
                       mvga: 'Yes',
                       wu: 'No',
                       zelle: 'No',
+                      other: 'No',
                     },
                     {
                       feature: 'Savings & Interest',
+                      mvga: 'Up to 8% APY',
+                      wu: 'No',
+                      zelle: 'No',
+                      other: '1-2% APY',
+                    },
+                    {
+                      feature: 'Self-Custody',
+                      mvga: 'Yes',
+                      wu: 'N/A',
+                      zelle: 'N/A',
+                      other: 'No',
+                    },
+                    {
+                      feature: 'P2P Escrow',
+                      mvga: 'On-chain',
+                      wu: 'None',
+                      zelle: 'None',
+                      other: 'None',
+                    },
+                    {
+                      feature: 'Open Source',
                       mvga: 'Yes',
                       wu: 'No',
                       zelle: 'No',
+                      other: 'No',
                     },
                   ].map((row) => (
                     <tr key={row.feature} className="group hover:bg-white/[0.02] transition">
@@ -384,10 +420,60 @@ export default function Home() {
                       <td className="py-4 px-4 text-center font-mono text-sm text-white/30">
                         {row.zelle}
                       </td>
+                      <td className="py-4 px-4 text-center font-mono text-sm text-white/30">
+                        {row.other}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+            </div>
+          </div>
+        </section>
+
+        {/* ── WHY CHOOSE MVGA ──────────────────────────────────── */}
+        <section className="py-24 md:py-32 px-6 border-t border-white/10">
+          <div className="max-w-7xl mx-auto">
+            <p className="text-xs tracking-[0.3em] text-white/30 uppercase font-mono mb-4">
+              Structural Advantages
+            </p>
+            <h2 className="text-3xl md:text-5xl font-bold mb-4">Why choose MVGA.</h2>
+            <p className="text-white/40 mb-16 max-w-2xl">
+              Not just lower fees. A fundamentally different architecture that puts you in control.
+            </p>
+
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-px bg-white/10 stagger">
+              {[
+                {
+                  icon: '\uD83D\uDD10',
+                  title: 'Self-Custody by Default',
+                  desc: 'Your keys never leave your device. No one — not even MVGA — can freeze your account or move your funds.',
+                },
+                {
+                  icon: '\uD83D\uDD0D',
+                  title: 'On-Chain Transparency',
+                  desc: 'Every transaction is verifiable on Solana. No black boxes. No hidden ledgers. Full auditability.',
+                },
+                {
+                  icon: '\uD83D\uDEE1\uFE0F',
+                  title: 'P2P Escrow Protection',
+                  desc: 'Smart contract locks funds until both parties confirm. No trust required. No chargebacks.',
+                },
+                {
+                  icon: '\uD83D\uDCC8',
+                  title: 'Real DeFi Yields',
+                  desc: 'Earn through Solana DeFi protocols, not a company treasury. Transparent, auditable returns.',
+                },
+              ].map((card) => (
+                <div
+                  key={card.title}
+                  className="fade-up bg-black p-8 hover:bg-white/[0.02] transition"
+                >
+                  <span className="text-3xl mb-4 block">{card.icon}</span>
+                  <h3 className="text-sm font-bold uppercase tracking-wide mb-3">{card.title}</h3>
+                  <p className="text-white/40 leading-relaxed text-sm">{card.desc}</p>
+                </div>
+              ))}
             </div>
           </div>
         </section>
@@ -614,9 +700,9 @@ export default function Home() {
                   desc: 'Sub-second transfers, near-zero network fees',
                 },
                 {
-                  name: 'Coinbase',
-                  role: 'Deposits',
-                  desc: 'Trusted global on-ramp',
+                  name: 'Sumsub',
+                  role: 'Identity',
+                  desc: 'KYC verification for 220+ countries',
                 },
                 {
                   name: 'Vercel',

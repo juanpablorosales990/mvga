@@ -306,6 +306,29 @@ export default function SettingsPage() {
         </div>
       )}
 
+      {/* KYC Verification */}
+      {connected && (
+        <Link
+          to="/kyc"
+          className="card p-4 flex items-center justify-between hover:bg-white/10 transition"
+        >
+          <div>
+            <h2 className="font-semibold text-sm text-gray-400 uppercase tracking-wide">
+              {t('settings.kyc')}
+            </h2>
+            <p className="text-xs text-gray-500 mt-1">{t('settings.kycDesc')}</p>
+          </div>
+          <svg
+            className="w-5 h-5 text-gray-400 flex-shrink-0"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </Link>
+      )}
+
       {/* Auto-Compound Default */}
       <div className="card p-4">
         <div className="flex items-center justify-between">

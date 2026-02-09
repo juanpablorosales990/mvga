@@ -40,7 +40,8 @@
     "assets": "Assets",
     "viewAll": "View All",
     "deposit": "Deposit",
-    "charge": "Charge"
+    "charge": "Charge",
+    "share": "Share"
   },
   "send": {
     "title": "Send",
@@ -494,7 +495,9 @@
     "enableBiometric": "Enable",
     "biometricEnabled": "Biometric unlock enabled!",
     "biometricDisabled": "Biometric unlock disabled",
-    "biometricFailed": "Biometric setup failed. Try again."
+    "biometricFailed": "Biometric setup failed. Try again.",
+    "kyc": "Verification Status",
+    "kycDesc": "Verify your identity to unlock all features"
   },
   "onboarding": {
     "tagline": "Your keys, your coins. No extensions. No middlemen.",
@@ -960,7 +963,9 @@
     "secureBiometrics": "Secure with biometrics",
     "firstDeposit": "Make your first deposit",
     "firstSend": "Send your first payment",
-    "joinCard": "Join the card waitlist"
+    "joinCard": "Join the card waitlist",
+    "inviteFriend": "Invite a friend",
+    "verifyIdentity": "Verify your identity"
   },
   "cashout": {
     "title": "Cash Out",
@@ -986,5 +991,20 @@
     "status_FAILED": "Failed",
     "poweredBy": "Powered by Airtm. Recipient receives USD to their Airtm wallet.",
     "connectPrompt": "Connect your wallet to cash out"
+  },
+  "kyc": {
+    "title": "Verify Your Identity",
+    "subtitle": "Complete verification to unlock P2P, cash out, and card features",
+    "verifyPrompt": "Verify your identity",
+    "verifyDesc": "Unlock P2P, cash out, and card features",
+    "startVerification": "Start Verification",
+    "pending": "Verification in Progress",
+    "pendingDesc": "We're reviewing your documents. This usually takes a few minutes.",
+    "approved": "Verified",
+    "approvedDesc": "Your identity has been verified. All features are unlocked.",
+    "rejected": "Verification Failed",
+    "rejectedReason": "Reason: {{reason}}",
+    "tryAgain": "Try Again",
+    "requiredForFeature": "Identity verification required"
   }
 }

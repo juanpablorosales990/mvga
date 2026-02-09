@@ -24,6 +24,8 @@ export interface RecentRecipient {
   lastUsed: number;
 }
 
+export type KycStatus = 'UNVERIFIED' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED';
+
 export interface PriceAlert {
   id: string;
   token: string; // SOL, USDC, MVGA
@@ -72,6 +74,10 @@ interface WalletState {
   // Balance refresh trigger
   balanceVersion: number;
 
+  // KYC
+  kycStatus: KycStatus;
+  kycTier: number;
+
   // Onboarding
   tourCompleted: boolean;
   checklistDismissed: boolean;
@@ -98,6 +104,8 @@ interface WalletState {
   addPriceAlert: (alert: Omit<PriceAlert, 'id' | 'triggered' | 'createdAt'>) => void;
   removePriceAlert: (id: string) => void;
   triggerPriceAlert: (id: string) => void;
+  setKycStatus: (status: KycStatus) => void;
+  setKycTier: (tier: number) => void;
   completeTour: () => void;
   dismissChecklist: () => void;
   markFirstSend: () => void;
@@ -124,6 +132,8 @@ export const useWalletStore = create<WalletState>()(
       savingsGoal: null,
       cardStatus: 'none' as CardStatus,
       balanceVersion: 0,
+      kycStatus: 'UNVERIFIED' as KycStatus,
+      kycTier: 0,
       tourCompleted: false,
       checklistDismissed: false,
       firstSendCompleted: false,
@@ -188,6 +198,8 @@ export const useWalletStore = create<WalletState>()(
         set((state) => ({
           priceAlerts: state.priceAlerts.map((a) => (a.id === id ? { ...a, triggered: true } : a)),
         })),
+      setKycStatus: (status) => set({ kycStatus: status }),
+      setKycTier: (tier) => set({ kycTier: tier }),
       completeTour: () => set({ tourCompleted: true }),
       dismissChecklist: () => set({ checklistDismissed: true }),
       markFirstSend: () => set({ firstSendCompleted: true }),
@@ -211,6 +223,8 @@ export const useWalletStore = create<WalletState>()(
         readNotifications: state.readNotifications,
         savingsGoal: state.savingsGoal,
         cardStatus: state.cardStatus,
+        kycStatus: state.kycStatus,
+        kycTier: state.kycTier,
         tourCompleted: state.tourCompleted,
         checklistDismissed: state.checklistDismissed,
         firstSendCompleted: state.firstSendCompleted,

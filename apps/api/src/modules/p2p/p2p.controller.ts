@@ -22,6 +22,7 @@ import {
   ResolveDisputeDto,
 } from './dto/create-offer.dto';
 import { AuthGuard } from '../auth/auth.guard';
+import { KycGuard } from '../kyc/kyc.guard';
 import { AdminGuard } from '../auth/admin.guard';
 import { Roles } from '../auth/roles.decorator';
 import { CurrentUser } from '../auth/auth.decorator';
@@ -58,7 +59,7 @@ export class P2PController {
 
   @Post('offers')
   @Throttle({ default: { limit: 5, ttl: 60000 } })
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, KycGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a new P2P offer' })
   async createOffer(@Body() dto: CreateOfferDto, @CurrentUser('wallet') wallet: string) {
@@ -80,7 +81,7 @@ export class P2PController {
 
   @Post('offers/:offerId/accept')
   @Throttle({ default: { limit: 5, ttl: 60000 } })
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, KycGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Accept an offer and start a trade' })
   async acceptOffer(

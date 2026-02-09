@@ -47,6 +47,7 @@ export default function WalletPage() {
   const [loading, setLoading] = useState(false);
   const { formatUsdValue } = usePrices();
   const preferredCurrency = useWalletStore((s) => s.preferredCurrency);
+  const kycStatus = useWalletStore((s) => s.kycStatus);
   const storeSetBalances = useWalletStore((s) => s.setBalances);
   const balanceVersion = useWalletStore((s) => s.balanceVersion);
 
@@ -205,14 +206,44 @@ export default function WalletPage() {
       {/* Getting Started Checklist */}
       <GettingStartedCard />
 
+      {/* KYC Banner */}
+      {kycStatus !== 'APPROVED' && (
+        <Link
+          to="/kyc"
+          className="card flex items-center gap-3 border border-gold-500/20 hover:border-gold-500/40 transition"
+        >
+          <div className="w-10 h-10 border border-gold-500/30 flex items-center justify-center flex-shrink-0">
+            <svg
+              className="w-5 h-5 text-gold-500"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+              />
+            </svg>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold">{t('kyc.verifyPrompt')}</p>
+            <p className="text-xs text-white/30">{t('kyc.verifyDesc')}</p>
+          </div>
+          <span className="text-gold-500 text-sm font-mono flex-shrink-0">→</span>
+        </Link>
+      )}
+
       {/* Quick Actions */}
-      <div className="grid grid-cols-5 gap-2">
+      <div className="grid grid-cols-6 gap-2">
         {[
           { label: t('wallet.send'), icon: '↑', href: '/send' },
           { label: t('wallet.receive'), icon: '↓', href: '/receive' },
           { label: t('wallet.swap'), icon: '⇄', href: '/swap' },
           { label: t('wallet.deposit'), icon: '$', href: '/deposit' },
           { label: t('wallet.charge'), icon: '₿', href: '/charge' },
+          { label: t('wallet.share'), icon: '★', href: '/referral' },
         ].map((action) => (
           <Link
             key={action.label}
