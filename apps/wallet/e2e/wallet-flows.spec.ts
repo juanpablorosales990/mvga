@@ -549,13 +549,14 @@ test.describe('Navigation After Wallet Connected', () => {
   });
 
   test('wallet page shows quick action buttons when connected', async ({ page }) => {
-    // Quick actions grid has Send, Receive, Swap, Deposit links
+    // Quick actions grid has Send, Receive, Swap, Deposit, Charge links
     const quickActions = page.locator('.grid a');
-    await expect(quickActions).toHaveCount(4);
+    await expect(quickActions).toHaveCount(5);
     await expect(page.locator('a[href="/send"]').first()).toBeVisible();
     await expect(page.locator('a[href="/receive"]').first()).toBeVisible();
     await expect(page.locator('a[href="/swap"]').first()).toBeVisible();
     await expect(page.locator('a[href="/deposit"]')).toBeVisible();
+    await expect(page.locator('a[href="/charge"]')).toBeVisible();
   });
 
   test('send page loads without connect prompt when connected', async ({ page }) => {

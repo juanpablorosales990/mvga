@@ -2,9 +2,10 @@ import { test, expect } from '@playwright/test';
 
 /**
  * Smoke test against production (app.mvga.io).
- * Only run manually: npx playwright test e2e/production-smoke.spec.ts
+ * Only run manually: SMOKE=1 npx playwright test e2e/production-smoke.spec.ts
  */
 
+test.skip(!process.env.SMOKE, 'Production smoke test — run with SMOKE=1');
 test.use({ baseURL: 'https://app.mvga.io' });
 
 test('production: app loads and shows onboarding or lock screen', async ({ page }) => {

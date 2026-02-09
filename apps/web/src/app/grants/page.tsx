@@ -21,6 +21,7 @@ async function getProposals(): Promise<Proposal[]> {
   try {
     const res = await fetch(`${API_BASE}/grants/proposals?status=FUNDED`, {
       next: { revalidate: 300 },
+      signal: AbortSignal.timeout(5000),
     });
     if (!res.ok) return [];
     return res.json();
@@ -33,6 +34,7 @@ async function getVotingProposals(): Promise<Proposal[]> {
   try {
     const res = await fetch(`${API_BASE}/grants/proposals?status=VOTING`, {
       next: { revalidate: 60 },
+      signal: AbortSignal.timeout(5000),
     });
     if (!res.ok) return [];
     return res.json();

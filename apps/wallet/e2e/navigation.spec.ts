@@ -19,7 +19,7 @@ test.describe('Navigation', () => {
     await expect(page).toHaveURL('/swap');
 
     // Navigate to Bank
-    await nav.getByRole('link', { name: /bank|banco/i }).click();
+    await nav.getByRole('link', { name: /dollar|dólar/i }).click();
     await expect(page).toHaveURL('/banking');
 
     // Navigate to P2P

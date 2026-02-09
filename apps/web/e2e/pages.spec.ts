@@ -1,19 +1,21 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Grants Page', () => {
+  // Grants page does SSR data fetching — allow extra time when API is unreachable
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/grants', { timeout: 30000 });
+  });
+
   test('loads and shows heading', async ({ page }) => {
-    await page.goto('/grants');
     await expect(page.locator('text=Community Grants')).toBeVisible();
   });
 
   test('has submit proposal button linking to app', async ({ page }) => {
-    await page.goto('/grants');
     const submitBtn = page.locator('a:has-text("Submit a Proposal")');
     await expect(submitBtn).toHaveAttribute('href', 'https://app.mvga.io/grants/create');
   });
 
   test('shows How It Works section with 4 steps', async ({ page }) => {
-    await page.goto('/grants');
     await expect(page.locator('text=How It Works')).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Apply' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Vote' })).toBeVisible();

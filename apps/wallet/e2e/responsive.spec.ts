@@ -16,7 +16,7 @@ test.describe('Responsive — Mobile', () => {
     // All 5 bottom nav tabs should be visible
     await expect(nav.getByRole('link', { name: /wallet|billetera/i })).toBeVisible();
     await expect(nav.getByRole('link', { name: /swap|cambiar/i })).toBeVisible();
-    await expect(nav.getByRole('link', { name: /bank|banco/i })).toBeVisible();
+    await expect(nav.getByRole('link', { name: /dollar|dólar/i })).toBeVisible();
     await expect(nav.getByRole('link', { name: /p2p/i })).toBeVisible();
     await expect(nav.getByRole('link', { name: /more|más/i })).toBeVisible();
   });
