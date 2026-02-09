@@ -301,7 +301,8 @@
     "batchSend": "Batch Send",
     "recurringPayments": "Recurring Payments",
     "dcaAutoBuy": "DCA Auto-Buy",
-    "pendingApprovals": "Pending Approvals"
+    "pendingApprovals": "Pending Approvals",
+    "cashout": "Cash Out"
   },
   "grants": {
     "title": "Grants",
@@ -923,5 +924,30 @@
     "status_REFUNDED": "Refunded",
     "poweredBy": "Powered by Reloadly. Supports Movistar, Movilnet & Digitel.",
     "connectPrompt": "Connect your wallet to recharge phones"
+  },
+  "cashout": {
+    "title": "Cash Out",
+    "subtitle": "Send USD to any Airtm account. Recipient cashes out to their local bank.",
+    "sendTab": "Send",
+    "historyTab": "History",
+    "recipientEmail": "Recipient Email",
+    "invalidEmail": "Enter a valid email address",
+    "amount": "Amount (USD)",
+    "customAmount": "Custom amount ($1 – $1,800)",
+    "description": "Description (optional)",
+    "descriptionPlaceholder": "e.g. Rent payment, groceries",
+    "to": "To",
+    "send": "Send ${{amount}}",
+    "success": "${{amount}} sent to {{email}}",
+    "failed": "Cash out failed",
+    "noHistory": "No cash outs yet",
+    "status_PENDING": "Pending",
+    "status_COMMITTED": "Committed",
+    "status_PROCESSING": "Processing",
+    "status_COMPLETED": "Completed",
+    "status_CANCELLED": "Cancelled",
+    "status_FAILED": "Failed",
+    "poweredBy": "Powered by Airtm. Recipient receives USD to their Airtm wallet.",
+    "connectPrompt": "Connect your wallet to cash out"
   }
 }

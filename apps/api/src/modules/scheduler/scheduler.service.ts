@@ -287,9 +287,10 @@ export class SchedulerService {
       throw new BadRequestException('Transaction signer does not match wallet');
     }
 
-    // Update execution
-    await this.prisma.scheduledExecution.update({
-      where: { id },
+    // Atomic update — prevents race condition where two concurrent requests
+    // both pass the PENDING check above
+    const { count } = await this.prisma.scheduledExecution.updateMany({
+      where: { id, status: 'PENDING' },
       data: {
         status: 'COMPLETED',
         signature: dto.signature,
@@ -297,6 +298,10 @@ export class SchedulerService {
         outputAmount: dto.outputAmount ? BigInt(dto.outputAmount) : null,
       },
     });
+
+    if (count === 0) {
+      throw new BadRequestException('Execution already completed or no longer pending');
+    }
 
     // Advance parent order to next cycle
     if (execution.type === 'PAYMENT' && execution.paymentId) {

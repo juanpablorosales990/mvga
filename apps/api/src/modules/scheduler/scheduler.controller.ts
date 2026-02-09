@@ -9,9 +9,10 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthGuard } from '../auth/auth.guard';
-import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { CurrentUser } from '../auth/auth.decorator';
 import { SchedulerService } from './scheduler.service';
 import {
   CreateRecurringPaymentDto,
@@ -29,6 +30,7 @@ export class SchedulerController {
   // ── Recurring Payments ──────────────────────────────────────────────
 
   @Post('payments')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   async createPayment(
     @CurrentUser('wallet') wallet: string,
     @Body() dto: CreateRecurringPaymentDto
@@ -59,6 +61,7 @@ export class SchedulerController {
   // ── DCA Orders ──────────────────────────────────────────────────────
 
   @Post('dca')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   async createDCA(@CurrentUser('wallet') wallet: string, @Body() dto: CreateDCAOrderDto) {
     return this.schedulerService.createDCAOrder(wallet, dto);
   }
@@ -96,6 +99,7 @@ export class SchedulerController {
   }
 
   @Post('executions/:id/complete')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   async completeExecution(
     @CurrentUser('wallet') wallet: string,
     @Param('id') id: string,
@@ -105,6 +109,7 @@ export class SchedulerController {
   }
 
   @Post('executions/:id/skip')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   async skipExecution(@CurrentUser('wallet') wallet: string, @Param('id') id: string) {
     return this.schedulerService.skipExecution(wallet, id);
   }

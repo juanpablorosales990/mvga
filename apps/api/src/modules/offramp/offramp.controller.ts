@@ -1,4 +1,5 @@
 import { Controller, Post, Get, Body, Param, UseGuards } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthGuard } from '../auth/auth.guard';
 import { CurrentUser } from '../auth/auth.decorator';
@@ -13,6 +14,7 @@ export class OfframpController {
   constructor(private readonly offrampService: OfframpService) {}
 
   @Post('payout')
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
   async createPayout(@CurrentUser('wallet') wallet: string, @Body() dto: CreatePayoutDto) {
     return this.offrampService.createPayout(
       wallet,
@@ -23,6 +25,7 @@ export class OfframpController {
   }
 
   @Post('payout/one-step')
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
   async createOneStepPayout(@CurrentUser('wallet') wallet: string, @Body() dto: CreatePayoutDto) {
     return this.offrampService.createOneStepPayout(
       wallet,
@@ -33,11 +36,13 @@ export class OfframpController {
   }
 
   @Post('payout/commit')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   async commitPayout(@CurrentUser('wallet') wallet: string, @Body() dto: CommitPayoutDto) {
     return this.offrampService.commitPayout(wallet, dto.payoutId);
   }
 
   @Post('payout/:id/cancel')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   async cancelPayout(@CurrentUser('wallet') wallet: string, @Param('id') id: string) {
     return this.offrampService.cancelPayout(wallet, id);
   }

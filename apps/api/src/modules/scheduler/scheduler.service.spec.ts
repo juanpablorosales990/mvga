@@ -82,7 +82,7 @@ describe('SchedulerService', () => {
         findFirst: jest.fn().mockResolvedValue(null),
         create: jest.fn().mockResolvedValue(mockExecution()),
         update: jest.fn().mockResolvedValue(mockExecution()),
-        updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
     };
 
@@ -449,8 +449,8 @@ describe('SchedulerService', () => {
     it('completes a pending payment execution', async () => {
       await service.completeExecution(WALLET, EXEC_ID, dto);
 
-      expect(prisma.scheduledExecution.update).toHaveBeenCalledWith({
-        where: { id: EXEC_ID },
+      expect(prisma.scheduledExecution.updateMany).toHaveBeenCalledWith({
+        where: { id: EXEC_ID, status: 'PENDING' },
         data: expect.objectContaining({
           status: 'COMPLETED',
           signature: dto.signature,

@@ -1,7 +1,7 @@
 import { Controller, Post, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthGuard } from '../auth/auth.guard';
-import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { CurrentUser } from '../auth/auth.decorator';
 import { OnrampService } from './onramp.service';
 
 @ApiTags('Onramp')

@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
+import { PrismaService } from '../../common/prisma.service';
 import { Connection } from '@solana/web3.js';
 
 const TOKEN_DECIMALS: Record<string, number> = {

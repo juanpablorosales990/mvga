@@ -301,7 +301,8 @@
     "batchSend": "Envio Masivo",
     "recurringPayments": "Pagos Recurrentes",
     "dcaAutoBuy": "Compra Automatica DCA",
-    "pendingApprovals": "Aprobaciones Pendientes"
+    "pendingApprovals": "Aprobaciones Pendientes",
+    "cashout": "Retiro"
   },
   "grants": {
     "title": "Subvenciones",
@@ -923,5 +924,30 @@
     "status_REFUNDED": "Reembolsada",
     "poweredBy": "Impulsado por Reloadly. Compatible con Movistar, Movilnet y Digitel.",
     "connectPrompt": "Conecta tu billetera para recargar teléfonos"
+  },
+  "cashout": {
+    "title": "Retiro",
+    "subtitle": "Envía USD a cualquier cuenta Airtm. El destinatario retira a su banco local.",
+    "sendTab": "Enviar",
+    "historyTab": "Historial",
+    "recipientEmail": "Email del Destinatario",
+    "invalidEmail": "Ingresa un email válido",
+    "amount": "Monto (USD)",
+    "customAmount": "Monto personalizado ($1 – $1,800)",
+    "description": "Descripción (opcional)",
+    "descriptionPlaceholder": "ej. Pago de alquiler, compras",
+    "to": "Para",
+    "send": "Enviar ${{amount}}",
+    "success": "${{amount}} enviados a {{email}}",
+    "failed": "Retiro fallido",
+    "noHistory": "Sin retiros aún",
+    "status_PENDING": "Pendiente",
+    "status_COMMITTED": "Confirmado",
+    "status_PROCESSING": "Procesando",
+    "status_COMPLETED": "Completado",
+    "status_CANCELLED": "Cancelado",
+    "status_FAILED": "Fallido",
+    "poweredBy": "Impulsado por Airtm. El destinatario recibe USD en su billetera Airtm.",
+    "connectPrompt": "Conecta tu billetera para hacer retiros"
   }
 }
