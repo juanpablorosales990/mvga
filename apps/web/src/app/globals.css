@@ -140,6 +140,78 @@ body {
   100% { transform: translateX(-50%); }
 }
 
+/* Hero entrance animations — CSS-only for above-the-fold reliability */
+@keyframes hero-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes hero-slide-up {
+  from { opacity: 0; transform: translateY(80px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes hero-fade-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.hero-badges {
+  animation: hero-fade-in 0.3s ease both;
+}
+.hero-line-1 {
+  animation: hero-slide-up 0.7s cubic-bezier(0.25, 0.1, 0.25, 1) both;
+}
+.hero-line-2 {
+  animation: hero-slide-up 0.7s cubic-bezier(0.25, 0.1, 0.25, 1) 0.15s both;
+}
+.hero-desc {
+  animation: hero-fade-up 0.5s ease 0.5s both;
+}
+.hero-cta {
+  animation: hero-fade-up 0.5s ease 0.65s both;
+}
+
+/* Scroll-triggered fade-up animation via IntersectionObserver */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fade-up {
+  opacity: 0;
+  transform: translateY(24px);
+}
+.fade-up.visible {
+  animation: fade-up 0.5s cubic-bezier(0.25, 0.1, 0.25, 1) both;
+}
+/* Stagger children: nth-child delays */
+.stagger > .fade-up.visible:nth-child(1) { animation-delay: 0s; }
+.stagger > .fade-up.visible:nth-child(2) { animation-delay: 0.08s; }
+.stagger > .fade-up.visible:nth-child(3) { animation-delay: 0.16s; }
+.stagger > .fade-up.visible:nth-child(4) { animation-delay: 0.24s; }
+.stagger > .fade-up.visible:nth-child(5) { animation-delay: 0.32s; }
+.stagger > .fade-up.visible:nth-child(6) { animation-delay: 0.4s; }
+.stagger > .fade-up.visible:nth-child(7) { animation-delay: 0.48s; }
+.stagger > .fade-up.visible:nth-child(8) { animation-delay: 0.56s; }
+.stagger > .fade-up.visible:nth-child(9) { animation-delay: 0.64s; }
+.stagger > .fade-up.visible:nth-child(10) { animation-delay: 0.72s; }
+
+/* Respect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .fade-up { opacity: 1; transform: none; }
+  .hero-badges, .hero-line-1, .hero-line-2, .hero-desc, .hero-cta, .sticky-cta {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Sticky CTA entrance */
+@keyframes sticky-slide-in {
+  from { opacity: 0; transform: translateY(100px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.sticky-cta {
+  animation: sticky-slide-in 0.5s ease 2s both;
+}
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;

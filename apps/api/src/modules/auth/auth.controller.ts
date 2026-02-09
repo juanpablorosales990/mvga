@@ -13,7 +13,9 @@ function setAuthCookie(res: Response, token: string) {
   res.cookie(COOKIE_NAME, token, {
     httpOnly: true,
     secure: IS_PROD,
-    sameSite: IS_PROD ? 'none' : 'lax',
+    // All MVGA properties are under the same "site" (mvga.io), so we don't need SameSite=None.
+    // Using Lax reduces CSRF risk while still allowing normal same-site API calls from app.mvga.io -> api.mvga.io.
+    sameSite: 'lax',
     path: '/',
     maxAge: 24 * 60 * 60 * 1000, // 24h — matches JWT expiry
   });
@@ -55,7 +57,7 @@ export class AuthController {
     res.clearCookie(COOKIE_NAME, {
       httpOnly: true,
       secure: IS_PROD,
-      sameSite: IS_PROD ? 'none' : 'lax',
+      sameSite: 'lax',
       path: '/',
     });
     return { authenticated: false };

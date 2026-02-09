@@ -1,8 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState, useRef } from 'react';
-import { motion, useInView, AnimatePresence } from 'framer-motion';
+import { useEffect, useState } from 'react';
 import Nav from '@/components/Nav';
 import Footer from '@/components/Footer';
 import GridBackground from '@/components/GridBackground';
@@ -19,29 +18,31 @@ interface LiveMetrics {
   totalBurned: number;
 }
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 24 },
-  visible: (i: number) => ({
-    opacity: 1,
-    y: 0,
-    transition: { delay: i * 0.1, duration: 0.5, ease: [0.25, 0.1, 0.25, 1] as const },
-  }),
-};
-
-const stagger = {
-  visible: { transition: { staggerChildren: 0.08 } },
-};
-
 export default function Home() {
   const [metrics, setMetrics] = useState<LiveMetrics | null>(null);
-  const missionRef = useRef(null);
-  const missionInView = useInView(missionRef, { once: true });
 
   useEffect(() => {
     fetch(`${API_BASE}/metrics`)
       .then((r) => (r.ok ? r.json() : null))
       .then(setMetrics)
       .catch(() => {});
+  }, []);
+
+  // IntersectionObserver for scroll-triggered fade-up animations
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.1 }
+    );
+    document.querySelectorAll('.fade-up').forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
   }, []);
 
   const marqueeItems = [
@@ -62,52 +63,35 @@ export default function Home() {
         {/* ── HERO ─────────────────────────────────────────────── */}
         <section className="pt-32 md:pt-40 pb-20 px-6">
           <div className="max-w-7xl mx-auto">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.3 }}
-              className="flex flex-wrap gap-3 mb-10"
-            >
+            <div className="flex flex-wrap gap-3 mb-10 hero-badges">
               <span className="text-xs tracking-[0.25em] uppercase border border-gold-500/30 px-3 py-1 text-gold-500">
                 Digital Dollars for Venezuela
               </span>
               <span className="text-xs tracking-[0.25em] uppercase border border-white/20 px-3 py-1 text-white/50">
                 No Bank Required
               </span>
-            </motion.div>
-
-            <div className="overflow-hidden">
-              {['YOUR MONEY.', 'YOUR RULES.'].map((word, i) => (
-                <motion.div
-                  key={word}
-                  initial={{ opacity: 0, y: 80 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.15 * i, duration: 0.7, ease: [0.25, 0.1, 0.25, 1] }}
-                >
-                  <h1 className="text-[12vw] md:text-[9vw] font-black uppercase tracking-tighter leading-[0.85]">
-                    {word}
-                  </h1>
-                </motion.div>
-              ))}
             </div>
 
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5, duration: 0.5 }}
-              className="text-lg md:text-xl text-white/40 max-w-2xl mt-10 leading-relaxed"
-            >
+            <div className="overflow-hidden">
+              <div className="hero-line-1">
+                <h1 className="text-[12vw] md:text-[9vw] font-black uppercase tracking-tighter leading-[0.85]">
+                  YOUR MONEY.
+                </h1>
+              </div>
+              <div className="hero-line-2">
+                <h1 className="text-[12vw] md:text-[9vw] font-black uppercase tracking-tighter leading-[0.85]">
+                  YOUR RULES.
+                </h1>
+              </div>
+            </div>
+
+            <p className="text-lg md:text-xl text-white/40 max-w-2xl mt-10 leading-relaxed hero-desc">
               A bank account in your pocket with US dollars you can spend anywhere in the world.
               Send remittances for free, pay bills, top up phones, and get a Visa debit card &mdash;
               all from one app. Made by Venezuelans, for Venezuelans.
-            </motion.p>
+            </p>
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.65, duration: 0.5 }}
-              className="flex flex-col sm:flex-row gap-4 mt-10"
-            >
+            <div className="flex flex-col sm:flex-row gap-4 mt-10 hero-cta">
               <Link
                 href="https://app.mvga.io"
                 target="_blank"
@@ -121,7 +105,7 @@ export default function Home() {
               >
                 See How It Works
               </Link>
-            </motion.div>
+            </div>
           </div>
         </section>
 
@@ -129,7 +113,7 @@ export default function Home() {
         <Marquee items={marqueeItems} />
 
         {/* ── THE PROBLEM ────────────────────────────────────────── */}
-        <section id="mission" className="py-24 md:py-32 px-6" ref={missionRef}>
+        <section id="mission" className="py-24 md:py-32 px-6">
           <div className="max-w-7xl mx-auto">
             <p className="text-xs tracking-[0.3em] text-white/30 uppercase font-mono mb-4">
               The Problem
@@ -138,12 +122,7 @@ export default function Home() {
               7 million Venezuelans abroad. Billions sent home every year. Up to 15% lost to fees.
             </h2>
 
-            <motion.div
-              className="grid md:grid-cols-3 gap-px bg-white/10"
-              variants={stagger}
-              initial="hidden"
-              animate={missionInView ? 'visible' : 'hidden'}
-            >
+            <div className="grid md:grid-cols-3 gap-px bg-white/10 stagger">
               {[
                 {
                   num: '01',
@@ -160,19 +139,17 @@ export default function Home() {
                   title: 'No Banking Access',
                   desc: 'Millions of Venezuelans are unbanked or underbanked. International services like PayPal and Zelle don\u2019t fully work in Venezuela. MVGA works with just a phone.',
                 },
-              ].map((card, i) => (
-                <motion.div
+              ].map((card) => (
+                <div
                   key={card.num}
-                  custom={i}
-                  variants={fadeUp}
-                  className="bg-black p-8 hover:bg-white/[0.02] transition group"
+                  className="fade-up bg-black p-8 hover:bg-white/[0.02] transition group"
                 >
                   <span className="font-mono text-sm text-gold-500 mb-4 block">{card.num}</span>
                   <h3 className="text-xl font-bold mb-3">{card.title}</h3>
                   <p className="text-white/40 leading-relaxed">{card.desc}</p>
-                </motion.div>
+                </div>
               ))}
-            </motion.div>
+            </div>
           </div>
         </section>
 
@@ -189,13 +166,7 @@ export default function Home() {
               in 60 seconds.
             </p>
 
-            <motion.div
-              className="grid md:grid-cols-2 lg:grid-cols-3 gap-px bg-white/10"
-              variants={stagger}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-            >
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-px bg-white/10 stagger">
               {[
                 {
                   num: '01',
@@ -227,19 +198,17 @@ export default function Home() {
                   title: 'Real-Time Updates',
                   desc: 'Balance updates every 30 seconds. Full transaction history with timestamps. Push notifications for incoming transfers, payments, and scheduled transactions.',
                 },
-              ].map((item, i) => (
-                <motion.div
+              ].map((item) => (
+                <div
                   key={item.num}
-                  custom={i}
-                  variants={fadeUp}
-                  className="bg-black p-8 hover:bg-white/[0.02] transition"
+                  className="fade-up bg-black p-8 hover:bg-white/[0.02] transition"
                 >
                   <span className="font-mono text-sm text-gold-500 mb-4 block">{item.num}</span>
                   <h3 className="text-lg font-bold mb-3">{item.title}</h3>
                   <p className="text-white/40 leading-relaxed text-sm">{item.desc}</p>
-                </motion.div>
+                </div>
               ))}
-            </motion.div>
+            </div>
           </div>
         </section>
 
@@ -279,12 +248,7 @@ export default function Home() {
                 </div>
               </div>
 
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                className="border border-white/10 p-8"
-              >
+              <div className="fade-up border border-white/10 p-8">
                 <div className="aspect-[1.6/1] bg-gradient-to-br from-gold-500/20 via-gold-500/5 to-transparent border border-gold-500/20 p-6 flex flex-col justify-between mb-8">
                   <div className="flex items-start justify-between">
                     <span className="text-xl font-black tracking-tighter">MVGA</span>
@@ -321,7 +285,7 @@ export default function Home() {
                     <span className="font-mono text-gold-500">Yes</span>
                   </div>
                 </div>
-              </motion.div>
+              </div>
             </div>
           </div>
         </section>
@@ -494,15 +458,8 @@ export default function Home() {
                   title: 'Rewards Program',
                   desc: 'Earn rewards for using the platform. Refer friends and both of you get a bonus. Higher reward tiers unlock fee discounts, cashback, and priority support. The more you use MVGA, the more you earn.',
                 },
-              ].map((feat, i) => (
-                <motion.div
-                  key={feat.num}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.03 }}
-                  className="flex items-start gap-6 md:gap-12 py-8"
-                >
+              ].map((feat) => (
+                <div key={feat.num} className="fade-up flex items-start gap-6 md:gap-12 py-8">
                   <span className="text-[5rem] md:text-[6rem] font-mono text-white/[0.03] font-black leading-none shrink-0 hidden md:block">
                     {feat.num}
                   </span>
@@ -511,7 +468,7 @@ export default function Home() {
                     <h3 className="text-xl font-bold mb-3">{feat.title}</h3>
                     <p className="text-white/40 leading-relaxed max-w-xl text-sm">{feat.desc}</p>
                   </div>
-                </motion.div>
+                </div>
               ))}
             </div>
           </div>
@@ -529,13 +486,7 @@ export default function Home() {
               Venezuelan community and the diaspora.
             </p>
 
-            <motion.div
-              className="grid md:grid-cols-2 lg:grid-cols-4 gap-px bg-white/10"
-              variants={stagger}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-            >
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-px bg-white/10 stagger">
               {[
                 {
                   title: 'English & Spanish',
@@ -569,18 +520,16 @@ export default function Home() {
                   title: 'Transparent & Auditable',
                   desc: 'Every transaction is independently verifiable. The entire platform is open source on GitHub. Trust through transparency.',
                 },
-              ].map((item, i) => (
-                <motion.div
+              ].map((item) => (
+                <div
                   key={item.title}
-                  custom={i}
-                  variants={fadeUp}
-                  className="bg-black p-6 hover:bg-white/[0.02] transition"
+                  className="fade-up bg-black p-6 hover:bg-white/[0.02] transition"
                 >
                   <h3 className="text-sm font-bold uppercase tracking-wide mb-3">{item.title}</h3>
                   <p className="text-white/40 leading-relaxed text-sm">{item.desc}</p>
-                </motion.div>
+                </div>
               ))}
-            </motion.div>
+            </div>
           </div>
         </section>
 
@@ -594,13 +543,7 @@ export default function Home() {
               Three steps. Sixty seconds.
             </h2>
 
-            <motion.div
-              className="grid md:grid-cols-3 gap-px bg-white/10"
-              variants={stagger}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-            >
+            <div className="grid md:grid-cols-3 gap-px bg-white/10 stagger">
               {[
                 {
                   num: '01',
@@ -617,21 +560,19 @@ export default function Home() {
                   title: 'Send, Spend, Save',
                   desc: 'Send money home. Pay with your Visa card. Top up phones. Earn interest. Cash out to a bank. Everything from one account.',
                 },
-              ].map((step, i) => (
-                <motion.div
+              ].map((step) => (
+                <div
                   key={step.num}
-                  custom={i}
-                  variants={fadeUp}
-                  className="bg-black p-8 hover:bg-white/[0.02] transition"
+                  className="fade-up bg-black p-8 hover:bg-white/[0.02] transition"
                 >
                   <span className="font-mono text-4xl text-gold-500/30 font-bold block mb-4">
                     {step.num}
                   </span>
                   <h3 className="text-xl font-bold mb-3">{step.title}</h3>
                   <p className="text-white/40 leading-relaxed">{step.desc}</p>
-                </motion.div>
+                </div>
               ))}
-            </motion.div>
+            </div>
           </div>
         </section>
 
@@ -645,13 +586,7 @@ export default function Home() {
               Built on trusted infrastructure.
             </h2>
 
-            <motion.div
-              className="grid grid-cols-2 md:grid-cols-4 gap-px bg-white/10"
-              variants={stagger}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-            >
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-white/10 stagger">
               {[
                 {
                   name: 'Visa',
@@ -693,19 +628,17 @@ export default function Home() {
                   role: 'Infrastructure',
                   desc: 'Enterprise-grade transaction processing',
                 },
-              ].map((partner, i) => (
-                <motion.div
+              ].map((partner) => (
+                <div
                   key={partner.name}
-                  custom={i}
-                  variants={fadeUp}
-                  className="bg-black p-6 text-center hover:bg-white/[0.02] transition"
+                  className="fade-up bg-black p-6 text-center hover:bg-white/[0.02] transition"
                 >
                   <p className="font-mono font-bold text-sm mb-1">{partner.name}</p>
                   <p className="text-xs text-gold-500 font-mono mb-2">{partner.role}</p>
                   <p className="text-xs text-white/30 leading-relaxed">{partner.desc}</p>
-                </motion.div>
+                </div>
               ))}
-            </motion.div>
+            </div>
           </div>
         </section>
 
@@ -721,13 +654,7 @@ export default function Home() {
               finances.
             </p>
 
-            <motion.div
-              className="grid md:grid-cols-2 lg:grid-cols-3 gap-px bg-white/10"
-              variants={stagger}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-            >
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-px bg-white/10 stagger">
               {[
                 {
                   quote:
@@ -772,11 +699,9 @@ export default function Home() {
                   feature: 'Batch Payments',
                 },
               ].map((testimonial, i) => (
-                <motion.div
+                <div
                   key={i}
-                  custom={i}
-                  variants={fadeUp}
-                  className="bg-black p-8 hover:bg-white/[0.02] transition flex flex-col"
+                  className="fade-up bg-black p-8 hover:bg-white/[0.02] transition flex flex-col"
                 >
                   <span className="text-[10px] font-mono text-gold-500/60 uppercase tracking-widest mb-4">
                     {testimonial.feature}
@@ -788,9 +713,9 @@ export default function Home() {
                     <p className="font-bold text-sm">{testimonial.author}</p>
                     <p className="text-xs text-white/30">{testimonial.context}</p>
                   </div>
-                </motion.div>
+                </div>
               ))}
-            </motion.div>
+            </div>
           </div>
         </section>
 
@@ -804,13 +729,7 @@ export default function Home() {
               experience with hyperinflation, capital controls, and broken banking.
             </p>
 
-            <motion.div
-              className="grid md:grid-cols-2 lg:grid-cols-4 gap-px bg-white/10"
-              variants={stagger}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-            >
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-px bg-white/10 stagger">
               {[
                 {
                   initials: 'JR',
@@ -840,12 +759,10 @@ export default function Home() {
                   bio: 'Architecture, code review, security audits, test generation. Human intent, AI velocity.',
                   stat: 'Ship 10x faster',
                 },
-              ].map((member, i) => (
-                <motion.div
+              ].map((member) => (
+                <div
                   key={member.name}
-                  custom={i}
-                  variants={fadeUp}
-                  className="bg-black p-8 hover:bg-white/[0.02] transition"
+                  className="fade-up bg-black p-8 hover:bg-white/[0.02] transition"
                 >
                   <div className="w-14 h-14 border border-white/20 flex items-center justify-center mb-4">
                     <span className="font-mono text-lg text-white/50">{member.initials}</span>
@@ -858,30 +775,19 @@ export default function Home() {
                   <span className="text-[10px] font-mono text-white/20 uppercase tracking-widest">
                     {member.stat}
                   </span>
-                </motion.div>
+                </div>
               ))}
-            </motion.div>
+            </div>
           </div>
         </section>
 
         {/* ── FAQ ──────────────────────────────────────────────── */}
         <section id="faq" className="py-24 md:py-32 px-6 border-t border-white/10">
           <div className="max-w-4xl mx-auto">
-            <motion.h2
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="text-3xl md:text-5xl font-black uppercase tracking-tight mb-16 text-center"
-            >
+            <h2 className="fade-up text-3xl md:text-5xl font-black uppercase tracking-tight mb-16 text-center">
               Frequently Asked Questions
-            </motion.h2>
-            <motion.div
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              variants={stagger}
-              className="space-y-0"
-            >
+            </h2>
+            <div className="space-y-0">
               {[
                 {
                   q: 'Is MVGA safe?',
@@ -916,12 +822,7 @@ export default function Home() {
                   a: 'Yes. The entire platform \u2014 API, wallet app, and this website \u2014 is public on GitHub. Anyone can audit the code and verify exactly what the platform does. 14 security audits completed with zero known vulnerabilities.',
                 },
               ].map((faq, i) => (
-                <motion.details
-                  key={i}
-                  custom={i}
-                  variants={fadeUp}
-                  className="group border-b border-white/10"
-                >
+                <details key={i} className="fade-up group border-b border-white/10">
                   <summary className="flex items-center justify-between cursor-pointer py-6 text-lg font-bold uppercase tracking-wide hover:text-gold-500 transition-colors">
                     {faq.q}
                     <span className="text-white/20 group-open:rotate-45 transition-transform text-2xl ml-4">
@@ -929,23 +830,18 @@ export default function Home() {
                     </span>
                   </summary>
                   <p className="pb-6 text-white/40 leading-relaxed">{faq.a}</p>
-                </motion.details>
+                </details>
               ))}
-            </motion.div>
+            </div>
           </div>
         </section>
 
         {/* ── CTA ──────────────────────────────────────────────── */}
         <section className="py-24 md:py-32 px-6 border-t border-white/10">
           <div className="max-w-4xl mx-auto text-center">
-            <motion.h2
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="text-4xl md:text-6xl font-black uppercase tracking-tight mb-6"
-            >
+            <h2 className="fade-up text-4xl md:text-6xl font-black uppercase tracking-tight mb-6">
               Your Money Deserves Better
-            </motion.h2>
+            </h2>
             <p className="text-xl text-white/40 mb-10">
               Digital dollars for Venezuela. Send, spend, save, and earn &mdash; all from one app.
               Made by Venezuelans, for Venezuelans.
@@ -972,31 +868,23 @@ export default function Home() {
         <Footer />
 
         {/* ── STICKY CTA ─────────────────────────────────────── */}
-        <AnimatePresence>
-          <motion.div
-            initial={{ y: 100, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 100, opacity: 0 }}
-            transition={{ delay: 2, duration: 0.5 }}
-            className="fixed bottom-6 right-6 z-40 hidden md:block"
+        <div className="fixed bottom-6 right-6 z-40 hidden md:block sticky-cta">
+          <Link
+            href="https://app.mvga.io"
+            target="_blank"
+            className="bg-gold-500 text-black font-bold text-sm uppercase tracking-wider px-6 py-3 hover:bg-gold-400 transition-all shadow-lg shadow-gold-500/20 flex items-center gap-2"
           >
-            <Link
-              href="https://app.mvga.io"
-              target="_blank"
-              className="bg-gold-500 text-black font-bold text-sm uppercase tracking-wider px-6 py-3 hover:bg-gold-400 transition-all shadow-lg shadow-gold-500/20 flex items-center gap-2"
-            >
-              <span>Open Account</span>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13 7l5 5m0 0l-5 5m5-5H6"
-                />
-              </svg>
-            </Link>
-          </motion.div>
-        </AnimatePresence>
+            <span>Open Account</span>
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M13 7l5 5m0 0l-5 5m5-5H6"
+              />
+            </svg>
+          </Link>
+        </div>
       </main>
     </GridBackground>
   );
