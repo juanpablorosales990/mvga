@@ -1,7 +1,8 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useWalletStore } from '../stores/walletStore';
+import { useBiometric } from '../hooks/useBiometric';
 
 interface ChecklistItem {
   labelKey: string;
@@ -11,29 +12,32 @@ interface ChecklistItem {
 
 export default function GettingStartedCard() {
   const { t } = useTranslation();
+  const { isEnabled: biometricEnabled } = useBiometric();
   const checklistDismissed = useWalletStore((s) => s.checklistDismissed);
   const dismissChecklist = useWalletStore((s) => s.dismissChecklist);
   const balances = useWalletStore((s) => s.balances);
   const firstSendCompleted = useWalletStore((s) => s.firstSendCompleted);
   const cardStatus = useWalletStore((s) => s.cardStatus);
   const kycStatus = useWalletStore((s) => s.kycStatus);
+  const [expanded, setExpanded] = useState(false);
 
   const hasBalance = useMemo(() => balances.some((b) => b.balance > 0), [balances]);
 
   const items: ChecklistItem[] = useMemo(
     () => [
       { labelKey: 'checklist.createWallet', completed: true, href: '/' },
-      { labelKey: 'checklist.secureBiometrics', completed: false, href: '/settings' },
+      { labelKey: 'checklist.secureBiometrics', completed: biometricEnabled, href: '/settings' },
       { labelKey: 'checklist.firstDeposit', completed: hasBalance, href: '/deposit' },
       { labelKey: 'checklist.verifyIdentity', completed: kycStatus === 'APPROVED', href: '/kyc' },
       { labelKey: 'checklist.firstSend', completed: firstSendCompleted, href: '/send' },
       { labelKey: 'checklist.joinCard', completed: cardStatus !== 'none', href: '/banking/card' },
-      { labelKey: 'checklist.inviteFriend', completed: false, href: '/referral' },
     ],
-    [hasBalance, kycStatus, firstSendCompleted, cardStatus]
+    [biometricEnabled, hasBalance, kycStatus, firstSendCompleted, cardStatus]
   );
 
   const completedCount = items.filter((i) => i.completed).length;
+  const incomplete = items.filter((i) => !i.completed);
+  const visibleItems = expanded ? items : incomplete.slice(0, 3);
 
   if (checklistDismissed || completedCount === items.length) return null;
 
@@ -63,7 +67,7 @@ export default function GettingStartedCard() {
 
       {/* Checklist items */}
       <div className="space-y-1">
-        {items.map((item) => (
+        {visibleItems.map((item) => (
           <Link
             key={item.labelKey}
             to={item.completed ? '#' : item.href}
@@ -108,6 +112,16 @@ export default function GettingStartedCard() {
           </Link>
         ))}
       </div>
+
+      {/* Expand / collapse */}
+      {incomplete.length > 3 && (
+        <button
+          onClick={() => setExpanded((v) => !v)}
+          className="w-full text-white/30 text-xs font-mono uppercase tracking-wider hover:text-white/50 transition py-2 mt-2"
+        >
+          {expanded ? t('checklist.showLess') : t('checklist.showAll')}
+        </button>
+      )}
     </div>
   );
 }

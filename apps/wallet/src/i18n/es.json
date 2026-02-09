@@ -791,7 +791,7 @@
   },
   "charge": {
     "title": "Cobrar",
-    "subtitle": "Solicita un pago de cualquier persona con billetera Solana",
+    "subtitle": "Crea un enlace de pago o QR para cualquier billetera Solana",
     "token": "Token",
     "amount": "Monto",
     "memo": "Memo (opcional)",
@@ -980,6 +980,8 @@
     "title": "Primeros Pasos",
     "progress": "{{completed}} de {{total}} completados",
     "dismiss": "Cerrar",
+    "showAll": "Ver todos los pasos",
+    "showLess": "Ocultar pasos",
     "createWallet": "Crear tu billetera",
     "secureBiometrics": "Activar biométricos",
     "firstDeposit": "Hacer tu primer depósito",

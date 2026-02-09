@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import GettingStartedCard from '../components/GettingStartedCard';
 import { useWalletStore } from '../stores/walletStore';
@@ -14,6 +14,7 @@ function renderCard() {
 
 describe('GettingStartedCard', () => {
   beforeEach(() => {
+    localStorage.removeItem('mvga-biometric-enabled');
     useWalletStore.setState({
       checklistDismissed: false,
       firstSendCompleted: false,
@@ -30,26 +31,38 @@ describe('GettingStartedCard', () => {
 
   it('shows progress text', () => {
     renderCard();
-    // 1 of 7 completed (create wallet is always checked)
-    expect(screen.getByText('1 of 7 completed')).toBeTruthy();
+    // 1 of 6 completed (create wallet is always checked; invite step removed)
+    expect(screen.getByText('1 of 6 completed')).toBeTruthy();
   });
 
-  it('renders all 7 checklist items', () => {
+  it('collapses by default (shows top 3 incomplete items)', () => {
     renderCard();
+    expect(screen.getByText('Secure with biometrics')).toBeTruthy();
+    expect(screen.getByText('Make your first deposit')).toBeTruthy();
+    expect(screen.getByText('Verify your identity')).toBeTruthy();
+
+    // Completed/other steps are hidden until expanded.
+    expect(screen.queryByText('Create your wallet')).toBeNull();
+    expect(screen.queryByText('Send your first payment')).toBeNull();
+    expect(screen.queryByText('Join the card waitlist')).toBeNull();
+  });
+
+  it('expands to show all steps (including completed)', () => {
+    const { container } = renderCard();
+    fireEvent.click(screen.getByText('Show all steps'));
+
+    // Now all 6 items should be visible
     expect(screen.getByText('Create your wallet')).toBeTruthy();
     expect(screen.getByText('Secure with biometrics')).toBeTruthy();
     expect(screen.getByText('Make your first deposit')).toBeTruthy();
     expect(screen.getByText('Verify your identity')).toBeTruthy();
     expect(screen.getByText('Send your first payment')).toBeTruthy();
     expect(screen.getByText('Join the card waitlist')).toBeTruthy();
-    expect(screen.getByText('Invite a friend')).toBeTruthy();
-  });
 
-  it('create wallet item is always completed', () => {
-    const { container } = renderCard();
-    const items = container.querySelectorAll('a');
-    // First item should have pointer-events-none (completed)
-    expect(items[0].className).toContain('pointer-events-none');
+    const links = container.querySelectorAll('a');
+    // First item (create wallet) should be completed and non-interactive in expanded view
+    expect(links[0].className).toContain('pointer-events-none');
+    expect(links[0].className).toContain('opacity-50');
   });
 
   it('dismiss button hides the card', () => {
@@ -71,38 +84,43 @@ describe('GettingStartedCard', () => {
       ],
     });
     renderCard();
-    // Should now show 2 of 7 completed
-    expect(screen.getByText('2 of 7 completed')).toBeTruthy();
+    // Should now show 2 of 6 completed
+    expect(screen.getByText('2 of 6 completed')).toBeTruthy();
   });
 
   it('marks first send as completed from store', () => {
     useWalletStore.setState({ firstSendCompleted: true });
     renderCard();
-    expect(screen.getByText('2 of 7 completed')).toBeTruthy();
+    expect(screen.getByText('2 of 6 completed')).toBeTruthy();
   });
 
   it('marks card waitlist as completed when cardStatus is not none', () => {
     useWalletStore.setState({ cardStatus: 'waitlisted' });
     renderCard();
-    expect(screen.getByText('2 of 7 completed')).toBeTruthy();
+    expect(screen.getByText('2 of 6 completed')).toBeTruthy();
   });
 
-  it('returns null when all items completed', () => {
+  it('returns null when all items completed', async () => {
+    // Enable biometrics via localStorage (useBiometric reads this on mount).
+    localStorage.setItem('mvga-biometric-enabled', 'true');
     useWalletStore.setState({
       firstSendCompleted: true,
       cardStatus: 'waitlisted',
       balances: [
         { mint: 'x', symbol: 'SOL', name: 'Solana', balance: 1, decimals: 9, usdValue: 150 },
       ],
+      kycStatus: 'APPROVED',
     });
-    // 4 of 7 completed (biometrics + invite are hardcoded false, kyc unverified, so this won't reach 7)
-    // Card should still render
     const { container } = renderCard();
-    expect(container.innerHTML).not.toBe('');
+
+    // Initially rendered, then hidden after the biometrics hook updates state.
+    await waitFor(() => expect(container.innerHTML).toBe(''));
   });
 
-  it('incomplete items link to correct pages', () => {
+  it('expanded view links to correct pages', () => {
     const { container } = renderCard();
+    fireEvent.click(screen.getByText('Show all steps'));
+
     const links = container.querySelectorAll('a');
     const hrefs = Array.from(links).map((l) => l.getAttribute('href'));
     expect(hrefs).toContain('/settings');
@@ -110,11 +128,11 @@ describe('GettingStartedCard', () => {
     expect(hrefs).toContain('/kyc');
     expect(hrefs).toContain('/send');
     expect(hrefs).toContain('/banking/card');
-    expect(hrefs).toContain('/referral');
   });
 
   it('completed items are non-interactive', () => {
     const { container } = renderCard();
+    fireEvent.click(screen.getByText('Show all steps'));
     const links = container.querySelectorAll('a');
     // First item (create wallet) should have pointer-events-none
     expect(links[0].className).toContain('pointer-events-none');
@@ -126,8 +144,8 @@ describe('GettingStartedCard', () => {
     // Progress bar inner div with bg-gold-500
     const progressBar = container.querySelector('.bg-gold-500.transition-all');
     expect(progressBar).toBeTruthy();
-    // 1/7 ≈ 14.29%
-    expect((progressBar as HTMLElement).style.width).toBe(`${(1 / 7) * 100}%`);
+    // 1/6 ≈ 16.67%
+    expect((progressBar as HTMLElement).style.width).toBe(`${(1 / 6) * 100}%`);
   });
 
   it('updates progress bar width when more items completed', () => {
@@ -139,7 +157,7 @@ describe('GettingStartedCard', () => {
     });
     const { container } = renderCard();
     const progressBar = container.querySelector('.bg-gold-500.transition-all');
-    // 3/7 ≈ 42.86%
-    expect((progressBar as HTMLElement).style.width).toBe(`${(3 / 7) * 100}%`);
+    // 3/6 = 50%
+    expect((progressBar as HTMLElement).style.width).toBe(`${(3 / 6) * 100}%`);
   });
 });

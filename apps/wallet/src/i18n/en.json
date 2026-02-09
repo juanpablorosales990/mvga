@@ -40,7 +40,7 @@
     "assets": "Assets",
     "viewAll": "View All",
     "deposit": "Deposit",
-    "charge": "Charge",
+    "charge": "Get Paid",
     "share": "Share"
   },
   "send": {
@@ -302,7 +302,7 @@
     "notifications": "Notifications",
     "settings": "Settings",
     "help": "Help",
-    "charge": "Charge",
+    "charge": "Get Paid",
     "topup": "Top-Up",
     "contacts": "Contacts",
     "priceAlerts": "Price Alerts",
@@ -790,8 +790,8 @@
     "paypalPoweredBy": "Powered by PayPal. Fees: 2.99% + $0.49. MVGA does not hold fiat currency."
   },
   "charge": {
-    "title": "Charge",
-    "subtitle": "Request a payment from anyone with a Solana wallet",
+    "title": "Get Paid",
+    "subtitle": "Create a payment link or QR for anyone with a Solana wallet",
     "token": "Token",
     "amount": "Amount",
     "memo": "Memo (optional)",
@@ -980,6 +980,8 @@
     "title": "Getting Started",
     "progress": "{{completed}} of {{total}} completed",
     "dismiss": "Dismiss",
+    "showAll": "Show all steps",
+    "showLess": "Hide steps",
     "createWallet": "Create your wallet",
     "secureBiometrics": "Secure with biometrics",
     "firstDeposit": "Make your first deposit",
