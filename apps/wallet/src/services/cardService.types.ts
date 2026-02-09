@@ -1,6 +1,6 @@
 /**
- * Card service types — matches Rain's /issuing/ API shape.
- * When VITE_RAIN_API_KEY is set, the service calls Rain's sandbox.
+ * Card service types — matches Lithic API shape.
+ * When Lithic is configured, the service calls Lithic's sandbox/production.
  * Otherwise, falls back to mock data.
  */
 
@@ -61,37 +61,4 @@ export interface KycSubmission {
   };
   nationalIdType: 'cedula' | 'passport' | 'drivers_license';
   nationalId: string;
-}
-
-/** Rain API response shapes */
-export interface RainUserApplication {
-  id: string;
-  applicationStatus: string;
-  email?: string;
-  isActive?: boolean;
-}
-
-export interface RainCard {
-  id: string;
-  type: 'virtual' | 'physical';
-  status: string;
-  last4: string;
-  expirationMonth: number;
-  expirationYear: number;
-  limit: { frequency: string; amount: number };
-  displayName?: string;
-}
-
-export interface RainBalance {
-  /** All values in cents — divide by 100 for dollars */
-  creditLimit: number;
-  spendingPower: number;
-  balanceDue: number;
-}
-
-export interface RainContract {
-  id: string;
-  chainId: number;
-  depositAddress: string;
-  tokens: Array<{ address: string; balance: string }>;
 }

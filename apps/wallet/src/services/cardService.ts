@@ -9,7 +9,7 @@ import type {
 import { API_URL } from '../config';
 
 // ---------------------------------------------------------------------------
-// Backend API — all Rain operations are proxied through MVGA API.
+// Backend API — all card operations are proxied through MVGA API (Lithic).
 // No client-side API key needed. Falls back to mock data when API is
 // unavailable or in local dev without a backend.
 // ---------------------------------------------------------------------------
@@ -157,7 +157,7 @@ export async function getCardTransactions(): Promise<CardTransaction[]> {
 }
 
 export async function getCardControls(): Promise<CardControls> {
-  // Card controls are local state — Rain doesn't expose this via API
+  // Card controls are local state for now
   await delay(200);
   return { ...mockControls };
 }
@@ -220,9 +220,7 @@ export async function fundCard(
   return { success: true, newBalance: { ...mockBalance } };
 }
 
-export async function submitKyc(
-  data: KycSubmission
-): Promise<{
+export async function submitKyc(data: KycSubmission): Promise<{
   status: CardStatus;
   userId?: string;
   applicationId?: string;
@@ -258,6 +256,23 @@ export async function issueCard(_userId: string): Promise<CardDetails | null> {
   }
   await delay(500);
   return { ...MOCK_CARD };
+}
+
+export async function provisionCard(digitalWallet: 'APPLE_PAY' | 'GOOGLE_PAY'): Promise<{
+  jws?: {
+    header?: Record<string, unknown>;
+    payload?: string;
+    protected?: string;
+    signature?: string;
+  };
+  state?: string;
+  google_opc?: string;
+  tsp_opc?: string;
+}> {
+  return apiFetchLocal('/banking/card/provision', {
+    method: 'POST',
+    body: JSON.stringify({ digitalWallet }),
+  });
 }
 
 export async function getUserStatus(_userId: string): Promise<{ status: CardStatus }> {

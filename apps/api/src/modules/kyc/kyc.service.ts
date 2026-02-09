@@ -5,7 +5,6 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma.service';
-import { SumsubAdapter } from './sumsub.adapter';
 import { PersonaAdapter } from './persona.adapter';
 
 @Injectable()
@@ -14,14 +13,12 @@ export class KycService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly sumsub: SumsubAdapter,
     private readonly persona: PersonaAdapter
   ) {}
 
-  /** Which provider is active? Persona preferred, Sumsub fallback. */
-  private get provider(): 'persona' | 'sumsub' | 'none' {
+  /** Persona preferred, mock fallback in dev. */
+  private get provider(): 'persona' | 'none' {
     if (this.persona.isEnabled) return 'persona';
-    if (this.sumsub.isEnabled) return 'sumsub';
     return 'none';
   }
 
@@ -40,11 +37,7 @@ export class KycService {
       return { token: 'mock_token', applicantId: 'mock_001', mock: true, provider: 'mock' };
     }
 
-    if (this.provider === 'persona') {
-      return this.createPersonaSession(userId, walletAddress);
-    }
-
-    return this.createSumsubSession(userId, walletAddress);
+    return this.createPersonaSession(userId, walletAddress);
   }
 
   private async createPersonaSession(userId: string, walletAddress: string) {
@@ -75,24 +68,6 @@ export class KycService {
     };
   }
 
-  private async createSumsubSession(userId: string, walletAddress: string) {
-    const existing = await this.prisma.userKyc.findUnique({ where: { userId } });
-
-    let externalId = existing?.externalId;
-    if (!externalId) {
-      externalId = await this.sumsub.createApplicant(walletAddress);
-    }
-
-    await this.prisma.userKyc.upsert({
-      where: { userId },
-      create: { userId, status: 'PENDING', externalId },
-      update: { status: 'PENDING', externalId },
-    });
-
-    const { token } = await this.sumsub.getAccessToken(walletAddress);
-    return { token, applicantId: externalId, provider: 'sumsub' };
-  }
-
   /** Get current KYC status for a user. */
   async getStatus(userId: string) {
     const kyc = await this.prisma.userKyc.findUnique({ where: { userId } });
@@ -100,70 +75,6 @@ export class KycService {
       return { status: 'UNVERIFIED', tier: 0 };
     }
     return { status: kyc.status, tier: kyc.tier, rejectionReason: kyc.rejectionReason };
-  }
-
-  /** Handle Sumsub webhook callback. */
-  async handleSumsubWebhook(rawBody: string, signature: string) {
-    const payload = this.sumsub.parseWebhookPayload(rawBody, signature);
-    if (!payload) {
-      throw new BadRequestException('Invalid webhook signature');
-    }
-
-    return this.processSumsubEvent(payload);
-  }
-
-  private async processSumsubEvent(payload: Record<string, unknown>) {
-    const type = payload.type as string;
-    const externalId = (payload.applicantId ?? payload.externalUserId) as string;
-    const reviewResult = (payload as Record<string, unknown>).reviewResult as
-      | { reviewAnswer?: string; rejectLabels?: string[] }
-      | undefined;
-
-    if (!externalId) {
-      this.logger.warn('Webhook missing applicant ID');
-      return { ok: true };
-    }
-
-    const kyc = await this.prisma.userKyc.findFirst({ where: { externalId } });
-    if (!kyc) {
-      this.logger.warn(`Webhook for unknown applicant: ${externalId}`);
-      return { ok: true };
-    }
-
-    if (type === 'applicantReviewed') {
-      const answer = reviewResult?.reviewAnswer;
-      if (answer === 'GREEN') {
-        await this.prisma.userKyc.update({
-          where: { id: kyc.id },
-          data: { status: 'APPROVED', tier: 1, verifiedAt: new Date(), rejectionReason: null },
-        });
-      } else if (answer === 'RED') {
-        const reason = reviewResult?.rejectLabels?.join(', ') || 'Verification failed';
-        await this.prisma.userKyc.update({
-          where: { id: kyc.id },
-          data: { status: 'REJECTED', rejectionReason: reason },
-        });
-      }
-    } else if (type === 'applicantPending') {
-      if (kyc.status !== 'APPROVED' && kyc.status !== 'REJECTED') {
-        await this.prisma.userKyc.update({
-          where: { id: kyc.id },
-          data: { status: 'PENDING' },
-        });
-      }
-    } else if (type === 'applicantOnHold') {
-      this.logger.warn(`Applicant on hold: ${externalId}`);
-      if (kyc.status !== 'APPROVED' && kyc.status !== 'REJECTED') {
-        await this.prisma.userKyc.update({
-          where: { id: kyc.id },
-          data: { status: 'PENDING' },
-        });
-      }
-    } else {
-      this.logger.log(`Unhandled KYC webhook type: ${type} for ${externalId}`);
-    }
-
-    return { ok: true };
   }
 
   /** Handle Persona webhook callback. */
@@ -236,11 +147,6 @@ export class KycService {
     }
 
     return { ok: true };
-  }
-
-  // Keep backwards-compatible handleWebhook for existing Sumsub usage
-  async handleWebhook(rawBody: string, signature: string) {
-    return this.handleSumsubWebhook(rawBody, signature);
   }
 
   /** Check if a user has approved KYC. Used by KycGuard. */

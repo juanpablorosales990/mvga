@@ -21,7 +21,6 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { SavingsModule } from './modules/savings/savings.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { TopUpModule } from './modules/topup/topup.module';
-import { OnrampModule } from './modules/onramp/onramp.module';
 import { SchedulerModule } from './modules/scheduler/scheduler.module';
 import { OfframpModule } from './modules/offramp/offramp.module';
 import { KycModule } from './modules/kyc/kyc.module';
@@ -59,7 +58,6 @@ import { HealthController } from './health.controller';
     SavingsModule,
     PaymentsModule,
     TopUpModule,
-    OnrampModule,
     SchedulerModule,
     OfframpModule,
     KycModule,

@@ -7,6 +7,8 @@ import { useAuth } from '../hooks/useAuth';
 import { useCard } from '../hooks/useCard';
 import { showToast } from '../hooks/useToast';
 import { API_URL } from '../config';
+import { provisionCard } from '../services/cardService';
+import { isNative, isIOS } from '../utils/platform';
 import type { CardTransaction, KycSubmission } from '../services/cardService.types';
 
 // ---------------------------------------------------------------------------
@@ -667,6 +669,7 @@ function CardDashboardView() {
   const [showFundModal, setShowFundModal] = useState(false);
   const [showControls, setShowControls] = useState(false);
   const [freezing, setFreezing] = useState(false);
+  const [provisioning, setProvisioning] = useState(false);
 
   if (loading || !card || !balance || !controls) {
     return (
@@ -689,6 +692,32 @@ function CardDashboardView() {
       showToast('error', err instanceof Error ? err.message : t('common.somethingWrong'));
     } finally {
       setFreezing(false);
+    }
+  };
+
+  const handleAddToWallet = async () => {
+    if (provisioning) return;
+    setProvisioning(true);
+    try {
+      const useApple = isNative ? isIOS : /iPhone|iPad|Mac/.test(navigator.userAgent);
+      const wallet = useApple ? ('APPLE_PAY' as const) : ('GOOGLE_PAY' as const);
+      const result = await provisionCard(wallet);
+
+      if (wallet === 'APPLE_PAY' && result.jws) {
+        window.open(
+          `https://wallet.apple.com/passes/add?jws=${encodeURIComponent(JSON.stringify(result.jws))}`,
+          '_blank'
+        );
+      } else if (result.google_opc) {
+        window.open(
+          `https://pay.google.com/gp/v/provisioning?opc=${encodeURIComponent(result.google_opc)}`,
+          '_blank'
+        );
+      }
+    } catch (err) {
+      showToast('error', err instanceof Error ? err.message : t('common.somethingWrong'));
+    } finally {
+      setProvisioning(false);
     }
   };
 
@@ -737,7 +766,7 @@ function CardDashboardView() {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-4 gap-3">
         <button
           onClick={() => setShowFundModal(true)}
           className="card p-3 flex flex-col items-center gap-2 hover:bg-white/10 transition"
@@ -827,6 +856,29 @@ function CardDashboardView() {
           <span className="text-xs font-medium">
             {showPan ? t('card.hideNumber') : t('card.showNumber')}
           </span>
+        </button>
+
+        <button
+          onClick={handleAddToWallet}
+          disabled={provisioning}
+          className="card p-3 flex flex-col items-center gap-2 hover:bg-white/10 transition disabled:opacity-50"
+        >
+          <div className="w-10 h-10 bg-blue-500/20 rounded-full flex items-center justify-center">
+            <svg
+              className="w-5 h-5 text-blue-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"
+              />
+            </svg>
+          </div>
+          <span className="text-xs font-medium">{t('card.addToWallet')}</span>
         </button>
       </div>
 

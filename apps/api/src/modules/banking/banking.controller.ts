@@ -92,4 +92,16 @@ export class BankingController {
   async fundCard(@CurrentUser('wallet') wallet: string) {
     return this.bankingService.fundCard(wallet);
   }
+
+  // ─── Digital Wallet Provisioning ──────────────────────────────────
+
+  @Post('card/provision')
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
+  @UseGuards(AuthGuard)
+  async provisionCard(
+    @CurrentUser('wallet') wallet: string,
+    @Body() body: { digitalWallet: 'APPLE_PAY' | 'GOOGLE_PAY' }
+  ) {
+    return this.bankingService.provisionCard(wallet, body.digitalWallet);
+  }
 }

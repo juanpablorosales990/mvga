@@ -742,7 +742,7 @@ export default function Home() {
                   desc: 'Sub-second transfers, near-zero network fees',
                 },
                 {
-                  name: 'Sumsub',
+                  name: 'Persona',
                   role: 'Identity',
                   desc: 'KYC verification for 220+ countries',
                 },

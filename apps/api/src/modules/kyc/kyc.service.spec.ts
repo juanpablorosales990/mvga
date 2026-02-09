@@ -5,7 +5,6 @@ import { KycService } from './kyc.service';
 describe('KycService', () => {
   let service: KycService;
   let mockPrisma: any;
-  let mockSumsub: any;
   let mockPersona: any;
   let originalEnv: string | undefined;
 
@@ -20,14 +19,6 @@ describe('KycService', () => {
       },
     };
 
-    mockSumsub = {
-      isEnabled: false,
-      createApplicant: jest.fn(),
-      getAccessToken: jest.fn(),
-      getApplicantStatus: jest.fn(),
-      parseWebhookPayload: jest.fn(),
-    };
-
     mockPersona = {
       isEnabled: false,
       templateConfig: { templateId: 'itmpl_test', environmentId: 'env_test' },
@@ -36,7 +27,7 @@ describe('KycService', () => {
       parseWebhookPayload: jest.fn(),
     };
 
-    service = new KycService(mockPrisma, mockSumsub, mockPersona);
+    service = new KycService(mockPrisma, mockPersona);
   });
 
   afterEach(() => {
@@ -44,7 +35,7 @@ describe('KycService', () => {
   });
 
   describe('createSession', () => {
-    it('returns mock token in dev when both providers disabled', async () => {
+    it('returns mock token in dev when Persona disabled', async () => {
       process.env.NODE_ENV = 'development';
       mockPrisma.userKyc.upsert.mockResolvedValue({});
 
@@ -70,9 +61,8 @@ describe('KycService', () => {
       );
     });
 
-    it('uses Persona when enabled (preferred over Sumsub)', async () => {
+    it('uses Persona when enabled', async () => {
       mockPersona.isEnabled = true;
-      mockSumsub.isEnabled = true; // Both enabled, Persona wins
       mockPrisma.userKyc.findUnique.mockResolvedValue(null);
       mockPersona.createInquiry.mockResolvedValue('inq_123');
       mockPrisma.userKyc.upsert.mockResolvedValue({});
@@ -86,7 +76,6 @@ describe('KycService', () => {
         provider: 'persona',
       });
       expect(mockPersona.createInquiry).toHaveBeenCalledWith('wallet-abc');
-      expect(mockSumsub.createApplicant).not.toHaveBeenCalled();
     });
 
     it('reuses existing inquiry ID for Persona', async () => {
@@ -97,32 +86,6 @@ describe('KycService', () => {
       const result = await service.createSession('user-1', 'wallet-abc');
       expect(result.inquiryId).toBe('inq_existing');
       expect(mockPersona.createInquiry).not.toHaveBeenCalled();
-    });
-
-    it('falls back to Sumsub when only Sumsub is enabled', async () => {
-      mockSumsub.isEnabled = true;
-      mockPrisma.userKyc.findUnique.mockResolvedValue(null);
-      mockSumsub.createApplicant.mockResolvedValue('applicant-123');
-      mockSumsub.getAccessToken.mockResolvedValue({ token: 'sdk_token_abc' });
-      mockPrisma.userKyc.upsert.mockResolvedValue({});
-
-      const result = await service.createSession('user-1', 'wallet-abc');
-      expect(result).toEqual({
-        token: 'sdk_token_abc',
-        applicantId: 'applicant-123',
-        provider: 'sumsub',
-      });
-      expect(mockSumsub.createApplicant).toHaveBeenCalledWith('wallet-abc');
-    });
-
-    it('reuses existing externalId for Sumsub', async () => {
-      mockSumsub.isEnabled = true;
-      mockPrisma.userKyc.findUnique.mockResolvedValue({ externalId: 'existing-id' });
-      mockSumsub.getAccessToken.mockResolvedValue({ token: 'tok' });
-      mockPrisma.userKyc.upsert.mockResolvedValue({});
-
-      await service.createSession('user-1', 'wallet-abc');
-      expect(mockSumsub.createApplicant).not.toHaveBeenCalled();
     });
   });
 
@@ -154,113 +117,6 @@ describe('KycService', () => {
       const result = await service.getStatus('user-1');
       expect(result.status).toBe('REJECTED');
       expect(result.rejectionReason).toBe('ID expired');
-    });
-  });
-
-  describe('handleSumsubWebhook', () => {
-    it('throws BadRequestException on invalid signature', async () => {
-      mockSumsub.parseWebhookPayload.mockReturnValue(null);
-      await expect(service.handleSumsubWebhook('body', 'bad-sig')).rejects.toThrow(
-        BadRequestException
-      );
-    });
-
-    it('approves user on GREEN reviewAnswer', async () => {
-      mockSumsub.parseWebhookPayload.mockReturnValue({
-        type: 'applicantReviewed',
-        applicantId: 'ext-123',
-        reviewResult: { reviewAnswer: 'GREEN' },
-      });
-      mockPrisma.userKyc.findFirst.mockResolvedValue({ id: 'kyc-1', externalId: 'ext-123' });
-      mockPrisma.userKyc.update.mockResolvedValue({});
-
-      await service.handleSumsubWebhook('body', 'sig');
-      expect(mockPrisma.userKyc.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { id: 'kyc-1' },
-          data: expect.objectContaining({ status: 'APPROVED', tier: 1 }),
-        })
-      );
-    });
-
-    it('rejects user on RED reviewAnswer', async () => {
-      mockSumsub.parseWebhookPayload.mockReturnValue({
-        type: 'applicantReviewed',
-        applicantId: 'ext-123',
-        reviewResult: { reviewAnswer: 'RED', rejectLabels: ['ID_EXPIRED'] },
-      });
-      mockPrisma.userKyc.findFirst.mockResolvedValue({ id: 'kyc-1', externalId: 'ext-123' });
-      mockPrisma.userKyc.update.mockResolvedValue({});
-
-      await service.handleSumsubWebhook('body', 'sig');
-      expect(mockPrisma.userKyc.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({ status: 'REJECTED', rejectionReason: 'ID_EXPIRED' }),
-        })
-      );
-    });
-
-    it('sets PENDING on applicantPending event', async () => {
-      mockSumsub.parseWebhookPayload.mockReturnValue({
-        type: 'applicantPending',
-        applicantId: 'ext-123',
-      });
-      mockPrisma.userKyc.findFirst.mockResolvedValue({
-        id: 'kyc-1',
-        externalId: 'ext-123',
-        status: 'UNVERIFIED',
-      });
-      mockPrisma.userKyc.update.mockResolvedValue({});
-
-      await service.handleSumsubWebhook('body', 'sig');
-      expect(mockPrisma.userKyc.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: { status: 'PENDING' },
-        })
-      );
-    });
-
-    it('does not overwrite APPROVED on applicantPending', async () => {
-      mockSumsub.parseWebhookPayload.mockReturnValue({
-        type: 'applicantPending',
-        applicantId: 'ext-123',
-      });
-      mockPrisma.userKyc.findFirst.mockResolvedValue({
-        id: 'kyc-1',
-        externalId: 'ext-123',
-        status: 'APPROVED',
-      });
-
-      await service.handleSumsubWebhook('body', 'sig');
-      expect(mockPrisma.userKyc.update).not.toHaveBeenCalled();
-    });
-
-    it('does not overwrite APPROVED on applicantOnHold', async () => {
-      mockSumsub.parseWebhookPayload.mockReturnValue({
-        type: 'applicantOnHold',
-        applicantId: 'ext-123',
-      });
-      mockPrisma.userKyc.findFirst.mockResolvedValue({
-        id: 'kyc-1',
-        externalId: 'ext-123',
-        status: 'APPROVED',
-      });
-
-      await service.handleSumsubWebhook('body', 'sig');
-      expect(mockPrisma.userKyc.update).not.toHaveBeenCalled();
-    });
-
-    it('ignores webhook for unknown applicant', async () => {
-      mockSumsub.parseWebhookPayload.mockReturnValue({
-        type: 'applicantReviewed',
-        applicantId: 'unknown',
-        reviewResult: { reviewAnswer: 'GREEN' },
-      });
-      mockPrisma.userKyc.findFirst.mockResolvedValue(null);
-
-      const result = await service.handleSumsubWebhook('body', 'sig');
-      expect(result).toEqual({ ok: true });
-      expect(mockPrisma.userKyc.update).not.toHaveBeenCalled();
     });
   });
 

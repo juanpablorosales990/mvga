@@ -688,23 +688,19 @@ model YieldSnapshot {
 }
 
 // ============================================================================
-// Card Applications (Rain + Lithic Integration)
+// Card Applications (Lithic Integration)
 // ============================================================================
 
 model CardApplication {
   id            String        @id @default(uuid())
   walletAddress String
   provider      CardProvider  @default(NONE)
-  rainUserId    String?       @unique // Rain's user ID after KYC
-  rainCardId    String?       @unique // Rain's card ID after issuance
-  lithicAccountHolderToken String? @unique // Lithic account_holder_token
-  lithicAccountToken       String? @unique // Lithic account_token (for card ops)
-  lithicCardToken          String? @unique // Lithic card_token
-  lithicFinancialAccountToken String?      // Lithic financial account (for balance)
+  lithicAccountHolderToken String? @unique
+  lithicAccountToken       String? @unique
+  lithicCardToken          String? @unique
+  lithicFinancialAccountToken String?
   status        CardAppStatus @default(WAITLISTED)
-  kycData       Json?                 // Encrypted KYC submission (never logged)
-  chainId       Int?                  // Rain collateral contract chain
-  depositAddr   String?               // Rain collateral deposit address
+  kycData       Json?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
@@ -715,7 +711,6 @@ model CardApplication {
 enum CardProvider {
   NONE
   LITHIC
-  RAIN
 }
 
 enum CardAppStatus {

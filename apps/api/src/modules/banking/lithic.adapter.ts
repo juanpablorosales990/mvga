@@ -62,7 +62,7 @@ export class LithicAdapter {
     return this.client;
   }
 
-  /** Register user with Lithic using KYC_BYO (pre-verified via Persona/Sumsub). */
+  /** Register user with Lithic using KYC_BYO (pre-verified via Persona). */
   async submitKyc(data: {
     firstName: string;
     lastName: string;
@@ -226,6 +226,28 @@ export class LithicAdapter {
   async unfreezeCard(cardToken: string): Promise<void> {
     const client = this.getClient();
     await client.cards.update(cardToken, { state: 'OPEN' });
+  }
+
+  /** Web push provisioning — adds card to Apple Pay or Google Pay. */
+  async webProvision(
+    cardToken: string,
+    digitalWallet: 'APPLE_PAY' | 'GOOGLE_PAY'
+  ): Promise<{
+    jws?: {
+      header?: Record<string, unknown>;
+      payload?: string;
+      protected?: string;
+      signature?: string;
+    };
+    state?: string;
+    google_opc?: string;
+    tsp_opc?: string;
+  }> {
+    const client = this.getClient();
+    const result = await client.cards.webProvision(cardToken, {
+      digital_wallet: digitalWallet,
+    });
+    return result as unknown as Record<string, unknown>;
   }
 
   /** Get recent transactions for an account. */

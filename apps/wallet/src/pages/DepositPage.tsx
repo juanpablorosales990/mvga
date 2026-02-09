@@ -14,7 +14,7 @@ const PayPalScriptProvider = lazy(() =>
 
 const PRESET_AMOUNTS = [5, 10, 25, 50];
 
-type Tab = 'onramper' | 'coinbase' | 'paypal';
+type Tab = 'onramper' | 'paypal';
 
 export default function DepositPage() {
   const { t } = useTranslation();
@@ -22,8 +22,6 @@ export default function DepositPage() {
   const walletAddress = publicKey?.toBase58() || '';
   const [presetAmount, setPresetAmount] = useState<number | null>(null);
   const [tab, setTab] = useState<Tab>('onramper');
-  const [coinbaseUrl, setCoinbaseUrl] = useState<string | null>(null);
-  const [coinbaseLoading, setCoinbaseLoading] = useState(false);
   const [paypalEnabled, setPaypalEnabled] = useState(false);
   const [paypalAmount, setPaypalAmount] = useState('');
   const [paypalProcessing, setPaypalProcessing] = useState(false);
@@ -60,21 +58,6 @@ export default function DepositPage() {
     }
     return url.toString();
   }, [walletAddress, presetAmount]);
-
-  const loadCoinbaseSession = async () => {
-    if (coinbaseUrl) return;
-    setCoinbaseLoading(true);
-    try {
-      const data = await apiFetch<{ widgetUrl: string }>('/onramp/session', {
-        method: 'POST',
-      });
-      setCoinbaseUrl(data.widgetUrl);
-    } catch {
-      showToast('error', t('deposit.coinbaseError'));
-    } finally {
-      setCoinbaseLoading(false);
-    }
-  };
 
   if (!connected) {
     return (
@@ -119,19 +102,6 @@ export default function DepositPage() {
             {t('deposit.paypalTab')}
           </button>
         )}
-        <button
-          onClick={() => {
-            setTab('coinbase');
-            loadCoinbaseSession();
-          }}
-          className={`flex-1 py-2 text-sm font-medium border transition ${
-            tab === 'coinbase'
-              ? 'border-gold-500 bg-gold-500/10 text-gold-500'
-              : 'border-white/10 text-white/50'
-          }`}
-        >
-          {t('deposit.coinbaseTab')}
-        </button>
       </div>
 
       {tab === 'onramper' ? (
@@ -277,36 +247,7 @@ export default function DepositPage() {
             <p className="text-white/30 text-xs font-mono">{t('deposit.paypalPoweredBy')}</p>
           </div>
         </>
-      ) : (
-        <>
-          {/* Coinbase Onramp */}
-          {coinbaseLoading ? (
-            <div className="flex items-center justify-center py-20">
-              <div className="w-8 h-8 border-2 border-gold-500 border-t-transparent rounded-full animate-spin" />
-            </div>
-          ) : coinbaseUrl ? (
-            <div className="border border-white/10 overflow-hidden" style={{ height: '630px' }}>
-              <iframe
-                src={coinbaseUrl}
-                title={t('deposit.coinbaseTitle')}
-                height="630"
-                width="100%"
-                allow="accelerometer; autoplay; camera; gyroscope; payment"
-                style={{ border: 'none' }}
-              />
-            </div>
-          ) : (
-            <div className="card text-center py-12 space-y-3">
-              <p className="text-white/40 text-sm">{t('deposit.coinbaseUnavailable')}</p>
-              <p className="text-white/20 text-xs">{t('deposit.coinbaseNote')}</p>
-            </div>
-          )}
-
-          <div className="bg-white/5 border border-white/10 px-4 py-3">
-            <p className="text-white/30 text-xs font-mono">{t('deposit.coinbasePoweredBy')}</p>
-          </div>
-        </>
-      )}
+      ) : null}
 
       {/* MoneyGram link */}
       <Link

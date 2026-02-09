@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { isNative } from '../utils/platform';
 
 const BIOMETRIC_KEY = 'mvga-biometric-credential';
 const BIOMETRIC_ENABLED_KEY = 'mvga-biometric-enabled';
@@ -9,18 +10,12 @@ interface StoredCredential {
 }
 
 /**
- * WebAuthn biometric authentication hook.
- * Uses platform authenticators (Face ID, Touch ID, Windows Hello, Android biometrics).
+ * Biometric authentication hook.
  *
- * Flow:
- * 1. User enables biometric in Settings (registers a credential)
- * 2. On LockScreen, user taps "Unlock with biometric" (asserts the credential)
- * 3. If assertion succeeds, we decrypt and return the stored password
+ * Native (iOS/Android): Uses @aparajita/capacitor-biometric-auth for Face ID /
+ * Touch ID / fingerprint, with @capacitor/preferences for secure storage.
  *
- * Security: The password is encrypted with AES-GCM using a key derived from a
- * random secret, then stored in localStorage. The secret is stored in the
- * WebAuthn credential's userHandle, which requires biometric verification to access.
- * This avoids storing the raw password in userHandle (which the spec warns against).
+ * Web: Uses WebAuthn platform authenticators + AES-GCM encryption in localStorage.
  */
 export function useBiometric() {
   const [isAvailable, setIsAvailable] = useState(false);
@@ -28,8 +23,13 @@ export function useBiometric() {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    checkAvailability().then(setIsAvailable);
-    setIsEnabled(localStorage.getItem(BIOMETRIC_ENABLED_KEY) === 'true');
+    if (isNative) {
+      checkNativeAvailability().then(setIsAvailable);
+      getNativePreference(BIOMETRIC_ENABLED_KEY).then((v) => setIsEnabled(v === 'true'));
+    } else {
+      checkWebAvailability().then(setIsAvailable);
+      setIsEnabled(localStorage.getItem(BIOMETRIC_ENABLED_KEY) === 'true');
+    }
   }, []);
 
   const register = useCallback(
@@ -38,54 +38,10 @@ export function useBiometric() {
       setIsLoading(true);
 
       try {
-        // Generate a random secret to encrypt the password
-        const secret = crypto.getRandomValues(new Uint8Array(32));
-
-        // Encrypt the password with the secret
-        const encryptedPw = await encryptPassword(password, secret);
-
-        const challenge = crypto.getRandomValues(new Uint8Array(32));
-
-        const credential = (await navigator.credentials.create({
-          publicKey: {
-            challenge,
-            rp: {
-              name: 'MVGA Wallet',
-              id: window.location.hostname,
-            },
-            user: {
-              // Store the encryption secret in userHandle (non-sensitive random bytes)
-              id: secret,
-              name: 'mvga-wallet-user',
-              displayName: 'MVGA Wallet',
-            },
-            pubKeyCredParams: [
-              { type: 'public-key', alg: -7 }, // ES256
-              { type: 'public-key', alg: -257 }, // RS256
-            ],
-            authenticatorSelection: {
-              authenticatorAttachment: 'platform',
-              userVerification: 'required',
-              residentKey: 'required',
-              requireResidentKey: true,
-            },
-            timeout: 60000,
-          },
-        })) as PublicKeyCredential | null;
-
-        if (!credential) return false;
-
-        // Store credential ID for future assertions
-        const stored: StoredCredential = {
-          credentialId: bufferToBase64(credential.rawId),
-        };
-
-        localStorage.setItem(BIOMETRIC_KEY, JSON.stringify(stored));
-        localStorage.setItem(ENCRYPTED_PW_KEY, encryptedPw);
-        localStorage.setItem(BIOMETRIC_ENABLED_KEY, 'true');
-        setIsEnabled(true);
-
-        return true;
+        if (isNative) {
+          return await registerNative(password, setIsEnabled);
+        }
+        return await registerWeb(password, setIsEnabled);
       } catch (error) {
         console.error('Biometric registration failed:', error);
         return false;
@@ -101,39 +57,10 @@ export function useBiometric() {
     setIsLoading(true);
 
     try {
-      const storedStr = localStorage.getItem(BIOMETRIC_KEY);
-      const encryptedPw = localStorage.getItem(ENCRYPTED_PW_KEY);
-      if (!storedStr || !encryptedPw) return null;
-
-      const stored: StoredCredential = JSON.parse(storedStr);
-      const challenge = crypto.getRandomValues(new Uint8Array(32));
-
-      const assertion = (await navigator.credentials.get({
-        publicKey: {
-          challenge,
-          allowCredentials: [
-            {
-              type: 'public-key',
-              id: base64ToBuffer(stored.credentialId),
-              transports: ['internal'],
-            },
-          ],
-          userVerification: 'required',
-          timeout: 60000,
-        },
-      })) as PublicKeyCredential | null;
-
-      if (!assertion) return null;
-
-      const response = assertion.response as AuthenticatorAssertionResponse;
-
-      // The userHandle contains the encryption secret
-      if (response.userHandle) {
-        const secret = new Uint8Array(response.userHandle);
-        return await decryptPassword(encryptedPw, secret);
+      if (isNative) {
+        return await authenticateNative();
       }
-
-      return null;
+      return await authenticateWeb();
     } catch (error) {
       console.error('Biometric authentication failed:', error);
       return null;
@@ -142,14 +69,16 @@ export function useBiometric() {
     }
   }, [isEnabled]);
 
-  const disable = useCallback(() => {
-    localStorage.removeItem(BIOMETRIC_KEY);
-    localStorage.removeItem(BIOMETRIC_ENABLED_KEY);
-    localStorage.removeItem(ENCRYPTED_PW_KEY);
-    // Note: The WebAuthn credential remains on the platform authenticator.
-    // The spec does not provide a way to delete it programmatically.
-    // The encrypted password in localStorage is removed, so even if the
-    // credential is triggered, the decryption target no longer exists.
+  const disable = useCallback(async () => {
+    if (isNative) {
+      const { Preferences } = await import('@capacitor/preferences');
+      await Preferences.remove({ key: ENCRYPTED_PW_KEY });
+      await Preferences.remove({ key: BIOMETRIC_ENABLED_KEY });
+    } else {
+      localStorage.removeItem(BIOMETRIC_KEY);
+      localStorage.removeItem(BIOMETRIC_ENABLED_KEY);
+      localStorage.removeItem(ENCRYPTED_PW_KEY);
+    }
     setIsEnabled(false);
   }, []);
 
@@ -163,17 +92,158 @@ export function useBiometric() {
   };
 }
 
-async function checkAvailability(): Promise<boolean> {
-  if (typeof window === 'undefined') return false;
-  if (!window.PublicKeyCredential) return false;
+// ---------------------------------------------------------------------------
+// Native path (Capacitor)
+// ---------------------------------------------------------------------------
 
+async function checkNativeAvailability(): Promise<boolean> {
   try {
-    const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
-    return available;
+    const { BiometricAuth } = await import('@aparajita/capacitor-biometric-auth');
+    const result = await BiometricAuth.checkBiometry();
+    return result.isAvailable;
   } catch {
     return false;
   }
 }
+
+async function getNativePreference(key: string): Promise<string | null> {
+  try {
+    const { Preferences } = await import('@capacitor/preferences');
+    const { value } = await Preferences.get({ key });
+    return value;
+  } catch {
+    return null;
+  }
+}
+
+async function registerNative(
+  password: string,
+  setIsEnabled: (v: boolean) => void
+): Promise<boolean> {
+  const { BiometricAuth } = await import('@aparajita/capacitor-biometric-auth');
+  const { Preferences } = await import('@capacitor/preferences');
+
+  // Verify biometric first
+  await BiometricAuth.authenticate({ reason: 'Enable biometric unlock' });
+
+  // Store password in OS-encrypted Preferences
+  await Preferences.set({ key: ENCRYPTED_PW_KEY, value: password });
+  await Preferences.set({ key: BIOMETRIC_ENABLED_KEY, value: 'true' });
+  setIsEnabled(true);
+  return true;
+}
+
+async function authenticateNative(): Promise<string | null> {
+  const { BiometricAuth } = await import('@aparajita/capacitor-biometric-auth');
+  const { Preferences } = await import('@capacitor/preferences');
+
+  const { value: enabled } = await Preferences.get({ key: BIOMETRIC_ENABLED_KEY });
+  if (enabled !== 'true') return null;
+
+  // Prompt biometric
+  await BiometricAuth.authenticate({ reason: 'Unlock your wallet' });
+
+  // Retrieve password
+  const { value } = await Preferences.get({ key: ENCRYPTED_PW_KEY });
+  return value;
+}
+
+// ---------------------------------------------------------------------------
+// Web path (WebAuthn + AES-GCM)
+// ---------------------------------------------------------------------------
+
+async function checkWebAvailability(): Promise<boolean> {
+  if (typeof window === 'undefined') return false;
+  if (!window.PublicKeyCredential) return false;
+
+  try {
+    return await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+  } catch {
+    return false;
+  }
+}
+
+async function registerWeb(password: string, setIsEnabled: (v: boolean) => void): Promise<boolean> {
+  const secret = crypto.getRandomValues(new Uint8Array(32));
+  const encryptedPw = await encryptPassword(password, secret);
+  const challenge = crypto.getRandomValues(new Uint8Array(32));
+
+  const credential = (await navigator.credentials.create({
+    publicKey: {
+      challenge,
+      rp: {
+        name: 'MVGA Wallet',
+        id: window.location.hostname,
+      },
+      user: {
+        id: secret,
+        name: 'mvga-wallet-user',
+        displayName: 'MVGA Wallet',
+      },
+      pubKeyCredParams: [
+        { type: 'public-key', alg: -7 },
+        { type: 'public-key', alg: -257 },
+      ],
+      authenticatorSelection: {
+        authenticatorAttachment: 'platform',
+        userVerification: 'required',
+        residentKey: 'required',
+        requireResidentKey: true,
+      },
+      timeout: 60000,
+    },
+  })) as PublicKeyCredential | null;
+
+  if (!credential) return false;
+
+  const stored: StoredCredential = {
+    credentialId: bufferToBase64(credential.rawId),
+  };
+
+  localStorage.setItem(BIOMETRIC_KEY, JSON.stringify(stored));
+  localStorage.setItem(ENCRYPTED_PW_KEY, encryptedPw);
+  localStorage.setItem(BIOMETRIC_ENABLED_KEY, 'true');
+  setIsEnabled(true);
+  return true;
+}
+
+async function authenticateWeb(): Promise<string | null> {
+  const storedStr = localStorage.getItem(BIOMETRIC_KEY);
+  const encryptedPw = localStorage.getItem(ENCRYPTED_PW_KEY);
+  if (!storedStr || !encryptedPw) return null;
+
+  const stored: StoredCredential = JSON.parse(storedStr);
+  const challenge = crypto.getRandomValues(new Uint8Array(32));
+
+  const assertion = (await navigator.credentials.get({
+    publicKey: {
+      challenge,
+      allowCredentials: [
+        {
+          type: 'public-key',
+          id: base64ToBuffer(stored.credentialId),
+          transports: ['internal'],
+        },
+      ],
+      userVerification: 'required',
+      timeout: 60000,
+    },
+  })) as PublicKeyCredential | null;
+
+  if (!assertion) return null;
+
+  const response = assertion.response as AuthenticatorAssertionResponse;
+  if (response.userHandle) {
+    const secret = new Uint8Array(response.userHandle);
+    return await decryptPassword(encryptedPw, secret);
+  }
+
+  return null;
+}
+
+// ---------------------------------------------------------------------------
+// Crypto helpers (web path only)
+// ---------------------------------------------------------------------------
 
 function bufferToBase64(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer);
@@ -200,7 +270,6 @@ async function encryptPassword(password: string, secret: Uint8Array): Promise<st
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const encoded = new TextEncoder().encode(password);
   const ciphertext = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, encoded);
-  // Store as iv:ciphertext in base64
   return bufferToBase64(iv.buffer as ArrayBuffer) + ':' + bufferToBase64(ciphertext);
 }
 

@@ -1,92 +1,7 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { useKyc } from '../hooks/useKyc';
-
-// ─── Sumsub WebSDK (script tag) ──────────────────────────────────────
-
-function loadSumsubScript(): Promise<void> {
-  if (document.getElementById('sumsub-websdk-script')) {
-    return Promise.resolve();
-  }
-  return new Promise((resolve, reject) => {
-    const script = document.createElement('script');
-    script.id = 'sumsub-websdk-script';
-    script.src = 'https://static.sumsub.com/idensic/static/sns-websdk-builder.js';
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error('Failed to load Sumsub WebSDK'));
-    document.head.appendChild(script);
-  });
-}
-
-function SumsubWebSdk({
-  accessToken,
-  onRefreshToken,
-  onComplete,
-  onError,
-}: {
-  accessToken: string;
-  onRefreshToken: () => Promise<string>;
-  onComplete: () => void;
-  onError: (msg: string) => void;
-}) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const sdkRef = useRef<unknown>(null);
-
-  useEffect(() => {
-    let mounted = true;
-
-    async function init() {
-      try {
-        await loadSumsubScript();
-        if (!mounted || !containerRef.current) return;
-
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const snsWebSdkBuilder = (window as any).snsWebSdk;
-        if (!snsWebSdkBuilder) {
-          onError('Sumsub SDK failed to initialize');
-          return;
-        }
-
-        const sdk = snsWebSdkBuilder
-          .init(accessToken, onRefreshToken)
-          .withConf({ lang: document.documentElement.lang || 'en' })
-          .withOptions({ addViewportTag: false, adaptIframeHeight: true })
-          .on('idCheck.onStepCompleted', () => {})
-          .on('idCheck.onApplicantStatusChanged', () => {
-            onComplete();
-          })
-          .on('idCheck.onError', (error: unknown) => {
-            onError(String(error));
-          })
-          .build();
-
-        sdk.launch(containerRef.current);
-        sdkRef.current = sdk;
-      } catch (err) {
-        if (mounted) onError(err instanceof Error ? err.message : 'SDK load failed');
-      }
-    }
-
-    init();
-
-    return () => {
-      mounted = false;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      if (sdkRef.current && typeof (sdkRef.current as any).destroy === 'function') {
-        (sdkRef.current as any).destroy();
-      }
-    };
-  }, [accessToken, onRefreshToken, onComplete, onError]);
-
-  return (
-    <div
-      ref={containerRef}
-      id="sumsub-container"
-      className="min-h-[400px] bg-white/5 border border-white/10"
-    />
-  );
-}
 
 // ─── Persona Embedded Flow (npm SDK loaded dynamically) ──────────────
 
@@ -179,9 +94,7 @@ function PersonaFlow({
 // ─── KycPage ─────────────────────────────────────────────────────────
 
 interface SessionData {
-  provider: 'persona' | 'sumsub' | 'mock';
-  // Sumsub
-  token?: string;
+  provider: 'persona' | 'mock';
   // Persona
   templateId?: string;
   environmentId?: string;
@@ -205,7 +118,6 @@ export default function KycPage() {
     if (result) {
       setSession({
         provider: result.provider,
-        token: result.token,
         templateId: result.templateId,
         environmentId: result.environmentId,
         referenceId: result.referenceId,
@@ -218,14 +130,6 @@ export default function KycPage() {
     setSession(null);
     refresh();
   }, [refresh]);
-
-  const handleRefreshToken = useCallback(async (): Promise<string> => {
-    const result = await createSession();
-    if (!result?.token) {
-      throw new Error('Failed to refresh session token');
-    }
-    return result.token;
-  }, [createSession]);
 
   const handleSdkError = useCallback((msg: string) => {
     setSdkError(msg);
@@ -261,16 +165,7 @@ export default function KycPage() {
         </div>
       )}
 
-      {/* SDK Widget — Sumsub or Persona */}
-      {session?.provider === 'sumsub' && session.token && (
-        <SumsubWebSdk
-          accessToken={session.token}
-          onRefreshToken={handleRefreshToken}
-          onComplete={handleSdkComplete}
-          onError={handleSdkError}
-        />
-      )}
-
+      {/* Persona SDK Widget */}
       {session?.provider === 'persona' &&
         session.templateId &&
         session.environmentId &&

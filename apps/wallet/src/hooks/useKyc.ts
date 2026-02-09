@@ -10,13 +10,8 @@ interface KycStatusResponse {
 }
 
 interface KycSessionResponse {
-  // Common
-  provider: 'persona' | 'sumsub' | 'mock';
+  provider: 'persona' | 'mock';
   mock?: boolean;
-  // Sumsub
-  token?: string;
-  applicantId?: string;
-  // Persona
   inquiryId?: string;
   templateId?: string;
   environmentId?: string;

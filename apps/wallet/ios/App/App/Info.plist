@@ -47,5 +47,18 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>MVGA Wallet uses your camera to scan QR codes for payments</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>MVGA Wallet uses Face ID to securely unlock your wallet</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>mvga</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

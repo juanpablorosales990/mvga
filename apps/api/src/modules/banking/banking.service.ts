@@ -7,7 +7,6 @@ import {
 } from '@nestjs/common';
 import { CardAppStatus, CardProvider } from '@prisma/client';
 import { PrismaService } from '../../common/prisma.service';
-import { RainAdapter, KycData, RainTransaction } from './rain.adapter';
 import { LithicAdapter } from './lithic.adapter';
 
 /** Map Prisma CardAppStatus → wallet-expected lowercase string. */
@@ -28,18 +27,16 @@ export class BankingService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly rain: RainAdapter,
     private readonly lithic: LithicAdapter
   ) {}
 
-  /** Lithic preferred > Rain fallback > none (mock in dev, throw in prod). */
-  private get cardProvider(): 'lithic' | 'rain' | 'none' {
+  /** Lithic preferred > none (mock in dev, throw in prod). */
+  private get cardProvider(): 'lithic' | 'none' {
     if (this.lithic.isEnabled) return 'lithic';
-    if (this.rain.isEnabled) return 'rain';
     return 'none';
   }
 
-  // ─── Card Waitlist (unchanged) ────────────────────────────────────
+  // ─── Card Waitlist ──────────────────────────────────────────────────
 
   async joinCardWaitlist(walletAddress: string, email?: string) {
     const existing = await this.prisma.cardWaitlist.findFirst({
@@ -63,7 +60,24 @@ export class BankingService {
 
   // ─── KYC ───────────────────────────────────────────────────────────
 
-  async submitKyc(walletAddress: string, data: Omit<KycData, 'walletAddress'>) {
+  async submitKyc(
+    walletAddress: string,
+    data: {
+      firstName: string;
+      lastName: string;
+      email?: string;
+      birthDate?: string;
+      nationalId?: string;
+      countryOfIssue?: string;
+      address?: {
+        line1: string;
+        city: string;
+        region: string;
+        postalCode: string;
+        countryCode: string;
+      };
+    }
+  ) {
     if (this.cardProvider === 'none') {
       if (process.env.NODE_ENV === 'production') {
         throw new ServiceUnavailableException('Banking service not configured');
@@ -74,61 +88,39 @@ export class BankingService {
       return { status: walletStatus(app.status), applicationId: app.id };
     }
 
-    if (this.cardProvider === 'lithic') {
-      try {
-        this.logger.log(`Lithic submitKyc for wallet ${walletAddress}`);
-        const result = await this.lithic.submitKyc({
-          firstName: data.firstName,
-          lastName: data.lastName,
-          email: data.email,
-          walletAddress,
-          birthDate: data.birthDate,
-          governmentId: data.nationalId,
-          address: data.address,
-        });
-        const status: CardAppStatus = result.status === 'ACCEPTED' ? 'KYC_APPROVED' : 'KYC_PENDING';
-
-        const app = await this.prisma.cardApplication.create({
-          data: {
-            walletAddress,
-            provider: 'LITHIC' as CardProvider,
-            lithicAccountHolderToken: result.token,
-            lithicAccountToken: result.accountToken,
-            status,
-          },
-        });
-        this.logger.log(`Card application created: ${app.id}`);
-
-        return {
-          status: walletStatus(app.status),
-          applicationId: app.id,
-          lithicAccountToken: result.accountToken,
-        };
-      } catch (err) {
-        this.logger.error(`Lithic card flow failed: ${err?.message || err}`, err?.stack);
-        throw err;
-      }
-    }
-
-    // Rain path
-    const result = await this.rain.submitKyc({ ...data, walletAddress });
-    const statusMap: Record<string, string> = {
-      approved: 'KYC_APPROVED',
-      pending: 'KYC_PENDING',
-      rejected: 'KYC_REJECTED',
-    };
-    const status = statusMap[result.applicationStatus] || 'KYC_PENDING';
-
-    const app = await this.prisma.cardApplication.create({
-      data: {
+    try {
+      this.logger.log(`Lithic submitKyc for wallet ${walletAddress}`);
+      const result = await this.lithic.submitKyc({
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
         walletAddress,
-        provider: 'RAIN' as CardProvider,
-        rainUserId: result.id,
-        status: status as CardAppStatus,
-      },
-    });
+        birthDate: data.birthDate,
+        governmentId: data.nationalId,
+        address: data.address,
+      });
+      const status: CardAppStatus = result.status === 'ACCEPTED' ? 'KYC_APPROVED' : 'KYC_PENDING';
 
-    return { status: walletStatus(app.status), applicationId: app.id, rainUserId: result.id };
+      const app = await this.prisma.cardApplication.create({
+        data: {
+          walletAddress,
+          provider: 'LITHIC' as CardProvider,
+          lithicAccountHolderToken: result.token,
+          lithicAccountToken: result.accountToken,
+          status,
+        },
+      });
+      this.logger.log(`Card application created: ${app.id}`);
+
+      return {
+        status: walletStatus(app.status),
+        applicationId: app.id,
+        lithicAccountToken: result.accountToken,
+      };
+    } catch (err) {
+      this.logger.error(`Lithic card flow failed: ${err?.message || err}`, err?.stack);
+      throw err;
+    }
   }
 
   async getKycStatus(walletAddress: string) {
@@ -167,34 +159,6 @@ export class BankingService {
       }
     }
 
-    // Poll Rain if pending
-    if (
-      app.provider === 'RAIN' &&
-      app.rainUserId &&
-      app.status === 'KYC_PENDING' &&
-      this.rain.isEnabled
-    ) {
-      try {
-        const rainStatus = await this.rain.getUserStatus(app.rainUserId);
-        const newStatus: CardAppStatus =
-          rainStatus.applicationStatus === 'approved'
-            ? 'KYC_APPROVED'
-            : rainStatus.applicationStatus === 'rejected'
-              ? 'KYC_REJECTED'
-              : 'KYC_PENDING';
-
-        if (newStatus !== app.status) {
-          await this.prisma.cardApplication.update({
-            where: { id: app.id },
-            data: { status: newStatus },
-          });
-          return { status: walletStatus(newStatus) };
-        }
-      } catch (err) {
-        this.logger.warn(`Failed to poll Rain KYC status: ${err}`);
-      }
-    }
-
     return { status: walletStatus(app.status) };
   }
 
@@ -209,7 +173,6 @@ export class BankingService {
     if (!app) throw new BadRequestException('KYC must be approved before issuing a card');
 
     // Already issued
-    if (app.rainCardId) return { cardId: app.rainCardId, status: 'active' };
     if (app.lithicCardToken) return { cardId: app.lithicCardToken, status: 'active' };
 
     // Lithic path
@@ -236,36 +199,13 @@ export class BankingService {
       return { cardId: card.token, last4: card.last4, status: 'active' };
     }
 
-    // Rain path
-    if (app.provider === 'RAIN' && app.rainUserId && this.rain.isEnabled) {
-      const contract = await this.rain.deployContract(app.rainUserId);
-      const card = await this.rain.issueCard(app.rainUserId);
-
-      await this.prisma.cardApplication.update({
-        where: { id: app.id },
-        data: {
-          status: 'CARD_ISSUED',
-          rainCardId: card.id,
-          chainId: contract.chainId,
-          depositAddr: contract.depositAddress,
-        },
-      });
-
-      return {
-        cardId: card.id,
-        last4: card.last4,
-        depositAddress: contract.depositAddress,
-        status: 'active',
-      };
-    }
-
     // Mock path
     if (process.env.NODE_ENV === 'production') {
       throw new ServiceUnavailableException('Card issuance not configured');
     }
     await this.prisma.cardApplication.update({
       where: { id: app.id },
-      data: { status: 'CARD_ISSUED', rainCardId: 'mock_card_001' },
+      data: { status: 'CARD_ISSUED' },
     });
     return { cardId: 'mock_card_001', status: 'active' };
   }
@@ -293,10 +233,6 @@ export class BankingService {
       };
     }
 
-    if (app.rainUserId && this.rain.isEnabled) {
-      return this.rain.getCard(app.rainUserId);
-    }
-
     return null;
   }
 
@@ -318,11 +254,6 @@ export class BankingService {
       }
     }
 
-    if (app?.rainUserId && this.rain.isEnabled) {
-      const balance = await this.rain.getBalance(app.rainUserId);
-      return { available: balance.spendingPower / 100, pending: balance.balanceDue / 100 };
-    }
-
     return { available: 0, pending: 0 };
   }
 
@@ -340,19 +271,6 @@ export class BankingService {
         amount: tx.amount / 100,
         currency: tx.currency || 'USD',
         date: tx.created,
-        status: this.mapTxStatus(tx.status),
-      }));
-    }
-
-    if (app?.rainUserId && this.rain.isEnabled) {
-      const txs = await this.rain.getTransactions(app.rainUserId, limit);
-      return txs.map((tx: RainTransaction) => ({
-        id: tx.id,
-        merchantName: tx.merchantName || 'Unknown',
-        merchantCategory: this.mapMerchantCategory(tx.merchantCategory),
-        amount: tx.amount / 100,
-        currency: tx.currency || 'USD',
-        date: tx.createdAt,
         status: this.mapTxStatus(tx.status),
       }));
     }
@@ -389,8 +307,6 @@ export class BankingService {
 
   private async buildCardDetails(
     app: {
-      rainCardId: string | null;
-      rainUserId: string | null;
       lithicCardToken: string | null;
       lithicAccountToken: string | null;
       provider: CardProvider;
@@ -413,22 +329,8 @@ export class BankingService {
       }
     }
 
-    if (this.rain.isEnabled && app.rainUserId) {
-      const card = await this.rain.getCard(app.rainUserId);
-      if (card) {
-        return {
-          ...card,
-          status,
-          brand: 'visa' as const,
-          cardholderName: 'MVGA USER',
-          type: card.type,
-          pan: undefined,
-        };
-      }
-    }
-
     return {
-      id: app.rainCardId || app.lithicCardToken,
+      id: app.lithicCardToken,
       last4: '****',
       expirationMonth: 0,
       expirationYear: 0,
@@ -443,17 +345,12 @@ export class BankingService {
     const app = await this.prisma.cardApplication.findFirst({
       where: { walletAddress, status: 'CARD_ISSUED' },
     });
-    if (!app?.rainCardId && !app?.lithicCardToken)
-      throw new NotFoundException('No active card found');
+    if (!app?.lithicCardToken) throw new NotFoundException('No active card found');
 
-    if (app.provider === 'LITHIC' && app.lithicCardToken && this.lithic.isEnabled) {
+    if (app.provider === 'LITHIC' && this.lithic.isEnabled) {
       await this.lithic.freezeCard(app.lithicCardToken);
-    } else if (app.provider === 'LITHIC' && app.lithicCardToken) {
-      throw new ServiceUnavailableException('Lithic service unavailable');
-    } else if (app.rainCardId && this.rain.isEnabled) {
-      await this.rain.freezeCard(app.rainCardId);
-    } else if (app.rainCardId) {
-      throw new ServiceUnavailableException('Rain service unavailable');
+    } else {
+      throw new ServiceUnavailableException('Card service unavailable');
     }
 
     await this.prisma.cardApplication.update({
@@ -468,17 +365,12 @@ export class BankingService {
     const app = await this.prisma.cardApplication.findFirst({
       where: { walletAddress, status: 'FROZEN' },
     });
-    if (!app?.rainCardId && !app?.lithicCardToken)
-      throw new NotFoundException('No frozen card found');
+    if (!app?.lithicCardToken) throw new NotFoundException('No frozen card found');
 
-    if (app.provider === 'LITHIC' && app.lithicCardToken && this.lithic.isEnabled) {
+    if (app.provider === 'LITHIC' && this.lithic.isEnabled) {
       await this.lithic.unfreezeCard(app.lithicCardToken);
-    } else if (app.provider === 'LITHIC' && app.lithicCardToken) {
-      throw new ServiceUnavailableException('Lithic service unavailable');
-    } else if (app.rainCardId && this.rain.isEnabled) {
-      await this.rain.unfreezeCard(app.rainCardId);
-    } else if (app.rainCardId) {
-      throw new ServiceUnavailableException('Rain service unavailable');
+    } else {
+      throw new ServiceUnavailableException('Card service unavailable');
     }
 
     await this.prisma.cardApplication.update({
@@ -496,52 +388,34 @@ export class BankingService {
     if (!app) throw new NotFoundException('No card found');
 
     // Lithic: no on-chain collateral — return balance only
-    if (app.provider === 'LITHIC') {
-      let balance = { available: 0, pending: 0 };
-      const token = app.lithicFinancialAccountToken || app.lithicAccountToken;
-      if (token && this.lithic.isEnabled) {
-        try {
-          const b = await this.lithic.getBalance(token);
-          balance = { available: b.availableAmount / 100, pending: b.pendingAmount / 100 };
-        } catch (err) {
-          this.logger.warn(`Failed to fetch Lithic balance: ${err}`);
-        }
-      }
-      return { success: true, depositAddress: null, chainId: null, newBalance: balance };
-    }
-
-    // Rain: on-chain collateral contract
-    let depositAddress = app.depositAddr;
-    let chainId = app.chainId;
-
-    if (!depositAddress && app.rainUserId && this.rain.isEnabled) {
-      const contracts = await this.rain.getContracts(app.rainUserId);
-      if (contracts.length > 0) {
-        depositAddress = contracts[0].depositAddress;
-        chainId = contracts[0].chainId;
-        await this.prisma.cardApplication.update({
-          where: { id: app.id },
-          data: { depositAddr: depositAddress, chainId },
-        });
+    let balance = { available: 0, pending: 0 };
+    const token = app.lithicFinancialAccountToken || app.lithicAccountToken;
+    if (token && this.lithic.isEnabled) {
+      try {
+        const b = await this.lithic.getBalance(token);
+        balance = { available: b.availableAmount / 100, pending: b.pendingAmount / 100 };
+      } catch (err) {
+        this.logger.warn(`Failed to fetch Lithic balance: ${err}`);
       }
     }
+    return { success: true, depositAddress: null, chainId: null, newBalance: balance };
+  }
 
-    const balance =
-      app.rainUserId && this.rain.isEnabled
-        ? await this.rain.getBalance(app.rainUserId).catch((err) => {
-            this.logger.warn(`Failed to fetch card balance for ${app.rainUserId}: ${err}`);
-            return { spendingPower: 0, balanceDue: 0 };
-          })
-        : { spendingPower: 0, balanceDue: 0 };
+  // ─── Digital Wallet Provisioning ──────────────────────────────────
 
-    return {
-      success: !!depositAddress,
-      depositAddress: depositAddress || null,
-      chainId: chainId || null,
-      newBalance: {
-        available: balance.spendingPower / 100,
-        pending: balance.balanceDue / 100,
-      },
-    };
+  async provisionCard(walletAddress: string, digitalWallet: 'APPLE_PAY' | 'GOOGLE_PAY') {
+    const app = await this.prisma.cardApplication.findFirst({
+      where: { walletAddress, status: { in: ['CARD_ISSUED', 'FROZEN'] } },
+    });
+    if (!app) throw new NotFoundException('No card found');
+
+    if (app.provider !== 'LITHIC' || !app.lithicCardToken) {
+      throw new BadRequestException('Digital wallet provisioning requires a Lithic-issued card');
+    }
+    if (!this.lithic.isEnabled) {
+      throw new ServiceUnavailableException('Lithic service unavailable');
+    }
+
+    return this.lithic.webProvision(app.lithicCardToken, digitalWallet);
   }
 }
