@@ -1,26 +1,34 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Grants Page', () => {
-  // Grants page does SSR data fetching — allow extra time when API is unreachable
-  test.beforeEach(async ({ page }) => {
-    await page.goto('/grants', { timeout: 30000 });
-  });
+  // Grants page does SSR data fetching to the API. When the API is not running locally,
+  // Next.js dev server is slow on first compile due to ECONNREFUSED retries.
+  // Serial mode + retries prevent flaky failures from cold compilation.
+  test.describe.configure({ mode: 'serial', retries: 1 });
+  test.setTimeout(120000);
 
   test('loads and shows heading', async ({ page }) => {
-    await expect(page.locator('text=Community Grants')).toBeVisible();
+    await page.goto('/grants', { waitUntil: 'domcontentloaded', timeout: 90000 });
+    await expect(page.locator('text=Community Grants')).toBeVisible({ timeout: 20000 });
   });
 
   test('has submit proposal button linking to app', async ({ page }) => {
+    await page.goto('/grants', { waitUntil: 'domcontentloaded', timeout: 60000 });
     const submitBtn = page.locator('a:has-text("Submit a Proposal")');
+    await expect(submitBtn).toBeVisible({ timeout: 15000 });
     await expect(submitBtn).toHaveAttribute('href', 'https://app.mvga.io/grants/create');
   });
 
   test('shows How It Works section with 4 steps', async ({ page }) => {
-    await expect(page.locator('text=How It Works')).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Apply' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Vote' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Fund', exact: true })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Update' })).toBeVisible();
+    await page.goto('/grants', { waitUntil: 'domcontentloaded', timeout: 60000 });
+    await expect(page.locator('text=How It Works')).toBeVisible({ timeout: 15000 });
+    await page.locator('text=How It Works').scrollIntoViewIfNeeded();
+    await expect(page.getByRole('heading', { name: 'Apply' })).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole('heading', { name: 'Vote' })).toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole('heading', { name: 'Fund', exact: true })).toBeVisible({
+      timeout: 5000,
+    });
+    await expect(page.getByRole('heading', { name: 'Update' })).toBeVisible({ timeout: 5000 });
   });
 });
 
