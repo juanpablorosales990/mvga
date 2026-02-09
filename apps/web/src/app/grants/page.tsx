@@ -1,3 +1,4 @@
+import { unstable_noStore as noStore } from 'next/cache';
 import { API_BASE } from '@/lib/utils';
 import GrantsClient from './grants-client';
 
@@ -17,28 +18,23 @@ interface Proposal {
   updates: { id: string; title: string; content: string; createdAt: string }[];
 }
 
-async function getProposals(): Promise<Proposal[]> {
+async function safeFetch(url: string): Promise<Proposal[]> {
+  noStore();
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 4000);
   try {
-    const res = await fetch(`${API_BASE}/grants/proposals?status=FUNDED`, {
-      next: { revalidate: 300 },
-      signal: AbortSignal.timeout(5000),
+    const res = await fetch(url, {
+      signal: controller.signal,
+      cache: 'no-store',
     });
+    clearTimeout(timer);
     if (!res.ok) return [];
-    return res.json();
+    const contentType = res.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) return [];
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
   } catch {
-    return [];
-  }
-}
-
-async function getVotingProposals(): Promise<Proposal[]> {
-  try {
-    const res = await fetch(`${API_BASE}/grants/proposals?status=VOTING`, {
-      next: { revalidate: 60 },
-      signal: AbortSignal.timeout(5000),
-    });
-    if (!res.ok) return [];
-    return res.json();
-  } catch {
+    clearTimeout(timer);
     return [];
   }
 }
@@ -50,6 +46,9 @@ export const metadata = {
 };
 
 export default async function GrantsPage() {
-  const [funded, voting] = await Promise.all([getProposals(), getVotingProposals()]);
+  const [funded, voting] = await Promise.all([
+    safeFetch(`${API_BASE}/grants/proposals?status=FUNDED`),
+    safeFetch(`${API_BASE}/grants/proposals?status=VOTING`),
+  ]);
   return <GrantsClient funded={funded} voting={voting} />;
 }
