@@ -204,7 +204,7 @@ export default function WalletPage() {
       </div>
 
       {/* Primary actions (Meru-style, MVGA-brutalist) */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         <Link to="/deposit" className="btn-primary flex items-center justify-center gap-2">
           <span className="text-lg" aria-hidden="true">
             ↑
@@ -216,6 +216,15 @@ export default function WalletPage() {
             ↓
           </span>
           {t('cashout.title')}
+        </Link>
+        <Link
+          to="/charge"
+          className="btn-secondary col-span-2 md:col-span-1 flex items-center justify-center gap-2"
+        >
+          <span className="text-lg" aria-hidden="true">
+            ↗
+          </span>
+          {t('wallet.charge')}
         </Link>
       </div>
 

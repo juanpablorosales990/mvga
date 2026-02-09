@@ -17,6 +17,24 @@ type Step =
 const INPUT_CLASS =
   'w-full bg-white/5 border border-white/10 px-4 py-3 text-white placeholder:text-white/20 focus:border-gold-500 outline-none font-mono text-sm';
 
+const PASSWORD_MIN_LEN = 8;
+
+function getPasswordRules(pw: string) {
+  return {
+    minLen: pw.length >= PASSWORD_MIN_LEN,
+    upper: /[A-Z]/.test(pw),
+    lower: /[a-z]/.test(pw),
+    number: /[0-9]/.test(pw),
+    symbol: /[^A-Za-z0-9\s]/.test(pw),
+    noSpaces: !/\s/.test(pw),
+  };
+}
+
+function isStrongPassword(pw: string) {
+  const r = getPasswordRules(pw);
+  return Object.values(r).every(Boolean);
+}
+
 export default function OnboardingScreen() {
   const { t } = useTranslation();
   const { createWallet, completeOnboarding, importFromMnemonic, importFromSecretKey } =
@@ -29,6 +47,7 @@ export default function OnboardingScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [mnemonicWords, setMnemonicWords] = useState<string[]>([]);
   const [copied, setCopied] = useState(false);
+  const [revealMnemonic, setRevealMnemonic] = useState(false);
 
   // Mnemonic confirmation
   const [confirmIndices, setConfirmIndices] = useState<number[]>([]);
@@ -46,6 +65,39 @@ export default function OnboardingScreen() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const progressIndex = useMemo(() => {
+    // Keep the onboarding UI feeling linear even when there are multiple routes.
+    // 0 Start, 1 Password, 2 Backup, 3 Verify, 4 Secure
+    switch (step) {
+      case 'CHOICE':
+        return 0;
+      case 'CREATE_PASSWORD':
+      case 'IMPORT_CHOICE':
+        return 1;
+      case 'SHOW_MNEMONIC':
+      case 'IMPORT_MNEMONIC':
+      case 'IMPORT_KEY':
+        return 2;
+      case 'CONFIRM_MNEMONIC':
+        return 3;
+      case 'ENABLE_BIOMETRIC':
+      case 'BIOMETRIC_SUCCESS':
+        return 4;
+      default:
+        return 0;
+    }
+  }, [step]);
+
+  const passwordRules = useMemo(() => getPasswordRules(password), [password]);
+  const passwordMeetsRules = useMemo(
+    () => Object.values(passwordRules).every(Boolean),
+    [passwordRules]
+  );
+  const passwordsMatch = useMemo(
+    () => confirmPassword.length > 0 && password === confirmPassword,
+    [password, confirmPassword]
+  );
+
   // Pick 3 random indices for mnemonic confirmation
   const generateConfirmIndices = (words: string[]) => {
     const indices: number[] = [];
@@ -58,8 +110,8 @@ export default function OnboardingScreen() {
 
   // ─── Create wallet ──────────────────────────────────────────────
   const handleCreate = async () => {
-    if (password.length < 6) {
-      setError(t('onboarding.passwordTooShort'));
+    if (!isStrongPassword(password)) {
+      setError(t('onboarding.passwordTooWeak'));
       return;
     }
     if (password !== confirmPassword) {
@@ -70,6 +122,7 @@ export default function OnboardingScreen() {
     setLoading(true);
     try {
       const words = await createWallet(password);
+      setRevealMnemonic(false);
       setMnemonicWords(words);
       setStep('SHOW_MNEMONIC');
     } catch {
@@ -120,8 +173,8 @@ export default function OnboardingScreen() {
       setBiometricError(t('onboarding.biometricsUnavailable'));
       return;
     }
-    if (!biometricPassword || biometricPassword.length < 6) {
-      setBiometricError(t('onboarding.passwordTooShort'));
+    if (!biometricPassword || !isStrongPassword(biometricPassword)) {
+      setBiometricError(t('onboarding.passwordTooWeak'));
       return;
     }
 
@@ -156,8 +209,8 @@ export default function OnboardingScreen() {
       setError(t('onboarding.fill12Words'));
       return;
     }
-    if (importPassword.length < 6) {
-      setError(t('onboarding.passwordTooShort'));
+    if (!isStrongPassword(importPassword)) {
+      setError(t('onboarding.passwordTooWeak'));
       return;
     }
     setError('');
@@ -177,8 +230,8 @@ export default function OnboardingScreen() {
       setError(t('onboarding.pasteKey'));
       return;
     }
-    if (importPassword.length < 6) {
-      setError(t('onboarding.passwordTooShort'));
+    if (!isStrongPassword(importPassword)) {
+      setError(t('onboarding.passwordTooWeak'));
       return;
     }
     setError('');
@@ -215,6 +268,18 @@ export default function OnboardingScreen() {
   return (
     <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center px-6">
       <div className="w-full max-w-sm">
+        {/* Progress indicator */}
+        <div className="flex gap-1 mb-6">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div
+              key={i}
+              className={`h-1 flex-1 transition-colors ${
+                i <= progressIndex ? 'bg-gold-500' : 'bg-white/10'
+              }`}
+            />
+          ))}
+        </div>
+
         {/* Logo */}
         <div className="text-center mb-12">
           <h1 className="text-4xl font-black tracking-tighter">MVGA</h1>
@@ -258,11 +323,37 @@ export default function OnboardingScreen() {
               className={INPUT_CLASS}
               onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
             />
+
+            {/* Password checklist (Meru-inspired gating) */}
+            <div className="space-y-2 border border-white/10 bg-white/5 px-4 py-3">
+              {[
+                { ok: passwordRules.minLen, text: t('onboarding.pwRuleMinLen') },
+                { ok: passwordRules.upper, text: t('onboarding.pwRuleUpper') },
+                { ok: passwordRules.lower, text: t('onboarding.pwRuleLower') },
+                { ok: passwordRules.number, text: t('onboarding.pwRuleNumber') },
+                { ok: passwordRules.symbol, text: t('onboarding.pwRuleSymbol') },
+                { ok: passwordRules.noSpaces, text: t('onboarding.pwRuleNoSpaces') },
+                { ok: passwordsMatch, text: t('onboarding.pwRuleMatch') },
+              ].map((r) => (
+                <div key={r.text} className="flex items-center gap-2">
+                  <span
+                    className={`text-xs font-mono ${r.ok ? 'text-emerald-400' : 'text-white/20'}`}
+                    aria-hidden="true"
+                  >
+                    ✓
+                  </span>
+                  <span className={`text-xs ${r.ok ? 'text-white/60' : 'text-white/30'}`}>
+                    {r.text}
+                  </span>
+                </div>
+              ))}
+            </div>
+
             {error && <p className="text-red-400 text-xs font-mono">{error}</p>}
             <button
               onClick={handleCreate}
-              disabled={loading}
-              className="w-full btn-primary disabled:opacity-50"
+              disabled={loading || !passwordMeetsRules || !passwordsMatch}
+              className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? t('onboarding.creating') : t('onboarding.createWallet')}
             </button>
@@ -278,9 +369,17 @@ export default function OnboardingScreen() {
         {/* ── SHOW MNEMONIC (12 words) ──────────── */}
         {step === 'SHOW_MNEMONIC' && (
           <div className="space-y-4">
-            <p className="text-xs tracking-[0.3em] text-gold-500 uppercase font-mono mb-2">
-              {t('onboarding.recoveryPhrase')}
-            </p>
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs tracking-[0.3em] text-gold-500 uppercase font-mono">
+                {t('onboarding.recoveryPhrase')}
+              </p>
+              <button
+                onClick={() => setRevealMnemonic((v) => !v)}
+                className="text-xs text-white/30 font-mono uppercase tracking-wider hover:text-white/50 transition"
+              >
+                {revealMnemonic ? t('onboarding.hideWords') : t('onboarding.revealWords')}
+              </button>
+            </div>
             <p className="text-white/40 text-xs mb-4">{t('onboarding.mnemonicInstructions')}</p>
 
             {/* Word grid */}
@@ -293,12 +392,18 @@ export default function OnboardingScreen() {
                   <span className="text-white/20 text-[10px] font-mono w-4 text-right">
                     {i + 1}
                   </span>
-                  <span className="text-white font-mono text-sm">{word}</span>
+                  <span className="text-white font-mono text-sm">
+                    {revealMnemonic ? word : '••••'}
+                  </span>
                 </div>
               ))}
             </div>
 
-            <button onClick={copyMnemonic} className="w-full btn-secondary text-sm">
+            <button
+              onClick={copyMnemonic}
+              disabled={!revealMnemonic}
+              className="w-full btn-secondary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               {copied ? t('onboarding.copiedClears') : t('onboarding.copyToClipboard')}
             </button>
 
