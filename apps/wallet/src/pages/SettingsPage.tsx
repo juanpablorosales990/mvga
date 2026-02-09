@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useSelfCustodyWallet } from '../contexts/WalletContext';
 import { useWalletStore } from '../stores/walletStore';
+import { useBiometric } from '../hooks/useBiometric';
+import { showToast } from '../hooks/useToast';
 
 export default function SettingsPage() {
   const { t, i18n } = useTranslation();
@@ -11,12 +13,22 @@ export default function SettingsPage() {
   const setPreferredCurrency = useWalletStore((s) => s.setPreferredCurrency);
   const autoCompoundDefault = useWalletStore((s) => s.autoCompoundDefault);
   const setAutoCompoundDefault = useWalletStore((s) => s.setAutoCompoundDefault);
+  const {
+    isAvailable: biometricAvailable,
+    isEnabled: biometricEnabled,
+    register: registerBiometric,
+    disable: disableBiometric,
+    isLoading: biometricLoading,
+  } = useBiometric();
   const [copied, setCopied] = useState(false);
   const [showRecovery, setShowRecovery] = useState(false);
   const [recoveryPassword, setRecoveryPassword] = useState('');
   const [recoveryWords, setRecoveryWords] = useState<string[] | null>(null);
   const [recoveryError, setRecoveryError] = useState('');
   const [recoveryLoading, setRecoveryLoading] = useState(false);
+  const [biometricPassword, setBiometricPassword] = useState('');
+  const [showBiometricSetup, setShowBiometricSetup] = useState(false);
+  const [biometricError, setBiometricError] = useState('');
 
   const copyAddress = () => {
     if (!publicKey) return;
@@ -200,6 +212,86 @@ export default function SettingsPage() {
                   className="flex-1 py-2 text-sm font-medium bg-gold-500 text-black disabled:opacity-50 transition"
                 >
                   {recoveryLoading ? t('common.loading') : t('settings.reveal')}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Biometric Authentication */}
+      {connected && biometricAvailable && (
+        <div className="card p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="font-semibold text-sm text-gray-400 uppercase tracking-wide">
+                {t('settings.biometric')}
+              </h2>
+              <p className="text-xs text-gray-500 mt-1">{t('settings.biometricDesc')}</p>
+            </div>
+            <button
+              onClick={() => {
+                if (biometricEnabled) {
+                  disableBiometric();
+                  showToast('success', t('settings.biometricDisabled'));
+                } else {
+                  setShowBiometricSetup(true);
+                }
+              }}
+              disabled={biometricLoading}
+              className={`relative w-10 h-5 rounded-full transition flex-shrink-0 ${
+                biometricEnabled ? 'bg-green-500' : 'bg-white/10'
+              }`}
+            >
+              <span
+                className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${
+                  biometricEnabled ? 'translate-x-5' : 'translate-x-0.5'
+                }`}
+              />
+            </button>
+          </div>
+
+          {showBiometricSetup && !biometricEnabled && (
+            <div className="space-y-2">
+              <input
+                type="password"
+                value={biometricPassword}
+                onChange={(e) => {
+                  setBiometricPassword(e.target.value);
+                  setBiometricError('');
+                }}
+                placeholder={t('settings.enterPassword')}
+                className="w-full bg-white/5 border border-white/10 px-3 py-2 text-sm focus:outline-none focus:border-gold-500"
+              />
+              {biometricError && <p className="text-xs text-red-400">{biometricError}</p>}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setShowBiometricSetup(false);
+                    setBiometricPassword('');
+                    setBiometricError('');
+                  }}
+                  className="flex-1 py-2 text-sm font-medium bg-white/10 text-gray-300 hover:bg-white/20 transition"
+                >
+                  {t('common.cancel')}
+                </button>
+                <button
+                  onClick={async () => {
+                    if (!biometricPassword) return;
+                    setBiometricError('');
+                    const ok = await registerBiometric(biometricPassword);
+                    if (ok) {
+                      showToast('success', t('settings.biometricEnabled'));
+                      setShowBiometricSetup(false);
+                      setBiometricPassword('');
+                    } else {
+                      setBiometricError(t('settings.biometricFailed'));
+                    }
+                  }}
+                  disabled={biometricLoading || !biometricPassword}
+                  className="flex-1 py-2 text-sm font-medium bg-gold-500 text-black disabled:opacity-50 transition"
+                >
+                  {biometricLoading ? t('common.loading') : t('settings.enableBiometric')}
                 </button>
               </div>
             </div>

@@ -277,6 +277,12 @@
     "escrowLock": "Escrow Lock",
     "escrowRelease": "Escrow Release",
     "escrowRefund": "Escrow Refund",
+    "swap": "Swap",
+    "nftSale": "NFT Sale",
+    "nftMint": "NFT Mint",
+    "tokenMint": "Token Mint",
+    "burn": "Burn",
+    "unknown": "Transaction",
     "connectPrompt": "Connect your wallet to view transaction history"
   },
   "more": {
@@ -482,7 +488,13 @@
     "enterPassword": "Enter your password",
     "noMnemonic": "No recovery phrase found for this wallet.",
     "wrongPassword": "Wrong password.",
-    "reveal": "Reveal"
+    "reveal": "Reveal",
+    "biometric": "Biometric Unlock",
+    "biometricDesc": "Use Face ID, Touch ID, or fingerprint to unlock your wallet",
+    "enableBiometric": "Enable",
+    "biometricEnabled": "Biometric unlock enabled!",
+    "biometricDisabled": "Biometric unlock disabled",
+    "biometricFailed": "Biometric setup failed. Try again."
   },
   "onboarding": {
     "tagline": "Your keys, your coins. No extensions. No middlemen.",
@@ -531,6 +543,8 @@
     "unlock": "Unlock",
     "forgotPassword": "Forgot password? Reset wallet",
     "wrongPassword": "Wrong password",
+    "unlockBiometric": "Unlock with Biometric",
+    "orPassword": "or enter password",
     "resetWallet": "Reset Wallet",
     "resetWarning": "This will permanently delete your encrypted wallet from this device. You will need your secret key to recover your funds.",
     "deleteWallet": "Delete Wallet"

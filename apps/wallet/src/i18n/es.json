@@ -277,6 +277,12 @@
     "escrowLock": "Bloqueo de Custodia",
     "escrowRelease": "Liberación de Custodia",
     "escrowRefund": "Reembolso de Custodia",
+    "swap": "Cambio",
+    "nftSale": "Venta NFT",
+    "nftMint": "Mint NFT",
+    "tokenMint": "Mint de Token",
+    "burn": "Quema",
+    "unknown": "Transaccion",
     "connectPrompt": "Conecta tu billetera para ver el historial de transacciones"
   },
   "more": {
@@ -482,7 +488,13 @@
     "enterPassword": "Ingresa tu contraseña",
     "noMnemonic": "No se encontró frase de recuperación para esta billetera.",
     "wrongPassword": "Contraseña incorrecta.",
-    "reveal": "Revelar"
+    "reveal": "Revelar",
+    "biometric": "Desbloqueo Biometrico",
+    "biometricDesc": "Usa Face ID, Touch ID o huella dactilar para desbloquear tu billetera",
+    "enableBiometric": "Activar",
+    "biometricEnabled": "Desbloqueo biometrico activado!",
+    "biometricDisabled": "Desbloqueo biometrico desactivado",
+    "biometricFailed": "Error al configurar biometrico. Intenta de nuevo."
   },
   "onboarding": {
     "tagline": "Tus llaves, tus monedas. Sin extensiones. Sin intermediarios.",
@@ -531,6 +543,8 @@
     "unlock": "Desbloquear",
     "forgotPassword": "¿Olvidaste tu contraseña? Resetear billetera",
     "wrongPassword": "Contraseña incorrecta",
+    "unlockBiometric": "Desbloquear con Biometrico",
+    "orPassword": "o ingresa contraseña",
     "resetWallet": "Resetear Billetera",
     "resetWarning": "Esto eliminará permanentemente tu billetera encriptada de este dispositivo. Necesitarás tu llave secreta para recuperar tus fondos.",
     "deleteWallet": "Eliminar Billetera"
