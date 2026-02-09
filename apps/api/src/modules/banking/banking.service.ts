@@ -10,6 +10,18 @@ import { PrismaService } from '../../common/prisma.service';
 import { RainAdapter, KycData, RainTransaction } from './rain.adapter';
 import { LithicAdapter } from './lithic.adapter';
 
+/** Map Prisma CardAppStatus → wallet-expected lowercase string. */
+function walletStatus(prismaStatus: string): string {
+  const map: Record<string, string> = {
+    WAITLISTED: 'waitlisted',
+    KYC_PENDING: 'kyc_pending',
+    KYC_APPROVED: 'kyc_approved',
+    CARD_ISSUED: 'active',
+    FROZEN: 'frozen',
+  };
+  return map[prismaStatus] || prismaStatus.toLowerCase();
+}
+
 @Injectable()
 export class BankingService {
   private readonly logger = new Logger(BankingService.name);
@@ -59,33 +71,43 @@ export class BankingService {
       const app = await this.prisma.cardApplication.create({
         data: { walletAddress, provider: 'NONE' as CardProvider, status: 'KYC_APPROVED' },
       });
-      return { status: app.status, applicationId: app.id };
+      return { status: walletStatus(app.status), applicationId: app.id };
     }
 
     if (this.cardProvider === 'lithic') {
-      const result = await this.lithic.submitKyc({
-        firstName: data.firstName,
-        lastName: data.lastName,
-        email: data.email,
-        walletAddress,
-        birthDate: data.birthDate,
-        governmentId: data.nationalId,
-        address: data.address,
-      });
-
-      const status: CardAppStatus = result.status === 'ACCEPTED' ? 'KYC_APPROVED' : 'KYC_PENDING';
-
-      const app = await this.prisma.cardApplication.create({
-        data: {
+      try {
+        this.logger.log(`Lithic submitKyc for wallet ${walletAddress}`);
+        const result = await this.lithic.submitKyc({
+          firstName: data.firstName,
+          lastName: data.lastName,
+          email: data.email,
           walletAddress,
-          provider: 'LITHIC' as CardProvider,
-          lithicAccountHolderToken: result.token,
-          lithicAccountToken: result.accountToken,
-          status,
-        },
-      });
+          birthDate: data.birthDate,
+          governmentId: data.nationalId,
+          address: data.address,
+        });
+        const status: CardAppStatus = result.status === 'ACCEPTED' ? 'KYC_APPROVED' : 'KYC_PENDING';
 
-      return { status: app.status, applicationId: app.id, lithicAccountToken: result.accountToken };
+        const app = await this.prisma.cardApplication.create({
+          data: {
+            walletAddress,
+            provider: 'LITHIC' as CardProvider,
+            lithicAccountHolderToken: result.token,
+            lithicAccountToken: result.accountToken,
+            status,
+          },
+        });
+        this.logger.log(`Card application created: ${app.id}`);
+
+        return {
+          status: walletStatus(app.status),
+          applicationId: app.id,
+          lithicAccountToken: result.accountToken,
+        };
+      } catch (err) {
+        this.logger.error(`Lithic card flow failed: ${err?.message || err}`, err?.stack);
+        throw err;
+      }
     }
 
     // Rain path
@@ -106,7 +128,7 @@ export class BankingService {
       },
     });
 
-    return { status: app.status, applicationId: app.id, rainUserId: result.id };
+    return { status: walletStatus(app.status), applicationId: app.id, rainUserId: result.id };
   }
 
   async getKycStatus(walletAddress: string) {
@@ -115,7 +137,7 @@ export class BankingService {
       orderBy: { createdAt: 'desc' },
     });
 
-    if (!app) return { status: 'NONE' };
+    if (!app) return { status: 'none' };
 
     // Poll Lithic if pending
     if (
@@ -138,7 +160,7 @@ export class BankingService {
             where: { id: app.id },
             data: { status: newStatus },
           });
-          return { status: newStatus };
+          return { status: walletStatus(newStatus) };
         }
       } catch (err) {
         this.logger.warn(`Failed to poll Lithic KYC status: ${err}`);
@@ -166,14 +188,14 @@ export class BankingService {
             where: { id: app.id },
             data: { status: newStatus },
           });
-          return { status: newStatus };
+          return { status: walletStatus(newStatus) };
         }
       } catch (err) {
         this.logger.warn(`Failed to poll Rain KYC status: ${err}`);
       }
     }
 
-    return { status: app.status };
+    return { status: walletStatus(app.status) };
   }
 
   // ─── Card Issuance ─────────────────────────────────────────────────
@@ -187,8 +209,8 @@ export class BankingService {
     if (!app) throw new BadRequestException('KYC must be approved before issuing a card');
 
     // Already issued
-    if (app.rainCardId) return { cardId: app.rainCardId, status: 'CARD_ISSUED' };
-    if (app.lithicCardToken) return { cardId: app.lithicCardToken, status: 'CARD_ISSUED' };
+    if (app.rainCardId) return { cardId: app.rainCardId, status: 'active' };
+    if (app.lithicCardToken) return { cardId: app.lithicCardToken, status: 'active' };
 
     // Lithic path
     if (app.provider === 'LITHIC' && app.lithicAccountToken && this.lithic.isEnabled) {
@@ -211,7 +233,7 @@ export class BankingService {
         },
       });
 
-      return { cardId: card.token, last4: card.last4, status: 'CARD_ISSUED' };
+      return { cardId: card.token, last4: card.last4, status: 'active' };
     }
 
     // Rain path
@@ -233,7 +255,7 @@ export class BankingService {
         cardId: card.id,
         last4: card.last4,
         depositAddress: contract.depositAddress,
-        status: 'CARD_ISSUED',
+        status: 'active',
       };
     }
 
@@ -245,7 +267,7 @@ export class BankingService {
       where: { id: app.id },
       data: { status: 'CARD_ISSUED', rainCardId: 'mock_card_001' },
     });
-    return { cardId: 'mock_card_001', status: 'CARD_ISSUED' };
+    return { cardId: 'mock_card_001', status: 'active' };
   }
 
   // ─── Card Operations ───────────────────────────────────────────────

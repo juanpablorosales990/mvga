@@ -3,6 +3,7 @@ import {
   IsEmail,
   IsIn,
   IsObject,
+  IsOptional,
   ValidateNested,
   MaxLength,
   Matches,
@@ -20,7 +21,7 @@ export class AddressDto {
 export class SubmitKycDto {
   @IsString() @MaxLength(100) firstName: string;
   @IsString() @MaxLength(100) lastName: string;
-  @IsEmail() @MaxLength(254) email: string;
+  @IsOptional() @IsEmail() @MaxLength(254) email?: string;
   @IsString() @Matches(/^\d{4}-\d{2}-\d{2}$/) dateOfBirth: string; // YYYY-MM-DD
   @IsString() @IsIn(['cedula', 'passport', 'drivers_license']) nationalIdType: string;
   @IsString() @MaxLength(50) nationalId: string;

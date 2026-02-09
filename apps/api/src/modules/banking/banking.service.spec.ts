@@ -102,7 +102,7 @@ describe('BankingService', () => {
         email: 'j@test.com',
         dateOfBirth: '2000-01-01',
       } as any);
-      expect(result.status).toBe('KYC_APPROVED');
+      expect(result.status).toBe('kyc_approved');
     });
 
     it('throws ServiceUnavailableException in production when both providers disabled', async () => {
@@ -127,12 +127,12 @@ describe('BankingService', () => {
   describe('getKycStatus', () => {
     it('returns NONE when no application exists', async () => {
       mockPrisma.cardApplication.findFirst.mockResolvedValue(null);
-      expect(await service.getKycStatus('abc')).toEqual({ status: 'NONE' });
+      expect(await service.getKycStatus('abc')).toEqual({ status: 'none' });
     });
 
     it('returns current status from database', async () => {
       mockPrisma.cardApplication.findFirst.mockResolvedValue({ status: 'KYC_APPROVED' });
-      expect(await service.getKycStatus('abc')).toEqual({ status: 'KYC_APPROVED' });
+      expect(await service.getKycStatus('abc')).toEqual({ status: 'kyc_approved' });
     });
   });
 
@@ -149,7 +149,7 @@ describe('BankingService', () => {
         status: 'CARD_ISSUED',
       });
       const result = await service.issueCard('abc');
-      expect(result).toEqual({ cardId: 'card-123', status: 'CARD_ISSUED' });
+      expect(result).toEqual({ cardId: 'card-123', status: 'active' });
     });
 
     it('returns existing card if already issued (Lithic)', async () => {
@@ -160,7 +160,7 @@ describe('BankingService', () => {
         status: 'CARD_ISSUED',
       });
       const result = await service.issueCard('abc');
-      expect(result).toEqual({ cardId: 'lith_card_123', status: 'CARD_ISSUED' });
+      expect(result).toEqual({ cardId: 'lith_card_123', status: 'active' });
     });
 
     it('issues mock card in dev when both providers disabled', async () => {
@@ -379,7 +379,7 @@ describe('BankingService', () => {
       const result = await service.issueCard('abc');
       expect(result.cardId).toBe('card_tok_1');
       expect(result.last4).toBe('4242');
-      expect(result.status).toBe('CARD_ISSUED');
+      expect(result.status).toBe('active');
       expect(mockLithic.getFinancialAccountToken).toHaveBeenCalledWith('acct_123');
       expect(mockRain.deployContract).not.toHaveBeenCalled();
       expect(mockRain.issueCard).not.toHaveBeenCalled();

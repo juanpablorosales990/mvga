@@ -73,8 +73,9 @@ export function useCard() {
       const result = await cardService.submitKyc(data);
       setCardStatus(result.status);
       // If approved, automatically issue the card
-      if (result.status === 'kyc_approved' && result.userId) {
-        const issuedCard = await cardService.issueCard(result.userId);
+      const id = result.userId || result.applicationId || result.lithicAccountToken;
+      if (result.status === 'kyc_approved' && id) {
+        const issuedCard = await cardService.issueCard(id);
         if (issuedCard) {
           setCard(issuedCard);
           setCardStatus('active');

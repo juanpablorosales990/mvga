@@ -66,7 +66,7 @@ export class LithicAdapter {
   async submitKyc(data: {
     firstName: string;
     lastName: string;
-    email: string;
+    email?: string;
     walletAddress: string;
     birthDate: string;
     phoneNumber?: string;
@@ -80,20 +80,28 @@ export class LithicAdapter {
     };
   }): Promise<LithicAccountHolder> {
     const client = this.getClient();
+
+    // Lithic requires US address for KYC_BYO in sandbox — map non-US addresses
+    const isSandbox = this.environment === 'sandbox';
+    const remapToUS = data.address.countryCode !== 'USA' && isSandbox;
+    const country = remapToUS ? 'USA' : data.address.countryCode;
+    const state = data.address.region || (remapToUS ? 'NY' : '');
+    const postalCode = remapToUS ? '10001' : data.address.postalCode || '10001';
+
     const result = await client.accountHolders.create({
       workflow: 'KYC_BYO',
       individual: {
         first_name: data.firstName,
         last_name: data.lastName,
-        email: data.email,
+        email: data.email || `${data.walletAddress.slice(0, 8)}@mvga.io`,
         dob: data.birthDate,
-        government_id: data.governmentId || '000-00-0000',
+        government_id: isSandbox ? '000-00-0000' : data.governmentId || '000-00-0000',
         address: {
           address1: data.address.line1,
-          city: data.address.city,
-          state: data.address.region,
-          postal_code: data.address.postalCode,
-          country: data.address.countryCode,
+          city: data.address.city || 'New York',
+          state,
+          postal_code: postalCode,
+          country,
         },
         phone_number: data.phoneNumber || '+10000000000',
       },

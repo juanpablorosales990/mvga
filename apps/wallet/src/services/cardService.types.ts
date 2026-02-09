@@ -50,7 +50,7 @@ export interface CardBalance {
 export interface KycSubmission {
   firstName: string;
   lastName: string;
-  email: string;
+  email?: string;
   dateOfBirth: string;
   address: {
     line1: string;
@@ -61,7 +61,6 @@ export interface KycSubmission {
   };
   nationalIdType: 'cedula' | 'passport' | 'drivers_license';
   nationalId: string;
-  walletAddress: string;
 }
 
 /** Rain API response shapes */

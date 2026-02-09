@@ -222,9 +222,19 @@ export async function fundCard(
 
 export async function submitKyc(
   data: KycSubmission
-): Promise<{ status: CardStatus; userId?: string }> {
+): Promise<{
+  status: CardStatus;
+  userId?: string;
+  applicationId?: string;
+  lithicAccountToken?: string;
+}> {
   try {
-    return await apiFetchLocal<{ status: CardStatus; userId?: string }>('/banking/kyc/submit', {
+    return await apiFetchLocal<{
+      status: CardStatus;
+      userId?: string;
+      applicationId?: string;
+      lithicAccountToken?: string;
+    }>('/banking/kyc/submit', {
       method: 'POST',
       body: JSON.stringify(data),
     });

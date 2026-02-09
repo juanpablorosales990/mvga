@@ -465,7 +465,6 @@ function WaitlistedView() {
 function KycView() {
   const { t } = useTranslation();
   const { submitKyc } = useCard();
-  const { publicKey } = useSelfCustodyWallet();
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
     firstName: '',
@@ -490,7 +489,7 @@ function KycView() {
     const data: KycSubmission = {
       firstName: form.firstName,
       lastName: form.lastName,
-      email: form.email,
+      ...(form.email ? { email: form.email } : {}),
       dateOfBirth: form.dateOfBirth,
       address: {
         line1: form.line1,
@@ -501,7 +500,6 @@ function KycView() {
       },
       nationalIdType: form.nationalIdType,
       nationalId: form.nationalId,
-      walletAddress: publicKey?.toBase58() || '',
     };
     await submitKyc(data);
     setSubmitting(false);
