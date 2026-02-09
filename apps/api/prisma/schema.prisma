@@ -744,3 +744,99 @@ enum TopUpStatus {
   FAILED
   REFUNDED
 }
+
+// ============================================================================
+// Recurring Payments & DCA
+// ============================================================================
+
+enum RecurringFrequency {
+  DAILY
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+}
+
+enum RecurringStatus {
+  ACTIVE
+  PAUSED
+  CANCELLED
+}
+
+enum ScheduledType {
+  PAYMENT
+  DCA
+}
+
+enum ExecutionStatus {
+  PENDING
+  COMPLETED
+  EXPIRED
+  FAILED
+  SKIPPED
+}
+
+model RecurringPayment {
+  id               String              @id @default(uuid())
+  walletAddress    String
+  recipientAddress String
+  recipientLabel   String?
+  token            String              // SOL, USDC, USDT, MVGA
+  amount           BigInt              // smallest units (lamports / 6-9 decimals)
+  frequency        RecurringFrequency
+  status           RecurringStatus     @default(ACTIVE)
+  memo             String?
+  nextExecutionAt  DateTime
+  lastExecutedAt   DateTime?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  executions       ScheduledExecution[]
+
+  @@index([walletAddress, status])
+  @@index([status, nextExecutionAt])
+}
+
+model DCAOrder {
+  id              String              @id @default(uuid())
+  walletAddress   String
+  inputToken      String              // Token to spend (USDC, SOL, etc.)
+  outputToken     String              // Token to buy (SOL, MVGA, etc.)
+  inputAmount     BigInt              // Amount to spend each cycle (smallest units)
+  frequency       RecurringFrequency
+  status          RecurringStatus     @default(ACTIVE)
+  slippageBps     Int                 @default(50) // 0.5% default
+  totalSpent      BigInt              @default(0)
+  totalReceived   BigInt              @default(0)
+  executionCount  Int                 @default(0)
+  nextExecutionAt DateTime
+  lastExecutedAt  DateTime?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  executions      ScheduledExecution[]
+
+  @@index([walletAddress, status])
+  @@index([status, nextExecutionAt])
+}
+
+model ScheduledExecution {
+  id           String            @id @default(uuid())
+  type         ScheduledType
+  paymentId    String?
+  payment      RecurringPayment? @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  dcaId        String?
+  dca          DCAOrder?         @relation(fields: [dcaId], references: [id], onDelete: Cascade)
+  status       ExecutionStatus   @default(PENDING)
+  scheduledFor DateTime
+  notifiedAt   DateTime?
+  executedAt   DateTime?
+  expiresAt    DateTime          // 24h after creation
+  signature    String?           @unique
+  inputAmount  BigInt?
+  outputAmount BigInt?
+  error        String?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  @@index([status, expiresAt])
+  @@index([paymentId])
+  @@index([dcaId])
+}

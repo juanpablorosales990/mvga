@@ -66,6 +66,9 @@ interface WalletState {
   // Price Alerts
   priceAlerts: PriceAlert[];
 
+  // Pending scheduled executions (not persisted, fetched from API)
+  pendingExecutionCount: number;
+
   // Balance refresh trigger
   balanceVersion: number;
 
@@ -86,6 +89,7 @@ interface WalletState {
   addAddress: (entry: Omit<AddressBookEntry, 'createdAt'>) => void;
   removeAddress: (address: string) => void;
   addRecentRecipient: (address: string, label?: string) => void;
+  setPendingExecutionCount: (count: number) => void;
   addPriceAlert: (alert: Omit<PriceAlert, 'id' | 'triggered' | 'createdAt'>) => void;
   removePriceAlert: (id: string) => void;
   triggerPriceAlert: (id: string) => void;
@@ -106,6 +110,7 @@ export const useWalletStore = create<WalletState>()(
       addressBook: [],
       recentRecipients: [],
       priceAlerts: [],
+      pendingExecutionCount: 0,
       autoCompoundDefault: false,
       readNotifications: [],
       savingsGoal: null,
@@ -156,6 +161,7 @@ export const useWalletStore = create<WalletState>()(
             recentRecipients: [{ address, label, lastUsed: Date.now() }, ...filtered].slice(0, 5),
           };
         }),
+      setPendingExecutionCount: (count) => set({ pendingExecutionCount: count }),
       addPriceAlert: (alert) =>
         set((state) => ({
           priceAlerts: [

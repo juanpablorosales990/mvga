@@ -22,6 +22,7 @@ import { SavingsModule } from './modules/savings/savings.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { TopUpModule } from './modules/topup/topup.module';
 import { OnrampModule } from './modules/onramp/onramp.module';
+import { SchedulerModule } from './modules/scheduler/scheduler.module';
 import { HealthController } from './health.controller';
 
 @Module({
@@ -55,6 +56,7 @@ import { HealthController } from './health.controller';
     PaymentsModule,
     TopUpModule,
     OnrampModule,
+    SchedulerModule,
   ],
   controllers: [HealthController],
   providers: [

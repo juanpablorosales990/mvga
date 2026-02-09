@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState, useRef } from 'react';
-import { motion, useInView } from 'framer-motion';
+import { motion, useInView, AnimatePresence } from 'framer-motion';
 import Nav from '@/components/Nav';
 import Footer from '@/components/Footer';
 import GridBackground from '@/components/GridBackground';
@@ -337,6 +337,120 @@ export default function Home() {
           </div>
         </section>
 
+        {/* ── COMPARISON TABLE ────────────────────────────────── */}
+        <section className="py-24 md:py-32 px-6 border-t border-white/10">
+          <div className="max-w-7xl mx-auto">
+            <p className="text-xs tracking-[0.3em] text-white/30 uppercase font-mono mb-4">
+              Why MVGA
+            </p>
+            <h2 className="text-3xl md:text-5xl font-bold mb-4">Stop losing money to middlemen.</h2>
+            <p className="text-white/40 mb-16 max-w-2xl">
+              Traditional remittance services charge 5-15% in fees. MVGA charges zero platform fees
+              on P2P transfers. See how we compare.
+            </p>
+
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[640px]">
+                <thead>
+                  <tr className="border-b border-white/10">
+                    <th className="text-left py-4 pr-4 text-sm text-white/30 font-mono uppercase tracking-wider">
+                      Feature
+                    </th>
+                    <th className="py-4 px-4 text-center">
+                      <span className="text-gold-500 font-bold text-sm uppercase tracking-wider">
+                        MVGA
+                      </span>
+                    </th>
+                    <th className="py-4 px-4 text-center text-sm text-white/30 font-mono uppercase tracking-wider">
+                      Western Union
+                    </th>
+                    <th className="py-4 px-4 text-center text-sm text-white/30 font-mono uppercase tracking-wider">
+                      Zelle / PayPal
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {[
+                    {
+                      feature: 'P2P Transfer Fee',
+                      mvga: '$0',
+                      wu: '$5-15',
+                      zelle: '$0 (US only)',
+                      mvgaGold: true,
+                    },
+                    {
+                      feature: 'Exchange Rate Markup',
+                      mvga: '0%',
+                      wu: '3-8%',
+                      zelle: 'N/A',
+                      mvgaGold: true,
+                    },
+                    {
+                      feature: 'Transfer Speed',
+                      mvga: '< 1 second',
+                      wu: '1-3 days',
+                      zelle: 'Instant (US)',
+                      mvgaGold: true,
+                    },
+                    {
+                      feature: 'Send $200 to Venezuela',
+                      mvga: '$200 received',
+                      wu: '~$170 received',
+                      zelle: 'Not available',
+                      mvgaGold: true,
+                    },
+                    {
+                      feature: 'KYC Required',
+                      mvga: 'No',
+                      wu: 'Yes',
+                      zelle: 'Yes',
+                      mvgaGold: true,
+                    },
+                    {
+                      feature: 'Open Source',
+                      mvga: 'Yes',
+                      wu: 'No',
+                      zelle: 'No',
+                      mvgaGold: true,
+                    },
+                    {
+                      feature: 'Works in Venezuela',
+                      mvga: 'Yes',
+                      wu: 'Limited',
+                      zelle: 'No',
+                      mvgaGold: true,
+                    },
+                    {
+                      feature: 'Stablecoin Support',
+                      mvga: 'USDC, USDT',
+                      wu: 'None',
+                      zelle: 'None',
+                      mvgaGold: true,
+                    },
+                  ].map((row) => (
+                    <tr key={row.feature} className="group hover:bg-white/[0.02] transition">
+                      <td className="py-4 pr-4 text-sm text-white/60">{row.feature}</td>
+                      <td
+                        className={`py-4 px-4 text-center font-mono text-sm ${
+                          row.mvgaGold ? 'text-gold-500 font-bold' : 'text-white'
+                        }`}
+                      >
+                        {row.mvga}
+                      </td>
+                      <td className="py-4 px-4 text-center font-mono text-sm text-white/30">
+                        {row.wu}
+                      </td>
+                      <td className="py-4 px-4 text-center font-mono text-sm text-white/30">
+                        {row.zelle}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
         {/* ── FEATURES ─────────────────────────────────────────── */}
         <section id="features" className="py-24 md:py-32 px-6 border-t border-white/10">
           <div className="max-w-7xl mx-auto">
@@ -345,7 +459,7 @@ export default function Home() {
             </p>
             <h2 className="text-3xl md:text-5xl font-bold mb-4">Everything you need in one app.</h2>
             <p className="text-white/40 mb-16 max-w-2xl">
-              30 pages, 15+ features, 4 tokens, 2 languages, and zero middlemen. The most
+              32 pages, 17 modules, 4 tokens, 2 languages, 251+ tests, and zero middlemen. The most
               comprehensive financial app for Venezuelans.
             </p>
 
@@ -510,6 +624,80 @@ export default function Home() {
                 >
                   <h3 className="text-sm font-bold uppercase tracking-wide mb-3">{item.title}</h3>
                   <p className="text-white/40 leading-relaxed text-sm">{item.desc}</p>
+                </motion.div>
+              ))}
+            </motion.div>
+          </div>
+        </section>
+
+        {/* ── POWERED BY ──────────────────────────────────────── */}
+        <section className="py-24 md:py-32 px-6 border-t border-white/10">
+          <div className="max-w-7xl mx-auto">
+            <p className="text-xs tracking-[0.3em] text-white/30 uppercase font-mono mb-4 text-center">
+              Powered By
+            </p>
+            <h2 className="text-3xl md:text-5xl font-bold mb-16 text-center">
+              Built on battle-tested infrastructure.
+            </h2>
+
+            <motion.div
+              className="grid grid-cols-2 md:grid-cols-4 gap-px bg-white/10"
+              variants={stagger}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+            >
+              {[
+                {
+                  name: 'Solana',
+                  role: 'Blockchain',
+                  desc: '400ms finality, $0.00025 fees',
+                },
+                {
+                  name: 'Jupiter',
+                  role: 'DEX Aggregator',
+                  desc: 'Best-price token swaps across all Solana DEXs',
+                },
+                {
+                  name: 'Kamino',
+                  role: 'Yield Protocol',
+                  desc: 'Automated lending and yield strategies',
+                },
+                {
+                  name: 'Helius',
+                  role: 'RPC Provider',
+                  desc: 'Enterprise-grade Solana infrastructure',
+                },
+                {
+                  name: 'Reloadly',
+                  role: 'Top-Ups',
+                  desc: 'Phone recharges for Movistar, Digitel, Movilnet',
+                },
+                {
+                  name: 'Onramper',
+                  role: 'Fiat On-Ramp',
+                  desc: 'Buy crypto with card or bank transfer',
+                },
+                {
+                  name: 'Railway',
+                  role: 'Cloud Platform',
+                  desc: 'Auto-scaling API deployment',
+                },
+                {
+                  name: 'Vercel',
+                  role: 'Edge Network',
+                  desc: 'Global CDN for wallet and website',
+                },
+              ].map((partner, i) => (
+                <motion.div
+                  key={partner.name}
+                  custom={i}
+                  variants={fadeUp}
+                  className="bg-black p-6 text-center hover:bg-white/[0.02] transition"
+                >
+                  <p className="font-mono font-bold text-sm mb-1">{partner.name}</p>
+                  <p className="text-xs text-gold-500 font-mono mb-2">{partner.role}</p>
+                  <p className="text-xs text-white/30 leading-relaxed">{partner.desc}</p>
                 </motion.div>
               ))}
             </motion.div>
@@ -762,12 +950,12 @@ export default function Home() {
                 {
                   num: '01',
                   title: 'API (NestJS)',
-                  desc: 'Backend API with 13 modules: auth, staking, swap, P2P, grants, referrals, tiers, burns, treasury, banking, metrics, wallet, and health. TypeScript, PostgreSQL via Prisma, Solana RPC, Jupiter integration, automated cron jobs.',
+                  desc: 'Backend API with 17 modules: auth, staking, swap, P2P, grants, referrals, tiers, burns, treasury, banking, metrics, wallet, notifications, payments, topup, onramp, and savings. 157 tests passing. TypeScript, PostgreSQL via Prisma, Solana RPC, Jupiter integration, automated cron jobs.',
                 },
                 {
                   num: '02',
                   title: 'Wallet App (React)',
-                  desc: 'Progressive Web App with 24 pages: wallet dashboard, send, receive, swap, stake, P2P trading, banking, savings, card management, grants, referrals, portfolio, charts, metrics, transparency, history, notifications, settings, help, and more. Full i18n in English and Spanish.',
+                  desc: 'Progressive Web App with 32 pages: wallet dashboard, send, receive, swap, stake, P2P trading, banking, savings, card management, grants, referrals, portfolio, charts, metrics, batch send, QR scanner, scheduled payments, and more. 94 tests passing. Full i18n in English and Spanish.',
                 },
                 {
                   num: '03',
@@ -1104,6 +1292,33 @@ export default function Home() {
         </section>
 
         <Footer />
+
+        {/* ── STICKY CTA ─────────────────────────────────────── */}
+        <AnimatePresence>
+          <motion.div
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 100, opacity: 0 }}
+            transition={{ delay: 2, duration: 0.5 }}
+            className="fixed bottom-6 right-6 z-40 hidden md:block"
+          >
+            <Link
+              href="https://app.mvga.io"
+              target="_blank"
+              className="bg-gold-500 text-black font-bold text-sm uppercase tracking-wider px-6 py-3 hover:bg-gold-400 transition-all shadow-lg shadow-gold-500/20 flex items-center gap-2"
+            >
+              <span>Open Wallet</span>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 7l5 5m0 0l-5 5m5-5H6"
+                />
+              </svg>
+            </Link>
+          </motion.div>
+        </AnimatePresence>
       </main>
     </GridBackground>
   );

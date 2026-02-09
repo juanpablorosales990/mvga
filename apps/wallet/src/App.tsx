@@ -39,6 +39,9 @@ const TopUpPage = lazy(() => import('./pages/TopUpPage'));
 const ContactsPage = lazy(() => import('./pages/ContactsPage'));
 const PriceAlertsPage = lazy(() => import('./pages/PriceAlertsPage'));
 const BatchSendPage = lazy(() => import('./pages/BatchSendPage'));
+const ScheduledPaymentsPage = lazy(() => import('./pages/ScheduledPaymentsPage'));
+const DCAPage = lazy(() => import('./pages/DCAPage'));
+const PendingScheduledPage = lazy(() => import('./pages/PendingScheduledPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
 // Components
@@ -111,6 +114,9 @@ function AppShell() {
                 <Route path="/contacts" element={<ContactsPage />} />
                 <Route path="/price-alerts" element={<PriceAlertsPage />} />
                 <Route path="/batch-send" element={<BatchSendPage />} />
+                <Route path="/scheduled" element={<PendingScheduledPage />} />
+                <Route path="/scheduled/payments" element={<ScheduledPaymentsPage />} />
+                <Route path="/scheduled/dca" element={<DCAPage />} />
                 <Route path="*" element={<NotFoundPage />} />
               </Routes>
             </Suspense>
