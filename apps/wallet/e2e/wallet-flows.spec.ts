@@ -55,6 +55,14 @@ async function skipBiometricsSetupIfPresent(page: Page) {
   if (await skip.isVisible().catch(() => false)) await skip.click();
 }
 
+async function unlockIfLocked(page: Page) {
+  const passwordInput = page.getByPlaceholder(/enter password|ingresa tu contraseña/i);
+  if (!(await passwordInput.isVisible().catch(() => false))) return;
+
+  await passwordInput.fill(TEST_PASSWORD);
+  await page.getByRole('button', { name: /unlock|desbloquear/i }).click();
+}
+
 // ---------------------------------------------------------------------------
 // Helper: create a new wallet through the onboarding UI and return the 12 words
 // ---------------------------------------------------------------------------
@@ -118,6 +126,11 @@ async function confirmMnemonic(page: Page, words: string[]) {
   await skipBiometricsSetupIfPresent(page);
 
   // First-time users see the WelcomeTour overlay; skip it to reach the app shell.
+  await skipWelcomeTourIfPresent(page);
+
+  // Some navigations can trigger a full reload which drops the in-memory keypair,
+  // leaving the app on the LockScreen. Normalize by unlocking with the test password.
+  await unlockIfLocked(page);
   await skipWelcomeTourIfPresent(page);
 }
 
@@ -596,15 +609,22 @@ test.describe('Navigation After Wallet Connected', () => {
   });
 
   test('send page loads without connect prompt when connected', async ({ page }) => {
-    await page.goto('/send');
-    // Should NOT show connect prompt
-    await expect(page.locator('text=/connect.*wallet/i')).not.toBeVisible({ timeout: 3000 });
+    // Use client-side navigation (page.goto would reload and lock the wallet)
+    await page.locator('a[href="/send"]').first().click();
+    await page.waitForURL('**/send');
+    // Send page should render the send form (it doesn't show a connect prompt).
+    await expect(page.getByRole('heading', { name: /send/i })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByPlaceholder('Enter Solana address...')).toBeVisible();
   });
 
   test('receive page shows wallet address when connected', async ({ page }) => {
-    await page.goto('/receive');
-    // Should show the wallet address or QR code area
-    await expect(page.locator('text=/connect.*wallet/i')).not.toBeVisible({ timeout: 3000 });
+    // Use client-side navigation (page.goto would reload and lock the wallet)
+    await page.locator('a[href="/receive"]').first().click();
+    await page.waitForURL('**/receive');
+    // Connected receive page shows the "Copy Address" CTA and a QR.
+    await expect(page.getByRole('button', { name: /copy address|copiar dirección/i })).toBeVisible({
+      timeout: 10000,
+    });
   });
 });
 
