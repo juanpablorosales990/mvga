@@ -212,6 +212,35 @@ export class BankingService {
     return 'pending';
   }
 
+  private async buildCardDetails(
+    app: { rainCardId: string | null; rainUserId: string | null },
+    status: 'frozen' | 'active'
+  ) {
+    if (this.rain.isEnabled && app.rainUserId) {
+      const card = await this.rain.getCard(app.rainUserId);
+      if (card) {
+        return {
+          ...card,
+          status,
+          brand: 'visa' as const,
+          cardholderName: 'MVGA USER',
+          type: card.type,
+          pan: undefined,
+        };
+      }
+    }
+    return {
+      id: app.rainCardId,
+      last4: '****',
+      expirationMonth: 0,
+      expirationYear: 0,
+      brand: 'visa' as const,
+      status,
+      cardholderName: 'MVGA USER',
+      type: 'virtual' as const,
+    };
+  }
+
   async freezeCard(walletAddress: string) {
     const app = await this.prisma.cardApplication.findFirst({
       where: { walletAddress, status: 'CARD_ISSUED' },
@@ -225,29 +254,7 @@ export class BankingService {
       data: { status: 'FROZEN' },
     });
 
-    // Return full card details so wallet can update its state directly
-    if (this.rain.isEnabled && app.rainUserId) {
-      const card = await this.rain.getCard(app.rainUserId);
-      if (card)
-        return {
-          ...card,
-          status: 'frozen',
-          brand: 'visa' as const,
-          cardholderName: 'MVGA USER',
-          type: card.type,
-          pan: undefined,
-        };
-    }
-    return {
-      id: app.rainCardId,
-      last4: '****',
-      expirationMonth: 0,
-      expirationYear: 0,
-      brand: 'visa' as const,
-      status: 'frozen',
-      cardholderName: 'MVGA USER',
-      type: 'virtual' as const,
-    };
+    return this.buildCardDetails(app, 'frozen');
   }
 
   async unfreezeCard(walletAddress: string) {
@@ -263,32 +270,10 @@ export class BankingService {
       data: { status: 'CARD_ISSUED' },
     });
 
-    // Return full card details so wallet can update its state directly
-    if (this.rain.isEnabled && app.rainUserId) {
-      const card = await this.rain.getCard(app.rainUserId);
-      if (card)
-        return {
-          ...card,
-          status: 'active',
-          brand: 'visa' as const,
-          cardholderName: 'MVGA USER',
-          type: card.type,
-          pan: undefined,
-        };
-    }
-    return {
-      id: app.rainCardId,
-      last4: '****',
-      expirationMonth: 0,
-      expirationYear: 0,
-      brand: 'visa' as const,
-      status: 'active',
-      cardholderName: 'MVGA USER',
-      type: 'virtual' as const,
-    };
+    return this.buildCardDetails(app, 'active');
   }
 
-  async fundCard(walletAddress: string, _amountUsdc?: number) {
+  async fundCard(walletAddress: string) {
     const app = await this.prisma.cardApplication.findFirst({
       where: { walletAddress, status: { in: ['CARD_ISSUED', 'FROZEN'] } },
     });
@@ -313,9 +298,10 @@ export class BankingService {
     // Get current balance
     const balance =
       app.rainUserId && this.rain.isEnabled
-        ? await this.rain
-            .getBalance(app.rainUserId)
-            .catch(() => ({ spendingPower: 0, balanceDue: 0 }))
+        ? await this.rain.getBalance(app.rainUserId).catch((err) => {
+            this.logger.warn(`Failed to fetch card balance for ${app.rainUserId}: ${err}`);
+            return { spendingPower: 0, balanceDue: 0 };
+          })
         : { spendingPower: 0, balanceDue: 0 };
 
     return {

@@ -34,7 +34,7 @@ export default function DepositPage() {
   useEffect(() => {
     apiFetch<{ enabled: boolean }>('/paypal/status')
       .then((d) => setPaypalEnabled(d.enabled))
-      .catch(() => {});
+      .catch((err) => console.warn('PayPal status check failed:', err));
   }, []);
 
   const onramperSrc = useMemo(() => {

@@ -60,7 +60,7 @@ export default function PayPage() {
   useEffect(() => {
     apiFetch<{ enabled: boolean }>('/paypal/status')
       .then((d) => setPaypalEnabled(d.enabled))
-      .catch(() => {});
+      .catch((err) => console.warn('PayPal status check failed:', err));
   }, []);
 
   const paypalSupportedToken = request?.token === 'USDC' || request?.token === 'USDT';

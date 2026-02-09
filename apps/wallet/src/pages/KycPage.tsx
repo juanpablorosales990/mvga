@@ -69,7 +69,7 @@ function SumsubWebSdk({
           })
           .build();
 
-        sdk.launch('#sumsub-container');
+        sdk.launch(containerRef.current);
         sdkRef.current = sdk;
       } catch (err) {
         if (mounted) onError(err instanceof Error ? err.message : 'SDK load failed');

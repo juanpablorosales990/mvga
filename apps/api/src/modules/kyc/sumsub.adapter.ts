@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { createHmac } from 'crypto';
+import { createHmac, timingSafeEqual } from 'crypto';
 
 export interface SumsubAccessToken {
   token: string;
@@ -122,11 +122,26 @@ export class SumsubAdapter {
     }
 
     const expected = createHmac('sha256', this.webhookSecret).update(rawBody).digest('hex');
-    if (expected !== signature) {
+
+    // Use timing-safe comparison to avoid leaking info via signature validation.
+    const isHex = /^[0-9a-fA-F]+$/.test(signature) && signature.length % 2 === 0;
+    if (!isHex) {
+      this.logger.warn('Invalid webhook signature format');
+      return null;
+    }
+
+    const expectedBuf = Buffer.from(expected, 'hex');
+    const sigBuf = Buffer.from(signature, 'hex');
+    if (expectedBuf.length !== sigBuf.length || !timingSafeEqual(expectedBuf, sigBuf)) {
       this.logger.warn('Invalid webhook signature');
       return null;
     }
 
-    return JSON.parse(rawBody);
+    try {
+      return JSON.parse(rawBody);
+    } catch {
+      this.logger.warn('Invalid webhook JSON');
+      return null;
+    }
   }
 }

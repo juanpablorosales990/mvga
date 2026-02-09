@@ -89,7 +89,7 @@ export class BankingController {
 
   @Post('card/fund')
   @UseGuards(AuthGuard)
-  async fundCard(@CurrentUser('wallet') wallet: string, @Body() body: { amount?: number }) {
-    return this.bankingService.fundCard(wallet, body.amount);
+  async fundCard(@CurrentUser('wallet') wallet: string) {
+    return this.bankingService.fundCard(wallet);
   }
 }
