@@ -91,6 +91,12 @@ export async function createWalletAndUnlock(page: Page) {
     timeout: 10000,
   });
 
+  // Words are hidden by default — click "Reveal words" to show them
+  const revealBtn = page.getByRole('button', { name: /reveal words|mostrar palabras/i });
+  if (await revealBtn.isVisible().catch(() => false)) {
+    await revealBtn.click();
+  }
+
   const words: string[] = [];
   for (let i = 1; i <= 12; i++) {
     const wordEl = page.locator(`div.grid > div:nth-child(${i}) span.text-white`);

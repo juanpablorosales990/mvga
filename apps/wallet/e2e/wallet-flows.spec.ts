@@ -82,6 +82,12 @@ async function createWalletAndGetMnemonic(page: Page): Promise<string[]> {
   // Should show mnemonic (12 words)
   await expect(page.getByText('Recovery Phrase')).toBeVisible({ timeout: 10000 });
 
+  // Words are hidden by default — click "Reveal words" to show them
+  const revealBtn = page.getByRole('button', { name: /reveal words/i });
+  if (await revealBtn.isVisible().catch(() => false)) {
+    await revealBtn.click();
+  }
+
   // Extract the 12 words from the grid
   const words: string[] = [];
   for (let i = 1; i <= 12; i++) {
@@ -154,16 +160,16 @@ test.describe('Wallet Creation Flow', () => {
     await page.getByText('Create New Wallet').click();
     await page.getByPlaceholder(/password.*min/i).fill('12345'); // too short
     await page.getByPlaceholder(/confirm/i).fill('12345');
-    await page.getByRole('button', { name: /create wallet/i }).click();
-    await expect(page.getByText(/at least 6 characters/i)).toBeVisible();
+    // Button should be disabled when password rules aren't met
+    await expect(page.getByRole('button', { name: /create wallet/i })).toBeDisabled();
   });
 
   test('validates password match on create', async ({ page }) => {
     await page.getByText('Create New Wallet').click();
     await page.getByPlaceholder(/password.*min/i).fill(TEST_PASSWORD);
-    await page.getByPlaceholder(/confirm/i).fill('DifferentPass1');
-    await page.getByRole('button', { name: /create wallet/i }).click();
-    await expect(page.getByText(/do not match/i)).toBeVisible();
+    await page.getByPlaceholder(/confirm/i).fill('DifferentPass1!');
+    // Button should be disabled when passwords don't match
+    await expect(page.getByRole('button', { name: /create wallet/i })).toBeDisabled();
   });
 
   test('creates wallet and shows 12-word mnemonic', async ({ page }) => {
@@ -359,7 +365,7 @@ test.describe('Import Wallet via Mnemonic', () => {
     // Short password
     await page.locator('input[type="password"]').fill('12345');
     await page.getByRole('button', { name: /import wallet/i }).click();
-    await expect(page.getByText(/at least 6 characters/i)).toBeVisible();
+    await expect(page.getByText(/password requirements not met/i)).toBeVisible();
   });
 
   test('full mnemonic import: create → lock → reset → import same phrase → same address', async ({
@@ -438,7 +444,7 @@ test.describe('Import Wallet via Secret Key', () => {
     await page.locator('textarea').fill('SomeBase58Key');
     await page.locator('input[type="password"]').fill('12345');
     await page.getByRole('button', { name: /import.*encrypt/i }).click();
-    await expect(page.getByText(/at least 6 characters/i)).toBeVisible();
+    await expect(page.getByText(/password requirements not met/i)).toBeVisible();
   });
 
   test('import secret key shows error for invalid key', async ({ page }) => {
