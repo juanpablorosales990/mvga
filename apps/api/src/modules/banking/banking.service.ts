@@ -283,13 +283,16 @@ export class BankingService {
       where: { walletAddress, status: { in: ['CARD_ISSUED', 'FROZEN'] } },
     });
 
-    if (app?.provider === 'LITHIC' && app.lithicFinancialAccountToken && this.lithic.isEnabled) {
-      try {
-        const balance = await this.lithic.getBalance(app.lithicFinancialAccountToken);
-        return { available: balance.availableAmount / 100, pending: balance.pendingAmount / 100 };
-      } catch (err) {
-        this.logger.warn(`Failed to fetch Lithic balance: ${err}`);
-        return { available: 0, pending: 0 };
+    if (app?.provider === 'LITHIC' && this.lithic.isEnabled) {
+      const token = app.lithicFinancialAccountToken || app.lithicAccountToken;
+      if (token) {
+        try {
+          const balance = await this.lithic.getBalance(token);
+          return { available: balance.availableAmount / 100, pending: balance.pendingAmount / 100 };
+        } catch (err) {
+          this.logger.warn(`Failed to fetch Lithic balance: ${err}`);
+          return { available: 0, pending: 0 };
+        }
       }
     }
 
@@ -473,9 +476,10 @@ export class BankingService {
     // Lithic: no on-chain collateral — return balance only
     if (app.provider === 'LITHIC') {
       let balance = { available: 0, pending: 0 };
-      if (app.lithicFinancialAccountToken && this.lithic.isEnabled) {
+      const token = app.lithicFinancialAccountToken || app.lithicAccountToken;
+      if (token && this.lithic.isEnabled) {
         try {
-          const b = await this.lithic.getBalance(app.lithicFinancialAccountToken);
+          const b = await this.lithic.getBalance(token);
           balance = { available: b.availableAmount / 100, pending: b.pendingAmount / 100 };
         } catch (err) {
           this.logger.warn(`Failed to fetch Lithic balance: ${err}`);

@@ -160,25 +160,52 @@ export class LithicAdapter {
   /** Get the ISSUING financial account token for a given account. */
   async getFinancialAccountToken(accountToken: string): Promise<string | null> {
     const client = this.getClient();
-    const page = await client.financialAccounts.list({ account_token: accountToken });
-    const accounts = page.data || [];
-    const issuing = accounts.find((a) => a.type === 'ISSUING');
-    return issuing?.token ?? null;
+    try {
+      const page = await client.financialAccounts.list({ account_token: accountToken });
+      const accounts = page.data || [];
+      const issuing = accounts.find((a) => a.type === 'ISSUING');
+      return issuing?.token ?? null;
+    } catch {
+      // Sandbox KYC_BYO accounts may not support this operation
+      return null;
+    }
   }
 
-  /** Get balance for a financial account. */
-  async getBalance(financialAccountToken: string): Promise<LithicBalance> {
+  /** Get balance for an account. Tries top-level balances, then financial account balances. */
+  async getBalance(accountOrFinancialToken: string): Promise<LithicBalance> {
     const client = this.getClient();
-    const page = await client.financialAccounts.balances.list(financialAccountToken);
-    const balances = page.data;
-    if (!balances || balances.length === 0) {
-      return { availableAmount: 0, pendingAmount: 0 };
+
+    // Try top-level balances endpoint first (works with account_token)
+    try {
+      const page = await client.balances.list({ account_token: accountOrFinancialToken });
+      const balances = page.data;
+      if (balances && balances.length > 0) {
+        const b = balances[0];
+        return {
+          availableAmount: b.available_amount ?? 0,
+          pendingAmount: b.pending_amount ?? 0,
+        };
+      }
+    } catch {
+      // Fall through to financial account balance
     }
-    const b = balances[0];
-    return {
-      availableAmount: b.available_amount ?? 0,
-      pendingAmount: b.pending_amount ?? 0,
-    };
+
+    // Fallback: try as a financial account token
+    try {
+      const page = await client.financialAccounts.balances.list(accountOrFinancialToken);
+      const balances = page.data;
+      if (balances && balances.length > 0) {
+        const b = balances[0];
+        return {
+          availableAmount: b.available_amount ?? 0,
+          pendingAmount: b.pending_amount ?? 0,
+        };
+      }
+    } catch {
+      // Sandbox may not support balance queries on KYC_BYO accounts
+    }
+
+    return { availableAmount: 0, pendingAmount: 0 };
   }
 
   /** Freeze a card (PAUSED state). */
