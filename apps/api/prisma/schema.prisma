@@ -840,3 +840,34 @@ model ScheduledExecution {
   @@index([paymentId])
   @@index([dcaId])
 }
+
+// ============================================================================
+// Airtm Off-Ramp Payouts
+// ============================================================================
+
+model Payout {
+  id               String       @id @default(uuid())
+  walletAddress    String       // Sender wallet
+  recipientEmail   String       // Airtm recipient email
+  amountUsd        Float        // Amount in USD
+  description      String?      // Optional memo
+  status           PayoutStatus @default(PENDING)
+  airtmPayoutId    String?      @unique // Airtm payout ID
+  airtmCode        String?      // Airtm reference code
+  errorMessage     String?
+  completedAt      DateTime?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  @@index([walletAddress])
+  @@index([status])
+}
+
+enum PayoutStatus {
+  PENDING
+  COMMITTED
+  PROCESSING
+  COMPLETED
+  CANCELLED
+  FAILED
+}
