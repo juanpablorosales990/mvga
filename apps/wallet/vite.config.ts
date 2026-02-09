@@ -99,41 +99,21 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {
-            // React core
-            if (/\/(react|react-dom|react-router|react-router-dom|scheduler)\//.test(id)) {
-              return 'react-vendor';
-            }
-            // Solana SDK
-            if (/\/(@solana\/web3\.js|@solana\/spl-token|@solana\/wallet-adapter)/.test(id)) {
-              return 'solana-web3';
-            }
-            // Crypto: Node polyfills + noble/scure (tightly coupled, avoid circular refs)
+            // Heavy crypto polyfills — no React dependency, safe to isolate
             if (
-              /\/(bn\.js|elliptic|browserify-|des\.js|asn1\.js|hash\.js|sha\.js|pbkdf2|public-encrypt|parse-asn1|diffie-hellman|create-hash|create-hmac|cipher-base|randomfill|randombytes|hash-base|md5\.js|ripemd160|safe-buffer|readable-stream|string_decoder|isarray|inherits|events|process|util|assert|stream-browserify|@noble\/|@scure\/|tweetnacl|math-intrinsics|es-errors|call-bind|get-intrinsic|get-proto|has-symbols|hasown|gopd)\//.test(
+              /\/(bn\.js|elliptic|browserify-|des\.js|asn1\.js|hash\.js|sha\.js|pbkdf2|public-encrypt|parse-asn1|diffie-hellman|create-hash|create-hmac|cipher-base|randomfill|randombytes|hash-base|md5\.js|ripemd160|safe-buffer|readable-stream|string_decoder|isarray|inherits|events\/|process\/|util\/|assert\/|stream-browserify|@noble\/|@scure\/|tweetnacl|math-intrinsics|es-errors|call-bind|get-intrinsic|get-proto|has-symbols|hasown|gopd)\//.test(
                 id
               )
             ) {
               return 'crypto-polyfills';
             }
-            // Sentry
+            // Solana SDK — depends on crypto-polyfills but not React
+            if (/\/(@solana\/web3\.js|@solana\/spl-token|@solana\/wallet-adapter)/.test(id)) {
+              return 'solana-web3';
+            }
+            // Sentry — standalone, no React dependency in core
             if (/\/@sentry\//.test(id)) {
               return 'sentry';
-            }
-            // i18n
-            if (/\/(i18next|react-i18next|i18next-)/.test(id)) {
-              return 'i18n';
-            }
-            // Recharts
-            if (/\/(recharts|d3-|victory-)/.test(id)) {
-              return 'recharts';
-            }
-            // TanStack Query
-            if (/\/@tanstack\//.test(id)) {
-              return 'tanstack-query';
-            }
-            // Zustand
-            if (/\/zustand\//.test(id)) {
-              return 'zustand';
             }
           }
         },
