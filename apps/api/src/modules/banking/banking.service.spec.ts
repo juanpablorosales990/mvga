@@ -10,8 +10,10 @@ describe('BankingService', () => {
   let service: BankingService;
   let mockPrisma: any;
   let mockRain: any;
+  let originalEnv: string | undefined;
 
   beforeEach(() => {
+    originalEnv = process.env.NODE_ENV;
     mockPrisma = {
       cardWaitlist: {
         findFirst: jest.fn(),
@@ -39,6 +41,10 @@ describe('BankingService', () => {
     };
 
     service = new BankingService(mockPrisma, mockRain);
+  });
+
+  afterEach(() => {
+    process.env.NODE_ENV = originalEnv;
   });
 
   describe('joinCardWaitlist', () => {

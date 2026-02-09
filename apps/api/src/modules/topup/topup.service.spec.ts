@@ -6,6 +6,7 @@ describe('TopUpService', () => {
   let service: TopUpService;
   let mockPrisma: any;
   let mockConfig: any;
+  const originalFetch = global.fetch;
 
   beforeEach(() => {
     mockPrisma = {
@@ -26,6 +27,11 @@ describe('TopUpService', () => {
     };
 
     service = new TopUpService(mockPrisma, mockConfig);
+  });
+
+  afterEach(() => {
+    global.fetch = originalFetch;
+    jest.restoreAllMocks();
   });
 
   describe('getAccessToken (via getOperators)', () => {

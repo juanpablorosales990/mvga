@@ -1,6 +1,6 @@
 # MVGA Token Utility Model
 
-> **Positioning**: MVGA is a fintech rewards token — not a meme coin, not a security. Think airline miles backed by real platform revenue.
+> **Positioning**: MVGA is designed as a fintech rewards token — a loyalty and governance layer, not intended as an investment vehicle. Think airline miles backed by real platform revenue. _(This document does not constitute legal advice; classification may vary by jurisdiction — consult legal counsel.)_
 
 ## Core Thesis
 
@@ -85,7 +85,7 @@ Rewards come from actual platform activity, not inflationary token emissions. St
 
 ## Revenue-Backed Token Model
 
-```
+```text
 User Activity → Platform Fees → Weekly Treasury Distribution
                                     ├── 5% Burned (deflationary)
                                     ├── 40% to Stakers (fee sharing)
