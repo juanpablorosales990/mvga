@@ -1,13 +1,21 @@
 import { useSelfCustodyWallet } from '../contexts/WalletContext';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useMemo, useState } from 'react';
+import { lazy, Suspense, useMemo, useState, useEffect } from 'react';
 import { apiFetch } from '../lib/apiClient';
 import { showToast } from '../hooks/useToast';
+import { API_URL } from '../config';
+
+const PayPalButtons = lazy(() =>
+  import('@paypal/react-paypal-js').then((m) => ({ default: m.PayPalButtons }))
+);
+const PayPalScriptProvider = lazy(() =>
+  import('@paypal/react-paypal-js').then((m) => ({ default: m.PayPalScriptProvider }))
+);
 
 const PRESET_AMOUNTS = [5, 10, 25, 50];
 
-type Tab = 'onramper' | 'coinbase';
+type Tab = 'onramper' | 'coinbase' | 'paypal';
 
 export default function DepositPage() {
   const { t } = useTranslation();
@@ -17,6 +25,19 @@ export default function DepositPage() {
   const [tab, setTab] = useState<Tab>('onramper');
   const [coinbaseUrl, setCoinbaseUrl] = useState<string | null>(null);
   const [coinbaseLoading, setCoinbaseLoading] = useState(false);
+  const [paypalEnabled, setPaypalEnabled] = useState(false);
+  const [paypalAmount, setPaypalAmount] = useState('');
+  const [paypalProcessing, setPaypalProcessing] = useState(false);
+  const [paypalSuccess, setPaypalSuccess] = useState(false);
+
+  const paypalClientId = import.meta.env.VITE_PAYPAL_CLIENT_ID || '';
+
+  useEffect(() => {
+    fetch(`${API_URL}/paypal/status`)
+      .then((r) => r.json())
+      .then((d) => setPaypalEnabled(d.enabled))
+      .catch(() => {});
+  }, []);
 
   const onramperSrc = useMemo(() => {
     if (!walletAddress) return '';
@@ -43,7 +64,7 @@ export default function DepositPage() {
   }, [walletAddress, presetAmount]);
 
   const loadCoinbaseSession = async () => {
-    if (coinbaseUrl) return; // Already loaded
+    if (coinbaseUrl) return;
     setCoinbaseLoading(true);
     try {
       const data = await apiFetch<{ widgetUrl: string }>('/onramp/session', {
@@ -88,6 +109,18 @@ export default function DepositPage() {
         >
           {t('deposit.cardBank')}
         </button>
+        {paypalEnabled && paypalClientId && (
+          <button
+            onClick={() => setTab('paypal')}
+            className={`flex-1 py-2 text-sm font-medium border transition ${
+              tab === 'paypal'
+                ? 'border-gold-500 bg-gold-500/10 text-gold-500'
+                : 'border-white/10 text-white/50'
+            }`}
+          >
+            {t('deposit.paypalTab')}
+          </button>
+        )}
         <button
           onClick={() => {
             setTab('coinbase');
@@ -140,6 +173,113 @@ export default function DepositPage() {
 
           <div className="bg-white/5 border border-white/10 px-4 py-3">
             <p className="text-white/30 text-xs font-mono">{t('deposit.poweredBy')}</p>
+          </div>
+        </>
+      ) : tab === 'paypal' ? (
+        <>
+          {/* PayPal Deposit */}
+          <div className="card space-y-4">
+            <p className="text-white/40 text-xs">{t('deposit.paypalDesc')}</p>
+
+            {/* Amount input */}
+            <div>
+              <label className="text-white/40 text-xs block mb-1">
+                {t('deposit.paypalAmountLabel')}
+              </label>
+              <div className="flex gap-2">
+                {PRESET_AMOUNTS.map((amt) => (
+                  <button
+                    key={amt}
+                    onClick={() => setPaypalAmount(String(amt))}
+                    className={`flex-1 py-2 text-sm font-medium border transition ${
+                      paypalAmount === String(amt)
+                        ? 'border-gold-500 bg-gold-500/10 text-gold-500'
+                        : 'border-white/10 text-white/50 hover:border-white/30'
+                    }`}
+                  >
+                    ${amt}
+                  </button>
+                ))}
+              </div>
+              <input
+                type="number"
+                min="1"
+                step="0.01"
+                value={paypalAmount}
+                onChange={(e) => setPaypalAmount(e.target.value)}
+                placeholder="Custom amount ($1+)"
+                className="w-full mt-2 px-3 py-2 bg-black/50 border border-white/10 text-white text-sm placeholder:text-white/20"
+              />
+            </div>
+
+            {paypalSuccess ? (
+              <div className="text-center py-6">
+                <p className="text-green-400 text-sm font-medium">{t('deposit.paypalSuccess')}</p>
+                <p className="text-white/30 text-xs mt-1">{t('deposit.paypalCreditNote')}</p>
+              </div>
+            ) : paypalProcessing ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="w-8 h-8 border-2 border-gold-500 border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : paypalAmount && Number(paypalAmount) >= 1 ? (
+              <Suspense
+                fallback={
+                  <div className="flex items-center justify-center py-8">
+                    <div className="w-8 h-8 border-2 border-gold-500 border-t-transparent rounded-full animate-spin" />
+                  </div>
+                }
+              >
+                <PayPalScriptProvider options={{ clientId: paypalClientId, currency: 'USD' }}>
+                  <PayPalButtons
+                    key={paypalAmount}
+                    style={{ layout: 'vertical', color: 'gold', shape: 'rect', label: 'pay' }}
+                    createOrder={async () => {
+                      const res = await fetch(`${API_URL}/paypal/order/deposit`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          amountUsd: Number(paypalAmount),
+                          token: 'USDC',
+                        }),
+                      });
+                      const data = await res.json();
+                      return data.orderId;
+                    }}
+                    onApprove={async (data) => {
+                      setPaypalProcessing(true);
+                      try {
+                        await fetch(`${API_URL}/paypal/capture/deposit`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            orderId: data.orderID,
+                            token: 'USDC',
+                          }),
+                        });
+                        setPaypalSuccess(true);
+                        showToast('success', t('deposit.paypalSuccess'));
+                      } catch {
+                        showToast('error', t('deposit.paypalFailed'));
+                      } finally {
+                        setPaypalProcessing(false);
+                      }
+                    }}
+                    onError={() => {
+                      setPaypalProcessing(false);
+                      showToast('error', t('deposit.paypalFailed'));
+                    }}
+                  />
+                </PayPalScriptProvider>
+              </Suspense>
+            ) : (
+              <p className="text-white/20 text-xs text-center py-4">
+                {t('deposit.paypalEnterAmount')}
+              </p>
+            )}
+          </div>
+
+          <div className="bg-white/5 border border-white/10 px-4 py-3">
+            <p className="text-white/30 text-xs font-mono">{t('deposit.paypalPoweredBy')}</p>
           </div>
         </>
       ) : (

@@ -25,6 +25,7 @@ import { OnrampModule } from './modules/onramp/onramp.module';
 import { SchedulerModule } from './modules/scheduler/scheduler.module';
 import { OfframpModule } from './modules/offramp/offramp.module';
 import { KycModule } from './modules/kyc/kyc.module';
+import { PayPalModule } from './modules/paypal/paypal.module';
 import { HealthController } from './health.controller';
 
 @Module({
@@ -61,6 +62,7 @@ import { HealthController } from './health.controller';
     SchedulerModule,
     OfframpModule,
     KycModule,
+    PayPalModule,
   ],
   controllers: [HealthController],
   providers: [

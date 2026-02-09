@@ -1,9 +1,16 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { useParams } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import { useTranslation } from 'react-i18next';
 import { buildSolanaPayUrl } from '../utils/solana-pay';
 import { API_URL } from '../config';
+
+const PayPalButtons = lazy(() =>
+  import('@paypal/react-paypal-js').then((m) => ({ default: m.PayPalButtons }))
+);
+const PayPalScriptProvider = lazy(() =>
+  import('@paypal/react-paypal-js').then((m) => ({ default: m.PayPalScriptProvider }))
+);
 
 interface PaymentRequest {
   id: string;
@@ -17,17 +24,22 @@ interface PaymentRequest {
   createdAt: string;
 }
 
+type PayTab = 'solana' | 'paypal';
+
 export default function PayPage() {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const [request, setRequest] = useState<PaymentRequest | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [payTab, setPayTab] = useState<PayTab>('solana');
+  const [paypalEnabled, setPaypalEnabled] = useState(false);
+  const [paypalProcessing, setPaypalProcessing] = useState(false);
 
   const fetchRequest = useCallback(async () => {
     if (!id) return;
     try {
-      const res = await fetch(`${API_URL}/api/payments/request/${id}`);
+      const res = await fetch(`${API_URL}/payments/request/${id}`);
       if (!res.ok) throw new Error();
       const data = await res.json();
       setRequest(data);
@@ -42,6 +54,14 @@ export default function PayPage() {
   useEffect(() => {
     fetchRequest();
   }, [fetchRequest]);
+
+  // Check if PayPal is enabled
+  useEffect(() => {
+    fetch(`${API_URL}/paypal/status`)
+      .then((r) => r.json())
+      .then((d) => setPaypalEnabled(d.enabled))
+      .catch(() => {});
+  }, []);
 
   // Only poll when payment is still pending
   useEffect(() => {
@@ -90,6 +110,8 @@ export default function PayPage() {
           ? t('pay.cancelled')
           : t('pay.pending');
 
+  const paypalClientId = import.meta.env.VITE_PAYPAL_CLIENT_ID || '';
+
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">{t('pay.title')}</h1>
@@ -119,14 +141,103 @@ export default function PayPage() {
         )}
       </div>
 
-      {/* QR Code — only show for pending payments */}
+      {/* Payment methods — only show for pending payments */}
       {request.status === 'PENDING' && (
-        <div className="card flex flex-col items-center py-8">
-          <div className="bg-white p-4 mb-4">
-            <QRCodeSVG value={solanaPayUrl} size={220} level="H" />
-          </div>
-          <p className="text-white/30 text-xs text-center">{t('pay.scanQr')}</p>
-        </div>
+        <>
+          {/* Tab selector — only show if PayPal is available */}
+          {paypalEnabled && paypalClientId && (
+            <div className="flex gap-2">
+              <button
+                onClick={() => setPayTab('solana')}
+                className={`flex-1 py-2 text-sm font-medium border transition ${
+                  payTab === 'solana'
+                    ? 'border-gold-500 bg-gold-500/10 text-gold-500'
+                    : 'border-white/10 text-white/50'
+                }`}
+              >
+                {t('pay.solanaPay')}
+              </button>
+              <button
+                onClick={() => setPayTab('paypal')}
+                className={`flex-1 py-2 text-sm font-medium border transition ${
+                  payTab === 'paypal'
+                    ? 'border-gold-500 bg-gold-500/10 text-gold-500'
+                    : 'border-white/10 text-white/50'
+                }`}
+              >
+                {t('pay.paypalPay')}
+              </button>
+            </div>
+          )}
+
+          {payTab === 'solana' ? (
+            <div className="card flex flex-col items-center py-8">
+              <div className="bg-white p-4 mb-4">
+                <QRCodeSVG value={solanaPayUrl} size={220} level="H" />
+              </div>
+              <p className="text-white/30 text-xs text-center">{t('pay.scanQr')}</p>
+            </div>
+          ) : (
+            <div className="card py-6 px-4">
+              {paypalProcessing ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="w-8 h-8 border-2 border-gold-500 border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : (
+                <Suspense
+                  fallback={
+                    <div className="flex items-center justify-center py-8">
+                      <div className="w-8 h-8 border-2 border-gold-500 border-t-transparent rounded-full animate-spin" />
+                    </div>
+                  }
+                >
+                  <PayPalScriptProvider
+                    options={{
+                      clientId: paypalClientId,
+                      currency: 'USD',
+                    }}
+                  >
+                    <PayPalButtons
+                      style={{ layout: 'vertical', color: 'gold', shape: 'rect', label: 'pay' }}
+                      createOrder={async () => {
+                        const res = await fetch(`${API_URL}/paypal/order/payment`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            paymentRequestId: request.id,
+                            amountUsd: request.amount,
+                            description:
+                              request.memo || `Payment: ${request.amount} ${request.token}`,
+                          }),
+                        });
+                        const data = await res.json();
+                        return data.orderId;
+                      }}
+                      onApprove={async (data) => {
+                        setPaypalProcessing(true);
+                        try {
+                          await fetch(`${API_URL}/paypal/capture/payment`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              orderId: data.orderID,
+                              paymentRequestId: request.id,
+                            }),
+                          });
+                          fetchRequest();
+                        } finally {
+                          setPaypalProcessing(false);
+                        }
+                      }}
+                      onError={() => setPaypalProcessing(false)}
+                    />
+                  </PayPalScriptProvider>
+                </Suspense>
+              )}
+              <p className="text-white/30 text-xs text-center mt-3">{t('pay.paypalNote')}</p>
+            </div>
+          )}
+        </>
       )}
 
       {/* Payment TX link */}

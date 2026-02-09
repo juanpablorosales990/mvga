@@ -728,6 +728,8 @@ model PaymentRequest {
   memo             String?
   status           PaymentRequestStatus @default(PENDING)
   paymentTx        String?              @unique  // On-chain tx that paid this
+  paypalOrderId    String?              @unique  // PayPal order ID if paid via PayPal
+  paymentMethod    String?              // 'solana' | 'paypal'
   expiresAt        DateTime             // Default: 24h from creation
   createdAt        DateTime             @default(now())
   updatedAt        DateTime             @updatedAt

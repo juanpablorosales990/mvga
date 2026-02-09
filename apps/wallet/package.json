@@ -8,10 +8,17 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "lint": "eslint src/",
-    "test": "vitest run"
+    "test": "vitest run",
+    "native:sync:ios": "npm run build && npx cap sync ios",
+    "native:open:ios": "npx cap open ios",
+    "native:run:ios": "npm run native:sync:ios && npx cap run ios"
   },
   "dependencies": {
+    "@capacitor/cli": "^8.0.2",
+    "@capacitor/core": "^8.0.2",
+    "@capacitor/ios": "^8.0.2",
     "@mvga/sdk": "*",
+    "@paypal/react-paypal-js": "^8.9.2",
     "@scure/bip39": "^2.0.1",
     "@sentry/react": "^10.38.0",
     "@sentry/vite-plugin": "^4.9.0",

@@ -52,7 +52,7 @@ export default function ChargePage() {
     if (!hasAmount) return;
     setCreatingLink(true);
     try {
-      const res = await fetch(`${API_URL}/api/payments/request`, {
+      const res = await fetch(`${API_URL}/payments/request`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
