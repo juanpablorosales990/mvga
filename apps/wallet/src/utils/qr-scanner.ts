@@ -1,7 +1,6 @@
-import jsQR from 'jsqr';
-
 /**
  * Starts scanning QR codes from a video element using the camera.
+ * jsQR is lazy-loaded on first scan to keep the SendPage bundle small (~250 KB saved).
  * Returns a cleanup function to stop the scanner.
  */
 export function startScanner(
@@ -12,9 +11,20 @@ export function startScanner(
   let animationId: number;
   let stream: MediaStream | null = null;
   let stopped = false;
+  let jsQR:
+    | ((data: Uint8ClampedArray, width: number, height: number) => { data: string } | null)
+    | null = null;
+
+  const loadAndScan = async () => {
+    if (!jsQR) {
+      const mod = await import('jsqr');
+      jsQR = mod.default;
+    }
+    scan();
+  };
 
   const scan = () => {
-    if (stopped) return;
+    if (stopped || !jsQR) return;
     if (videoEl.readyState === videoEl.HAVE_ENOUGH_DATA) {
       const ctx = canvasEl.getContext('2d');
       if (ctx) {
@@ -42,7 +52,7 @@ export function startScanner(
       stream = mediaStream;
       videoEl.srcObject = mediaStream;
       videoEl.play();
-      animationId = requestAnimationFrame(scan);
+      loadAndScan();
     })
     .catch(() => {
       // Camera permission denied — handled by caller
