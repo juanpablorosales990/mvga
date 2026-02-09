@@ -16,7 +16,7 @@ function setAuthCookie(res: Response, token: string) {
     // All MVGA properties are under the same "site" (mvga.io), so we don't need SameSite=None.
     // Using Lax reduces CSRF risk while still allowing normal same-site API calls from app.mvga.io -> api.mvga.io.
     sameSite: 'lax',
-    path: '/',
+    path: '/api',
     maxAge: 24 * 60 * 60 * 1000, // 24h — matches JWT expiry
   });
 }
@@ -58,7 +58,7 @@ export class AuthController {
       httpOnly: true,
       secure: IS_PROD,
       sameSite: 'lax',
-      path: '/',
+      path: '/api',
     });
     return { authenticated: false };
   }

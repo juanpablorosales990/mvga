@@ -997,6 +997,12 @@ export class StakingService {
       });
       await this.txLogger.confirm(sig);
 
+      this.eventEmitter.emit('staking.referral_bonus', {
+        referrerAddress: referral.referrerAddress,
+        refereeAddress: walletAddress,
+        bonusAmount,
+      });
+
       this.logger.log(
         `Referral bonus: ${bonusAmount.toFixed(2)} MVGA to ${referral.referrerAddress.slice(0, 8)}... (from ${walletAddress.slice(0, 8)}... claim)`
       );

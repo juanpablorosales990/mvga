@@ -151,6 +151,61 @@ describe('KycService', () => {
       );
     });
 
+    it('sets PENDING on applicantPending event', async () => {
+      mockSumsub.parseWebhookPayload.mockReturnValue({
+        type: 'applicantPending',
+        applicantId: 'ext-123',
+      });
+      mockPrisma.userKyc.findFirst.mockResolvedValue({
+        id: 'kyc-1',
+        externalId: 'ext-123',
+        status: 'UNVERIFIED',
+      });
+      mockPrisma.userKyc.update.mockResolvedValue({});
+
+      await service.handleWebhook('body', 'sig');
+      expect(mockPrisma.userKyc.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: { status: 'PENDING' },
+        })
+      );
+    });
+
+    it('does not overwrite APPROVED on applicantPending', async () => {
+      mockSumsub.parseWebhookPayload.mockReturnValue({
+        type: 'applicantPending',
+        applicantId: 'ext-123',
+      });
+      mockPrisma.userKyc.findFirst.mockResolvedValue({
+        id: 'kyc-1',
+        externalId: 'ext-123',
+        status: 'APPROVED',
+      });
+
+      await service.handleWebhook('body', 'sig');
+      expect(mockPrisma.userKyc.update).not.toHaveBeenCalled();
+    });
+
+    it('sets PENDING on applicantOnHold event', async () => {
+      mockSumsub.parseWebhookPayload.mockReturnValue({
+        type: 'applicantOnHold',
+        applicantId: 'ext-123',
+      });
+      mockPrisma.userKyc.findFirst.mockResolvedValue({
+        id: 'kyc-1',
+        externalId: 'ext-123',
+        status: 'PENDING',
+      });
+      mockPrisma.userKyc.update.mockResolvedValue({});
+
+      await service.handleWebhook('body', 'sig');
+      expect(mockPrisma.userKyc.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: { status: 'PENDING' },
+        })
+      );
+    });
+
     it('ignores webhook for unknown applicant', async () => {
       mockSumsub.parseWebhookPayload.mockReturnValue({
         type: 'applicantReviewed',

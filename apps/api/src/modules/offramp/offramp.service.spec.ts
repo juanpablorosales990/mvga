@@ -303,6 +303,9 @@ describe('OfframpService', () => {
         ok: true,
         json: () => Promise.resolve({ status: 'completed' }),
       });
+      prisma.payout.update.mockResolvedValue(
+        mockPayout({ status: 'COMPLETED', completedAt: new Date() })
+      );
 
       const result = await service.getPayoutStatus(WALLET, PAYOUT_ID);
 

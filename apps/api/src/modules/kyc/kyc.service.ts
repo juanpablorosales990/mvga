@@ -82,7 +82,7 @@ export class KycService {
       return { ok: true };
     }
 
-    if (type === 'applicantReviewed' || type === 'applicantPending') {
+    if (type === 'applicantReviewed') {
       const answer = reviewResult?.reviewAnswer;
       if (answer === 'GREEN') {
         await this.prisma.userKyc.update({
@@ -96,6 +96,22 @@ export class KycService {
           data: { status: 'REJECTED', rejectionReason: reason },
         });
       }
+    } else if (type === 'applicantPending') {
+      // Sumsub signals the applicant's documents are under review
+      if (kyc.status !== 'APPROVED' && kyc.status !== 'REJECTED') {
+        await this.prisma.userKyc.update({
+          where: { id: kyc.id },
+          data: { status: 'PENDING' },
+        });
+      }
+    } else if (type === 'applicantOnHold') {
+      this.logger.warn(`Applicant on hold: ${externalId}`);
+      await this.prisma.userKyc.update({
+        where: { id: kyc.id },
+        data: { status: 'PENDING' },
+      });
+    } else {
+      this.logger.log(`Unhandled KYC webhook type: ${type} for ${externalId}`);
     }
 
     return { ok: true };
