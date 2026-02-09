@@ -58,7 +58,11 @@ export class KycService {
     await this.prisma.userKyc.upsert({
       where: { userId },
       create: { userId, status: 'PENDING', externalId: inquiryId, provider: 'PERSONA' },
-      update: { status: 'PENDING', externalId: inquiryId, provider: 'PERSONA' },
+      update: {
+        externalId: inquiryId,
+        provider: 'PERSONA',
+        ...(existing?.status !== 'APPROVED' ? { status: 'PENDING' } : {}),
+      },
     });
 
     const { templateId, environmentId } = this.persona.templateConfig;

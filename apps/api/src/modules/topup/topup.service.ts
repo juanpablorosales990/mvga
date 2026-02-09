@@ -246,17 +246,8 @@ export class TopUpService {
       throw new BadRequestException('Treasury wallet not configured');
     }
 
-    await this.verifyTreasuryPayment({
-      signature: paymentSignature,
-      fromWallet: walletAddress,
-      toTreasuryWallet: treasuryWallet,
-      minAmountUsd: amountUsd,
-    });
-
-    // Use the payment signature for idempotency and to prevent replay.
+    // Check idempotency FIRST to avoid redundant RPC calls.
     const customIdentifier = `mvga-usdc-${paymentSignature}`;
-
-    // If the signature was already used, return the existing record.
     const existing = await this.prisma.topUp.findFirst({
       where: { customIdentifier },
     });
@@ -271,6 +262,13 @@ export class TopUpService {
         reloadlyTxId: existing.reloadlyTxId,
       };
     }
+
+    await this.verifyTreasuryPayment({
+      signature: paymentSignature,
+      fromWallet: walletAddress,
+      toTreasuryWallet: treasuryWallet,
+      minAmountUsd: amountUsd,
+    });
 
     // Create DB record first (PENDING)
     const topup = await this.prisma.topUp.create({

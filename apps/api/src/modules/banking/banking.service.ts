@@ -69,6 +69,7 @@ export class BankingService {
         email: data.email,
         walletAddress,
         birthDate: data.birthDate,
+        governmentId: data.nationalId,
         address: data.address,
       });
 
@@ -193,9 +194,21 @@ export class BankingService {
     if (app.provider === 'LITHIC' && app.lithicAccountToken && this.lithic.isEnabled) {
       const card = await this.lithic.issueCard(app.lithicAccountToken);
 
+      // Fetch financial account token for balance queries
+      let financialAccountToken: string | null = null;
+      try {
+        financialAccountToken = await this.lithic.getFinancialAccountToken(app.lithicAccountToken);
+      } catch (err) {
+        this.logger.warn(`Failed to fetch Lithic financial account: ${err}`);
+      }
+
       await this.prisma.cardApplication.update({
         where: { id: app.id },
-        data: { status: 'CARD_ISSUED', lithicCardToken: card.token },
+        data: {
+          status: 'CARD_ISSUED',
+          lithicCardToken: card.token,
+          ...(financialAccountToken ? { lithicFinancialAccountToken: financialAccountToken } : {}),
+        },
       });
 
       return { cardId: card.token, last4: card.last4, status: 'CARD_ISSUED' };
@@ -410,8 +423,12 @@ export class BankingService {
 
     if (app.provider === 'LITHIC' && app.lithicCardToken && this.lithic.isEnabled) {
       await this.lithic.freezeCard(app.lithicCardToken);
+    } else if (app.provider === 'LITHIC' && app.lithicCardToken) {
+      throw new ServiceUnavailableException('Lithic service unavailable');
     } else if (app.rainCardId && this.rain.isEnabled) {
       await this.rain.freezeCard(app.rainCardId);
+    } else if (app.rainCardId) {
+      throw new ServiceUnavailableException('Rain service unavailable');
     }
 
     await this.prisma.cardApplication.update({
@@ -431,8 +448,12 @@ export class BankingService {
 
     if (app.provider === 'LITHIC' && app.lithicCardToken && this.lithic.isEnabled) {
       await this.lithic.unfreezeCard(app.lithicCardToken);
+    } else if (app.provider === 'LITHIC' && app.lithicCardToken) {
+      throw new ServiceUnavailableException('Lithic service unavailable');
     } else if (app.rainCardId && this.rain.isEnabled) {
       await this.rain.unfreezeCard(app.rainCardId);
+    } else if (app.rainCardId) {
+      throw new ServiceUnavailableException('Rain service unavailable');
     }
 
     await this.prisma.cardApplication.update({

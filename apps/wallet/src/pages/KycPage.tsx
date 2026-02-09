@@ -105,8 +105,6 @@ function PersonaFlow({
   onComplete: () => void;
   onError: (msg: string) => void;
 }) {
-  const containerRef = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
     let mounted = true;
     let client: { destroy?: () => void } | null = null;
@@ -127,7 +125,7 @@ function PersonaFlow({
           environmentId,
           referenceId,
           onReady: () => {
-            // SDK is loaded — it renders inline automatically
+            // SDK is loaded — modal opens automatically
           },
           onComplete: ({ inquiryId: _id, status }: { inquiryId: string; status: string }) => {
             if (status === 'completed') {
@@ -169,10 +167,7 @@ function PersonaFlow({
   }, [templateId, environmentId, referenceId, inquiryId, onComplete, onError]);
 
   return (
-    <div
-      ref={containerRef}
-      className="min-h-[400px] bg-white/5 border border-white/10 flex items-center justify-center"
-    >
+    <div className="min-h-[400px] bg-white/5 border border-white/10 flex items-center justify-center">
       <div className="text-center space-y-3">
         <div className="w-8 h-8 border-2 border-gold-500 border-t-transparent rounded-full animate-spin mx-auto" />
         <p className="text-sm text-white/40">Loading verification...</p>
@@ -226,7 +221,10 @@ export default function KycPage() {
 
   const handleRefreshToken = useCallback(async (): Promise<string> => {
     const result = await createSession();
-    return result?.token ?? '';
+    if (!result?.token) {
+      throw new Error('Failed to refresh session token');
+    }
+    return result.token;
   }, [createSession]);
 
   const handleSdkError = useCallback((msg: string) => {
@@ -273,16 +271,19 @@ export default function KycPage() {
         />
       )}
 
-      {session?.provider === 'persona' && session.templateId && (
-        <PersonaFlow
-          templateId={session.templateId}
-          environmentId={session.environmentId || ''}
-          referenceId={session.referenceId || ''}
-          inquiryId={session.inquiryId}
-          onComplete={handleSdkComplete}
-          onError={handleSdkError}
-        />
-      )}
+      {session?.provider === 'persona' &&
+        session.templateId &&
+        session.environmentId &&
+        session.referenceId && (
+          <PersonaFlow
+            templateId={session.templateId}
+            environmentId={session.environmentId}
+            referenceId={session.referenceId}
+            inquiryId={session.inquiryId}
+            onComplete={handleSdkComplete}
+            onError={handleSdkError}
+          />
+        )}
 
       {/* UNVERIFIED */}
       {status === 'UNVERIFIED' && !showingSdk && (

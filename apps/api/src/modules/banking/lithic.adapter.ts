@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Lithic from 'lithic';
 
@@ -58,7 +58,7 @@ export class LithicAdapter {
   }
 
   private getClient(): Lithic {
-    if (!this.client) throw new Error('Lithic API key not configured');
+    if (!this.client) throw new ServiceUnavailableException('Lithic API key not configured');
     return this.client;
   }
 
@@ -69,6 +69,8 @@ export class LithicAdapter {
     email: string;
     walletAddress: string;
     birthDate: string;
+    phoneNumber?: string;
+    governmentId?: string;
     address: {
       line1: string;
       city: string;
@@ -85,6 +87,7 @@ export class LithicAdapter {
         last_name: data.lastName,
         email: data.email,
         dob: data.birthDate,
+        government_id: data.governmentId || '000-00-0000',
         address: {
           address1: data.address.line1,
           city: data.address.city,
@@ -92,7 +95,7 @@ export class LithicAdapter {
           postal_code: data.address.postalCode,
           country: data.address.countryCode,
         },
-        phone_number: '+10000000000',
+        phone_number: data.phoneNumber || '+10000000000',
       },
       tos_timestamp: new Date().toISOString(),
       kyc_passed_timestamp: new Date().toISOString(),
@@ -152,6 +155,15 @@ export class LithicAdapter {
       expMonth: typeof c.exp_month === 'string' ? parseInt(c.exp_month, 10) : (c.exp_month ?? 0),
       expYear: typeof c.exp_year === 'string' ? parseInt(c.exp_year, 10) : (c.exp_year ?? 0),
     };
+  }
+
+  /** Get the ISSUING financial account token for a given account. */
+  async getFinancialAccountToken(accountToken: string): Promise<string | null> {
+    const client = this.getClient();
+    const page = await client.financialAccounts.list({ account_token: accountToken });
+    const accounts = page.data || [];
+    const issuing = accounts.find((a) => a.type === 'ISSUING');
+    return issuing?.token ?? null;
   }
 
   /** Get balance for a financial account. */

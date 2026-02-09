@@ -1,4 +1,13 @@
-import { IsString, IsNumber, IsPositive, IsIn, MaxLength, Min, Max } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsPositive,
+  IsIn,
+  MaxLength,
+  Min,
+  Max,
+  IsNotEmpty,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class DetectOperatorDto {
@@ -40,6 +49,7 @@ export class CreateTopUpDto {
       'Solana transaction signature proving a USDC transfer to the MVGA treasury (prevents free top-ups)',
   })
   @IsString()
+  @IsNotEmpty()
   @MaxLength(128)
   paymentSignature: string;
 }

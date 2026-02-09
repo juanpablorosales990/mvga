@@ -76,6 +76,9 @@ export class PersonaAdapter {
 
   /** Get inquiry status by ID. */
   async getInquiryStatus(inquiryId: string): Promise<PersonaInquiry> {
+    if (!inquiryId || !/^inq_[a-zA-Z0-9_-]+$/.test(inquiryId)) {
+      throw new Error('Invalid inquiry ID format');
+    }
     const result = await this.fetch<{
       data: {
         id: string;
@@ -114,6 +117,13 @@ export class PersonaAdapter {
       return null;
     }
     const timestamp = tPart.split('=')[1];
+
+    // Reject webhooks older than 5 minutes to prevent replay attacks
+    const timestampAge = Date.now() / 1000 - parseInt(timestamp, 10);
+    if (isNaN(timestampAge) || timestampAge > 300 || timestampAge < -60) {
+      this.logger.warn(`Persona webhook timestamp too old or invalid: ${timestamp}`);
+      return null;
+    }
 
     // Extract all v1 signatures (space-separated after the timestamp part)
     const sigParts = signatureHeader.split(' ').filter((p) => p.includes('v1='));

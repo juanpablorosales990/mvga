@@ -51,6 +51,7 @@ describe('BankingService', () => {
       getTransactions: jest.fn(),
       freezeCard: jest.fn(),
       unfreezeCard: jest.fn(),
+      getFinancialAccountToken: jest.fn(),
     };
 
     service = new BankingService(mockPrisma, mockRain, mockLithic);
@@ -235,6 +236,7 @@ describe('BankingService', () => {
     });
 
     it('freezes Rain card and returns card details', async () => {
+      mockRain.isEnabled = true;
       mockPrisma.cardApplication.findFirst.mockResolvedValue({
         id: '1',
         rainCardId: 'card-1',
@@ -258,6 +260,7 @@ describe('BankingService', () => {
     });
 
     it('unfreezes Rain card and returns card details', async () => {
+      mockRain.isEnabled = true;
       mockPrisma.cardApplication.findFirst.mockResolvedValue({
         id: '1',
         rainCardId: 'card-1',
@@ -370,12 +373,14 @@ describe('BankingService', () => {
         expMonth: 12,
         expYear: 2028,
       });
+      mockLithic.getFinancialAccountToken.mockResolvedValue('fa_tok_1');
       mockPrisma.cardApplication.update.mockResolvedValue({});
 
       const result = await service.issueCard('abc');
       expect(result.cardId).toBe('card_tok_1');
       expect(result.last4).toBe('4242');
       expect(result.status).toBe('CARD_ISSUED');
+      expect(mockLithic.getFinancialAccountToken).toHaveBeenCalledWith('acct_123');
       expect(mockRain.deployContract).not.toHaveBeenCalled();
       expect(mockRain.issueCard).not.toHaveBeenCalled();
     });
