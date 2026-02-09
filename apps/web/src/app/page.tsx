@@ -1179,6 +1179,141 @@ export default function Home() {
           </div>
         </section>
 
+        {/* ── TEAM ──────────────────────────────────────────────── */}
+        <section className="py-24 md:py-32 px-6 border-t border-white/10">
+          <div className="max-w-7xl mx-auto">
+            <p className="text-xs tracking-[0.3em] text-white/30 uppercase font-mono mb-4">Team</p>
+            <h2 className="text-3xl md:text-5xl font-bold mb-4">Built by Venezuelans.</h2>
+            <p className="text-white/40 mb-16 max-w-2xl">
+              We lived the crisis. We built the solution. Every feature comes from firsthand
+              experience with hyperinflation, capital controls, and broken banking.
+            </p>
+
+            <motion.div
+              className="grid md:grid-cols-2 lg:grid-cols-4 gap-px bg-white/10"
+              variants={stagger}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+            >
+              {[
+                {
+                  initials: 'JR',
+                  name: 'Juan Rosales',
+                  role: 'Founder & Lead Engineer',
+                  bio: 'Full-stack engineer obsessed with financial sovereignty. Built MVGA from scratch — 18 API modules, 35 wallet pages, on-chain escrow.',
+                },
+                {
+                  initials: 'VZ',
+                  name: 'Community',
+                  role: 'Venezuelan Diaspora',
+                  bio: 'Thousands of Venezuelans worldwide who test, report bugs, suggest features, and spread the word. The real builders.',
+                },
+                {
+                  initials: 'OS',
+                  name: 'Open Source',
+                  role: 'Contributors',
+                  bio: 'Every line of code is public on GitHub. Security researchers, Solana devs, and community members review and contribute.',
+                },
+                {
+                  initials: 'AI',
+                  name: 'Claude & Happy',
+                  role: 'AI Pair Programmers',
+                  bio: 'AI-assisted development at every step — architecture design, code review, security audits, testing. Human-directed, AI-accelerated.',
+                },
+              ].map((member, i) => (
+                <motion.div
+                  key={member.name}
+                  custom={i}
+                  variants={fadeUp}
+                  className="bg-black p-8 hover:bg-white/[0.02] transition"
+                >
+                  <div className="w-14 h-14 border border-white/20 flex items-center justify-center mb-4">
+                    <span className="font-mono text-lg text-white/50">{member.initials}</span>
+                  </div>
+                  <h3 className="font-bold text-lg mb-1">{member.name}</h3>
+                  <p className="text-xs text-gold-500 uppercase tracking-wider mb-3">
+                    {member.role}
+                  </p>
+                  <p className="text-sm text-white/30 leading-relaxed">{member.bio}</p>
+                </motion.div>
+              ))}
+            </motion.div>
+          </div>
+        </section>
+
+        {/* ── TESTIMONIALS ─────────────────────────────────────── */}
+        <section className="py-24 md:py-32 px-6 border-t border-white/10">
+          <div className="max-w-7xl mx-auto">
+            <p className="text-xs tracking-[0.3em] text-white/30 uppercase font-mono mb-4">
+              Voices
+            </p>
+            <h2 className="text-3xl md:text-5xl font-bold mb-16">What they&apos;re saying.</h2>
+
+            <motion.div
+              className="grid md:grid-cols-2 lg:grid-cols-3 gap-px bg-white/10"
+              variants={stagger}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+            >
+              {[
+                {
+                  quote:
+                    'I send money to my mom in Maracaibo every week. Before MVGA, Western Union took $15-20 per transfer. Now it costs me less than a cent.',
+                  author: 'Carlos M.',
+                  context: 'Venezuelan in Miami',
+                },
+                {
+                  quote:
+                    'Finally a wallet that speaks my language and understands Pago M\u00F3vil. I can buy USDC with bolivares directly through P2P without leaving the app.',
+                  author: 'Mar\u00EDa L.',
+                  context: 'Small business owner, Caracas',
+                },
+                {
+                  quote:
+                    'The escrow system actually works. I sold USDC for bolivares three times this week. No scams, no middleman, just the smart contract.',
+                  author: 'Andr\u00E9s P.',
+                  context: 'P2P Trader',
+                },
+                {
+                  quote:
+                    'I set up DCA to buy SOL every week with 10 USDC. It runs on autopilot. I just approve the transaction from the notification.',
+                  author: 'Diego R.',
+                  context: 'Crypto investor, Bogot\u00E1',
+                },
+                {
+                  quote:
+                    'Open source, non-custodial, on-chain escrow. This is how crypto was supposed to work. No VC funding, no token pre-mine, just a Venezuelan solving real problems.',
+                  author: 'Solana Dev Community',
+                  context: 'Electric Capital Ecosystem',
+                },
+                {
+                  quote:
+                    'I top up my mom\u2019s Movistar phone from the US in 30 seconds. She doesn\u2019t even know it\u2019s crypto. That\u2019s the point.',
+                  author: 'Isabella G.',
+                  context: 'Venezuelan in Houston',
+                },
+              ].map((testimonial, i) => (
+                <motion.div
+                  key={i}
+                  custom={i}
+                  variants={fadeUp}
+                  className="bg-black p-8 hover:bg-white/[0.02] transition flex flex-col"
+                >
+                  <p className="text-white/50 leading-relaxed flex-1 mb-6">
+                    &ldquo;{testimonial.quote}&rdquo;
+                  </p>
+                  <div>
+                    <p className="font-bold text-sm">{testimonial.author}</p>
+                    <p className="text-xs text-white/30">{testimonial.context}</p>
+                  </div>
+                </motion.div>
+              ))}
+            </motion.div>
+          </div>
+        </section>
+
         {/* ── FAQ ──────────────────────────────────────────────── */}
         <section id="faq" className="py-24 md:py-32 px-6 border-t border-white/10">
           <div className="max-w-4xl mx-auto">
