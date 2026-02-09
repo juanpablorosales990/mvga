@@ -1,0 +1,34 @@
+# Reduce Vercel CLI upload size/count for monorepo deploys.
+# Git-based Vercel deployments don't use this, but `vercel deploy` does.
+
+.git/
+**/node_modules/
+node_modules/
+
+# Local env + keys
+.env*
+.keys/
+
+# Build / test artifacts
+output/
+test-results/
+playwright-report/
+coverage/
+**/*.tsbuildinfo
+
+# App build outputs
+apps/api/dist/
+apps/web/.next/
+apps/web/out/
+apps/wallet/dist/
+
+# Native wrapper (not needed for web deploy)
+apps/wallet/ios/
+
+# Rust/Anchor artifacts
+packages/contracts/target/
+packages/contracts/.anchor/
+
+# Supabase temp
+supabase/.temp/
+**/supabase/.temp/
