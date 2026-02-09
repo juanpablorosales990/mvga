@@ -279,6 +279,13 @@ export default function SettingsPage() {
                   onClick={async () => {
                     if (!biometricPassword) return;
                     setBiometricError('');
+                    // Validate the password is correct before binding to biometric
+                    try {
+                      await exportMnemonic(biometricPassword);
+                    } catch {
+                      setBiometricError(t('settings.wrongPassword'));
+                      return;
+                    }
                     const ok = await registerBiometric(biometricPassword);
                     if (ok) {
                       showToast('success', t('settings.biometricEnabled'));

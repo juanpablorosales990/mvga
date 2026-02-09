@@ -37,17 +37,27 @@ test.describe('Settings Page', () => {
   });
 
   test('currency toggle switches to VES', async ({ page }) => {
-    await page.getByText('VES').click();
+    const main = page.locator('main');
+    await main.getByText('VES').click();
     // The VES button should be active (gold background)
-    const vesBtn = page.getByText('VES');
+    const vesBtn = main.getByText('VES');
     await expect(vesBtn).toHaveClass(/bg-gold-500/);
   });
 
   test('auto-compound toggle works', async ({ page }) => {
-    const toggle = page.locator('button.rounded-full').first();
+    // The auto-compound card: h2 is inside div > div, toggle is a sibling button
+    // Go up to the card level (.card.p-4) which contains both
+    const autoCompoundCard = page
+      .getByText(/auto.compound/i)
+      .first()
+      .locator('xpath=ancestor::div[contains(@class, "card")]');
+    const toggle = autoCompoundCard.locator('button.rounded-full');
+    // Default is off (bg-white/10), click to enable
     await toggle.click();
-    // Toggle should change state (we just verify no error)
-    await expect(toggle).toBeVisible();
+    await expect(toggle).toHaveClass(/bg-green-500/);
+    // Click again to disable
+    await toggle.click();
+    await expect(toggle).toHaveClass(/bg-white\/10/);
   });
 
   test('back button navigates to more page', async ({ page }) => {

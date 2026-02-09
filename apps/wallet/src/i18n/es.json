@@ -283,6 +283,7 @@
     "tokenMint": "Mint de Token",
     "burn": "Quema",
     "unknown": "Transaccion",
+    "via": "por",
     "connectPrompt": "Conecta tu billetera para ver el historial de transacciones"
   },
   "more": {
@@ -340,7 +341,6 @@
     "statusCompleted": "Completado",
     "votingEndsDate": "Votación termina {{date}}",
     "voteFailed": "Error al votar",
-    "requested": "solicitado",
     "forVotes": "A favor",
     "againstVotes": "En contra",
     "votingEndsLabel": "Votación termina"
@@ -859,7 +859,7 @@
   "scheduled": {
     "title": "Programado",
     "payments": "Pagos Recurrentes",
-    "dca": "Compra Automatica DCA",
+    "dcaLabel": "Compra Automatica DCA",
     "pending": "Aprobaciones Pendientes",
     "noPending": "Sin ejecuciones pendientes",
     "approve": "Aprobar",

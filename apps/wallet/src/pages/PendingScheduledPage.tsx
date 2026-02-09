@@ -230,7 +230,7 @@ export default function PendingScheduledPage() {
           to="/scheduled/dca"
           className="flex-1 card py-3 text-center text-sm hover:bg-white/10 transition"
         >
-          {t('scheduled.dca')}
+          {t('scheduled.dcaLabel')}
         </Link>
       </div>
 

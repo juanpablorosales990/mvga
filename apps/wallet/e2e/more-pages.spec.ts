@@ -20,24 +20,12 @@ test.describe('More Page & Sub-pages', () => {
     await expect(page.getByRole('link', { name: /settings|ajustes/i }).first()).toBeVisible();
   });
 
-  test('referral page loads from more menu', async ({ page }) => {
+  test('referral page loads and shows structure', async ({ page }) => {
     await page
       .getByRole('link', { name: /referral|referidos/i })
       .first()
       .click();
     await expect(page).toHaveURL('/referral');
-    await expect(page.getByText(/referral program|programa de referidos/i).first()).toBeVisible({
-      timeout: 10000,
-    });
-  });
-
-  test('referral page shows title and structure', async ({ page }) => {
-    await page
-      .getByRole('link', { name: /referral|referidos/i })
-      .first()
-      .click();
-    await expect(page).toHaveURL('/referral');
-    // Title should be visible
     await expect(page.getByText(/referral program|programa de referidos/i).first()).toBeVisible({
       timeout: 10000,
     });

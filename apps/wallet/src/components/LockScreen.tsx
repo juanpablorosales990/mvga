@@ -15,9 +15,16 @@ export default function LockScreen() {
   // Auto-trigger biometric on mount if enabled
   useEffect(() => {
     if (biometricEnabled) {
-      handleBiometricUnlock();
+      authenticate().then((pw) => {
+        if (pw) {
+          setLoading(true);
+          unlock(pw)
+            .catch(() => setError(t('lockScreen.wrongPassword')))
+            .finally(() => setLoading(false));
+        }
+      });
     }
-  }, [biometricEnabled]);
+  }, [biometricEnabled, authenticate, unlock, t]);
 
   const handleUnlock = async () => {
     if (!password) return;

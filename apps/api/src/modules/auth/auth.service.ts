@@ -27,7 +27,9 @@ export class AuthService {
         where: {
           OR: [
             { expiresAt: { lt: new Date() } },
-            { used: true, updatedAt: { lt: new Date(Date.now() - 60_000) } },
+            // AuthNonce doesn't have updatedAt; createdAt is sufficient for pruning
+            // old used nonces (they're single-use anyway).
+            { used: true, createdAt: { lt: new Date(Date.now() - 60_000) } },
           ],
         },
       });

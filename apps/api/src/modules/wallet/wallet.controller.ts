@@ -24,9 +24,17 @@ export class WalletController {
   }
 
   @Get(':address/transactions')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Get transaction history for a wallet address' })
   @ApiParam({ name: 'address', description: 'Solana wallet address' })
-  async getTransactions(@Param('address', ParseSolanaAddressPipe) address: string) {
+  async getTransactions(
+    @Param('address', ParseSolanaAddressPipe) address: string,
+    @CurrentUser('wallet') wallet: string
+  ) {
+    if (address !== wallet) {
+      throw new ForbiddenException("Cannot view other users' transactions");
+    }
     return this.walletService.getTransactions(address);
   }
 

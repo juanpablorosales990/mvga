@@ -2,10 +2,10 @@ import { useState, useEffect, useCallback } from 'react';
 
 const BIOMETRIC_KEY = 'mvga-biometric-credential';
 const BIOMETRIC_ENABLED_KEY = 'mvga-biometric-enabled';
+const ENCRYPTED_PW_KEY = 'mvga-biometric-pw';
 
 interface StoredCredential {
   credentialId: string;
-  publicKey: string;
 }
 
 /**
@@ -15,10 +15,12 @@ interface StoredCredential {
  * Flow:
  * 1. User enables biometric in Settings (registers a credential)
  * 2. On LockScreen, user taps "Unlock with biometric" (asserts the credential)
- * 3. If assertion succeeds, we auto-fill the stored password and unlock
+ * 3. If assertion succeeds, we decrypt and return the stored password
  *
- * The password is stored in the credential's userHandle (encrypted by the platform).
- * This is safe because the credential is hardware-bound and cannot be extracted.
+ * Security: The password is encrypted with AES-GCM using a key derived from a
+ * random secret, then stored in localStorage. The secret is stored in the
+ * WebAuthn credential's userHandle, which requires biometric verification to access.
+ * This avoids storing the raw password in userHandle (which the spec warns against).
  */
 export function useBiometric() {
   const [isAvailable, setIsAvailable] = useState(false);
@@ -26,7 +28,6 @@ export function useBiometric() {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    // Check if WebAuthn is available and platform authenticator exists
     checkAvailability().then(setIsAvailable);
     setIsEnabled(localStorage.getItem(BIOMETRIC_ENABLED_KEY) === 'true');
   }, []);
@@ -37,12 +38,13 @@ export function useBiometric() {
       setIsLoading(true);
 
       try {
-        // Generate a random challenge
-        const challenge = crypto.getRandomValues(new Uint8Array(32));
+        // Generate a random secret to encrypt the password
+        const secret = crypto.getRandomValues(new Uint8Array(32));
 
-        // Encode the password into the user ID so we can retrieve it on assertion
-        const encoder = new TextEncoder();
-        const userId = encoder.encode(password);
+        // Encrypt the password with the secret
+        const encryptedPw = await encryptPassword(password, secret);
+
+        const challenge = crypto.getRandomValues(new Uint8Array(32));
 
         const credential = (await navigator.credentials.create({
           publicKey: {
@@ -52,7 +54,8 @@ export function useBiometric() {
               id: window.location.hostname,
             },
             user: {
-              id: userId,
+              // Store the encryption secret in userHandle (non-sensitive random bytes)
+              id: secret,
               name: 'mvga-wallet-user',
               displayName: 'MVGA Wallet',
             },
@@ -72,15 +75,13 @@ export function useBiometric() {
 
         if (!credential) return false;
 
-        const response = credential.response as AuthenticatorAttestationResponse;
-
         // Store credential ID for future assertions
         const stored: StoredCredential = {
           credentialId: bufferToBase64(credential.rawId),
-          publicKey: bufferToBase64(response.getPublicKey?.() || new ArrayBuffer(0)),
         };
 
         localStorage.setItem(BIOMETRIC_KEY, JSON.stringify(stored));
+        localStorage.setItem(ENCRYPTED_PW_KEY, encryptedPw);
         localStorage.setItem(BIOMETRIC_ENABLED_KEY, 'true');
         setIsEnabled(true);
 
@@ -101,7 +102,8 @@ export function useBiometric() {
 
     try {
       const storedStr = localStorage.getItem(BIOMETRIC_KEY);
-      if (!storedStr) return null;
+      const encryptedPw = localStorage.getItem(ENCRYPTED_PW_KEY);
+      if (!storedStr || !encryptedPw) return null;
 
       const stored: StoredCredential = JSON.parse(storedStr);
       const challenge = crypto.getRandomValues(new Uint8Array(32));
@@ -125,10 +127,10 @@ export function useBiometric() {
 
       const response = assertion.response as AuthenticatorAssertionResponse;
 
-      // The userHandle contains the password we stored during registration
+      // The userHandle contains the encryption secret
       if (response.userHandle) {
-        const decoder = new TextDecoder();
-        return decoder.decode(response.userHandle);
+        const secret = new Uint8Array(response.userHandle);
+        return await decryptPassword(encryptedPw, secret);
       }
 
       return null;
@@ -143,6 +145,11 @@ export function useBiometric() {
   const disable = useCallback(() => {
     localStorage.removeItem(BIOMETRIC_KEY);
     localStorage.removeItem(BIOMETRIC_ENABLED_KEY);
+    localStorage.removeItem(ENCRYPTED_PW_KEY);
+    // Note: The WebAuthn credential remains on the platform authenticator.
+    // The spec does not provide a way to delete it programmatically.
+    // The encrypted password in localStorage is removed, so even if the
+    // credential is triggered, the decryption target no longer exists.
     setIsEnabled(false);
   }, []);
 
@@ -184,4 +191,34 @@ function base64ToBuffer(b64: string): ArrayBuffer {
     bytes[i] = binary.charCodeAt(i);
   }
   return bytes.buffer;
+}
+
+async function encryptPassword(password: string, secret: Uint8Array): Promise<string> {
+  const key = await crypto.subtle.importKey('raw', secret.buffer as ArrayBuffer, 'AES-GCM', false, [
+    'encrypt',
+  ]);
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const encoded = new TextEncoder().encode(password);
+  const ciphertext = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, encoded);
+  // Store as iv:ciphertext in base64
+  return bufferToBase64(iv.buffer as ArrayBuffer) + ':' + bufferToBase64(ciphertext);
+}
+
+async function decryptPassword(encrypted: string, secret: Uint8Array): Promise<string | null> {
+  try {
+    const [ivB64, ctB64] = encrypted.split(':');
+    const iv = new Uint8Array(base64ToBuffer(ivB64));
+    const ciphertext = base64ToBuffer(ctB64);
+    const key = await crypto.subtle.importKey(
+      'raw',
+      secret.buffer as ArrayBuffer,
+      'AES-GCM',
+      false,
+      ['decrypt']
+    );
+    const plaintext = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ciphertext);
+    return new TextDecoder().decode(plaintext);
+  } catch {
+    return null;
+  }
 }

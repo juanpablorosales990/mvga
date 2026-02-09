@@ -283,6 +283,7 @@
     "tokenMint": "Token Mint",
     "burn": "Burn",
     "unknown": "Transaction",
+    "via": "via",
     "connectPrompt": "Connect your wallet to view transaction history"
   },
   "more": {
@@ -340,7 +341,6 @@
     "statusCompleted": "Completed",
     "votingEndsDate": "Voting ends {{date}}",
     "voteFailed": "Vote failed",
-    "requested": "requested",
     "forVotes": "For",
     "againstVotes": "Against",
     "votingEndsLabel": "Voting ends"
@@ -859,7 +859,7 @@
   "scheduled": {
     "title": "Scheduled",
     "payments": "Recurring Payments",
-    "dca": "DCA Auto-Buy",
+    "dcaLabel": "DCA Auto-Buy",
     "pending": "Pending Approvals",
     "noPending": "No pending executions",
     "approve": "Approve",

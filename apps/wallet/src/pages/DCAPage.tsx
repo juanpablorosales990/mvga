@@ -133,7 +133,7 @@ export default function DCAPage() {
           </svg>
         </Link>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold">{t('scheduled.dca')}</h1>
+          <h1 className="text-2xl font-bold">{t('scheduled.dcaLabel')}</h1>
         </div>
         <button
           onClick={() => setShowCreate(!showCreate)}

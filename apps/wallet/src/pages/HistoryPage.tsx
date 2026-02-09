@@ -101,18 +101,18 @@ const SOURCE_LABELS: Record<string, string> = {
   SYSTEM_PROGRAM: 'System',
 };
 
-function formatDate(ts: number) {
-  return new Date(ts * 1000).toLocaleDateString('en-US', {
+function formatDate(ts: number, locale: string) {
+  return new Date(ts * 1000).toLocaleDateString(locale === 'es' ? 'es-ES' : 'en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
   });
 }
 
-function groupByDate(items: HistoryItem[]) {
+function groupByDate(items: HistoryItem[], locale: string) {
   const groups: Record<string, HistoryItem[]> = {};
   for (const item of items) {
-    const date = formatDate(item.timestamp);
+    const date = formatDate(item.timestamp, locale);
     if (!groups[date]) groups[date] = [];
     groups[date].push(item);
   }
@@ -120,7 +120,7 @@ function groupByDate(items: HistoryItem[]) {
 }
 
 export default function HistoryPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { connected, publicKey } = useSelfCustodyWallet();
   const [items, setItems] = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -165,9 +165,9 @@ export default function HistoryPage() {
           if (!logSigs.has(tx.signature)) {
             // Determine direction
             const isOutgoing =
-              tx.feePayer === addr ||
-              tx.nativeTransfers?.some((t) => t.fromUserAccount === addr) ||
-              tx.tokenTransfers?.some((t) => t.fromUserAccount === addr);
+              tx.tokenTransfers?.some((xfer) => xfer.fromUserAccount === addr) ||
+              tx.nativeTransfers?.some((xfer) => xfer.fromUserAccount === addr) ||
+              false;
 
             // Find counterparty
             let counterparty: string | undefined;
@@ -208,7 +208,7 @@ export default function HistoryPage() {
 
     fetchHistory();
     return () => controller.abort();
-  }, [connected, publicKey]);
+  }, [connected, publicKey, t]);
 
   if (!connected) {
     return (
@@ -218,7 +218,7 @@ export default function HistoryPage() {
     );
   }
 
-  const grouped = groupByDate(items);
+  const grouped = groupByDate(items, i18n.language);
 
   return (
     <div className="space-y-4">
@@ -276,7 +276,7 @@ export default function HistoryPage() {
                       </span>
                       {tx.source && SOURCE_LABELS[tx.source] && (
                         <span className="text-xs text-gray-500">
-                          via {SOURCE_LABELS[tx.source]}
+                          {t('history.via')} {SOURCE_LABELS[tx.source]}
                         </span>
                       )}
                     </div>
