@@ -459,7 +459,7 @@ export default function Home() {
             </p>
             <h2 className="text-3xl md:text-5xl font-bold mb-4">Everything you need in one app.</h2>
             <p className="text-white/40 mb-16 max-w-2xl">
-              32 pages, 17 modules, 4 tokens, 2 languages, 251+ tests, and zero middlemen. The most
+              36 pages, 20 modules, 4 tokens, 2 languages, 394+ tests, and zero middlemen. The most
               comprehensive financial app for Venezuelans.
             </p>
 
@@ -539,6 +539,31 @@ export default function Home() {
                   num: '15',
                   title: 'Transparency Dashboard',
                   desc: 'See exactly where every dollar goes. Revenue distribution breakdown — 40% liquidity, 40% staking, 20% grants. Live treasury wallet balances. Token burn history with transaction links. Verify all treasury wallets on Solscan. Zero founder fees — always.',
+                },
+                {
+                  num: '16',
+                  title: 'Phone Top-Ups',
+                  desc: 'Recharge any Venezuelan phone — Movistar, Digitel, or Movilnet — directly from your wallet. Pay in USDC, receive airtime instantly. Fixed denomination amounts from $0.28 to $2.10. Powered by Reloadly with sandbox-tested reliability.',
+                },
+                {
+                  num: '17',
+                  title: 'Fiat Deposits',
+                  desc: 'Buy crypto with your credit card, debit card, or bank transfer via Onramper. Supports 95+ fiat currencies and multiple payment methods. Funds arrive directly in your non-custodial wallet. No intermediary custody — ever.',
+                },
+                {
+                  num: '18',
+                  title: 'Cash Out (Off-Ramp)',
+                  desc: 'Send USD to any Airtm account and cash out to local bank accounts in Venezuela and 100+ countries. One-step payouts from $1 to $1,800. Track payout status in real-time. Powered by Airtm Business API.',
+                },
+                {
+                  num: '19',
+                  title: 'Recurring Payments & DCA',
+                  desc: 'Schedule automatic transfers on daily, weekly, biweekly, or monthly cycles. Dollar-cost average into SOL, USDC, or any Solana token via Jupiter. Notification-based approval flow — your keys, your signature, every time. Pause, resume, or cancel anytime.',
+                },
+                {
+                  num: '20',
+                  title: 'Batch Send & QR Payments',
+                  desc: 'Send to up to 15 recipients in a single versioned transaction. Scan QR codes to pay instantly using Solana Pay. Save recent recipients for quick repeat transfers. Contact book with labels and favorites.',
                 },
               ].map((feat, i) => (
                 <motion.div
@@ -682,6 +707,16 @@ export default function Home() {
                   name: 'Railway',
                   role: 'Cloud Platform',
                   desc: 'Auto-scaling API deployment',
+                },
+                {
+                  name: 'Airtm',
+                  role: 'Fiat Off-Ramp',
+                  desc: 'USD payouts to 100+ countries via local banks',
+                },
+                {
+                  name: 'Coinbase',
+                  role: 'On-Ramp',
+                  desc: 'Trusted fiat-to-crypto onboarding',
                 },
                 {
                   name: 'Vercel',
@@ -950,12 +985,12 @@ export default function Home() {
                 {
                   num: '01',
                   title: 'API (NestJS)',
-                  desc: 'Backend API with 17 modules: auth, staking, swap, P2P, grants, referrals, tiers, burns, treasury, banking, metrics, wallet, notifications, payments, topup, onramp, and savings. 157 tests passing. TypeScript, PostgreSQL via Prisma, Solana RPC, Jupiter integration, automated cron jobs.',
+                  desc: 'Backend API with 20 modules: auth, staking, swap, P2P, grants, referrals, tiers, burns, treasury, banking, metrics, wallet, notifications, payments, topup, onramp, savings, scheduler, offramp, and card. 243 tests passing. TypeScript, PostgreSQL via Prisma, Solana RPC, Jupiter integration, automated cron jobs.',
                 },
                 {
                   num: '02',
                   title: 'Wallet App (React)',
-                  desc: 'Progressive Web App with 32 pages: wallet dashboard, send, receive, swap, stake, P2P trading, banking, savings, card management, grants, referrals, portfolio, charts, metrics, batch send, QR scanner, scheduled payments, and more. 94 tests passing. Full i18n in English and Spanish.',
+                  desc: 'Progressive Web App with 36 pages: wallet dashboard, send, receive, swap, stake, P2P trading, banking, savings, card management, grants, referrals, portfolio, charts, metrics, batch send, QR scanner, scheduled payments, DCA, cash out, contacts, and more. 151 tests passing. Full i18n in English and Spanish.',
                 },
                 {
                   num: '03',
@@ -1126,6 +1161,10 @@ export default function Home() {
                     'Token Swaps (Jupiter)',
                     'Mobile PWA',
                     'Savings & Yield',
+                    'Fiat On-Ramp & Off-Ramp',
+                    'Phone Top-Ups',
+                    'Recurring Payments & DCA',
+                    'Batch Send & QR Payments',
                   ],
                   live: true,
                 },
@@ -1134,10 +1173,10 @@ export default function Home() {
                   name: 'Expansion',
                   items: [
                     'Visa Debit Card',
-                    'Fiat On-Ramp',
                     'DAO Governance',
                     'Insurance Fund',
                     'Multi-chain Support',
+                    'Escrow Mainnet Deploy',
                   ],
                   live: false,
                 },
@@ -1201,8 +1240,8 @@ export default function Home() {
                   initials: 'JR',
                   name: 'Juan Rosales',
                   role: 'Founder & Lead Engineer',
-                  bio: 'Venezuelan-American full-stack engineer. Built every module from auth to escrow. 18 API modules, 35 pages, 366 tests — solo.',
-                  stat: '20K+ lines shipped',
+                  bio: 'Venezuelan-American full-stack engineer. Built every module from auth to escrow. 20 API modules, 36 pages, 394 tests — solo.',
+                  stat: '25K+ lines shipped',
                 },
                 {
                   initials: 'VZ',
@@ -1215,7 +1254,7 @@ export default function Home() {
                   initials: 'OS',
                   name: 'Open Source',
                   role: 'Contributors & Auditors',
-                  bio: "Every line of code is public. 12 security audit rounds. Recognized in Electric Capital's Solana developer report.",
+                  bio: "Every line of code is public. 13 security audit rounds. Recognized in Electric Capital's Solana developer report.",
                   stat: '0 known vulnerabilities',
                 },
                 {
