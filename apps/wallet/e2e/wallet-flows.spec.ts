@@ -539,7 +539,10 @@ test.describe('Deposit Page', () => {
     });
 
     // Use client-side navigation (not page.goto which reloads and locks wallet)
-    await page.getByRole('link', { name: /^\$?\s*deposit$/i }).click();
+    await page
+      .getByRole('link', { name: /^\$?\s*deposit$/i })
+      .first()
+      .click();
     await page.waitForURL('**/deposit');
   });
 

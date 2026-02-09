@@ -86,11 +86,11 @@ test.describe('More Page & Sub-pages', () => {
 
   test('charge page loads', async ({ page }) => {
     await page
-      .getByRole('link', { name: /charge|cobrar/i })
+      .getByRole('link', { name: /get paid|cobrar/i })
       .first()
       .click();
     await expect(page).toHaveURL('/charge');
-    await expect(page.getByText(/charge|cobrar/i).first()).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText(/get paid|cobrar/i).first()).toBeVisible({ timeout: 10000 });
   });
 
   test('price alerts page loads from more menu', async ({ page }) => {

@@ -42,7 +42,7 @@ test.describe('Landing Page — Problem Section', () => {
     await page.goto('/');
     await expect(page.getByRole('heading', { name: 'Remittance Fees' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Unstable Currency' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'No Banking Access' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Limited Options' })).toBeVisible();
   });
 });
 
@@ -51,7 +51,7 @@ test.describe('Landing Page — Features Section', () => {
     await page.goto('/');
     await expect(page.getByRole('heading', { name: 'Free Remittances' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Visa Debit Card' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Phone Top-Ups' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Phone Top-Ups', exact: true })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Cash Out to Bank' })).toBeVisible();
   });
 });
