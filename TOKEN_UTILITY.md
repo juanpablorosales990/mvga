@@ -29,16 +29,16 @@ The MVGA token is the **loyalty and governance layer** of a digital dollar neoba
 - **Auto-compound**: Every 6 hours, minimum 100 MVGA
 - **Effective APY range**: 8.4% (Bronze, no lock, saturated) → 62.4% (Diamond, 180d lock, early phase)
 
-### 3. Revenue Sharing (Real Yield)
+### 3. Revenue Sharing
 
-Every week, platform fees from swaps, top-ups, gift cards, P2P trades, and yield are collected and distributed:
+Every week, platform fees from swaps, top-ups, gift cards, and yield are collected and distributed:
 
 - **5% burned** (deflationary)
 - **40% → Staking vault** (50% of this = fee sharing to stakers)
 - **40% → Liquidity** (ecosystem growth)
 - **20% → Grants** (community-funded development)
 
-**This is real yield from real revenue**, not inflationary token emissions. Stakers earn a pro-rata share of 20% of all platform fees weekly.
+Rewards come from actual platform activity, not inflationary token emissions. Stakers earn a pro-rata share of 20% of all platform fees weekly.
 
 ### 4. Deflationary Burn
 
@@ -88,25 +88,12 @@ Every week, platform fees from swaps, top-ups, gift cards, P2P trades, and yield
 ```
 User Activity → Platform Fees → Weekly Treasury Distribution
                                     ├── 5% Burned (deflationary)
-                                    ├── 40% to Stakers (real yield)
+                                    ├── 40% to Stakers (fee sharing)
                                     ├── 40% to Liquidity (growth)
                                     └── 20% to Grants (community)
 ```
 
 The token captures value proportional to platform usage. More users → more fees → more burns + more rewards → higher demand.
-
----
-
-## "Shares of the Business" Framing
-
-While MVGA tokens are NOT securities, the utility model mirrors equity-like benefits:
-
-- **Fee sharing** = dividend-like passive income from platform revenue
-- **Governance** = voting rights on how community funds are spent
-- **Burn mechanism** = buyback-like supply reduction from revenue
-- **Tier benefits** = preferred member perks (like premium banking tiers)
-
-The key difference: these are **utility rewards**, not profit-sharing. Users earn benefits for **using the platform**, not for holding idle tokens. Every benefit is earned through participation — staking, referrals, swaps, governance.
 
 ---
 
@@ -130,5 +117,5 @@ The key difference: these are **utility rewards**, not profit-sharing. Users ear
 1. **Escrow mainnet deploy** (~3-5 SOL) — enables P2P with on-chain settlement
 2. **Create Raydium MVGA/USDC pool** — DEX liquidity for price discovery
 3. **Launch staking program** — activate tier system on mainnet
-4. **Enable weekly treasury distribution** — real yield from day one
+4. **Enable weekly treasury distribution** — fee sharing from day one
 5. **Community grants round 1** — governance legitimacy
