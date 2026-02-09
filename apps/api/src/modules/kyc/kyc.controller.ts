@@ -25,7 +25,9 @@ export class KycController {
   @Post('webhook')
   @Throttle({ default: { ttl: 60000, limit: 50 } })
   async handleWebhook(@Req() req: RawBodyRequest<Request>) {
-    const rawBody = req.body ? JSON.stringify(req.body) : '';
+    // Use the raw body bytes for HMAC verification — JSON.stringify(req.body)
+    // produces different bytes than what Sumsub signed (key ordering, whitespace).
+    const rawBody = req.rawBody ? req.rawBody.toString('utf-8') : '';
     const signature = (req.headers['x-payload-digest'] as string) || '';
     return this.kycService.handleWebhook(rawBody, signature);
   }

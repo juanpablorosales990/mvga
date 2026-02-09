@@ -66,7 +66,7 @@ async function bootstrap() {
 
   validateEnv(logger);
 
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { rawBody: true });
 
   // Graceful shutdown hooks
   app.enableShutdownHooks();

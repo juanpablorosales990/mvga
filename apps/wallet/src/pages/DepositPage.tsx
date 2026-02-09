@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 import { lazy, Suspense, useMemo, useState, useEffect } from 'react';
 import { apiFetch } from '../lib/apiClient';
 import { showToast } from '../hooks/useToast';
-import { API_URL } from '../config';
 
 const PayPalButtons = lazy(() =>
   import('@paypal/react-paypal-js').then((m) => ({ default: m.PayPalButtons }))
@@ -33,8 +32,7 @@ export default function DepositPage() {
   const paypalClientId = import.meta.env.VITE_PAYPAL_CLIENT_ID || '';
 
   useEffect(() => {
-    fetch(`${API_URL}/paypal/status`)
-      .then((r) => r.json())
+    apiFetch<{ enabled: boolean }>('/paypal/status')
       .then((d) => setPaypalEnabled(d.enabled))
       .catch(() => {});
   }, []);
@@ -234,23 +232,20 @@ export default function DepositPage() {
                     key={paypalAmount}
                     style={{ layout: 'vertical', color: 'gold', shape: 'rect', label: 'pay' }}
                     createOrder={async () => {
-                      const res = await fetch(`${API_URL}/paypal/order/deposit`, {
+                      const data = await apiFetch<{ orderId: string }>('/paypal/order/deposit', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                           amountUsd: Number(paypalAmount),
                           token: 'USDC',
                         }),
                       });
-                      const data = await res.json();
                       return data.orderId;
                     }}
                     onApprove={async (data) => {
                       setPaypalProcessing(true);
                       try {
-                        await fetch(`${API_URL}/paypal/capture/deposit`, {
+                        await apiFetch('/paypal/capture/deposit', {
                           method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
                           body: JSON.stringify({
                             orderId: data.orderID,
                             token: 'USDC',

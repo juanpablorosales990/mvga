@@ -1,22 +1,134 @@
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { useKyc } from '../hooks/useKyc';
 
+/**
+ * Load the Sumsub WebSDK script dynamically.
+ * Returns a promise that resolves when the script is loaded.
+ */
+function loadSumsubScript(): Promise<void> {
+  if (document.getElementById('sumsub-websdk-script')) {
+    return Promise.resolve();
+  }
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.id = 'sumsub-websdk-script';
+    script.src = 'https://static.sumsub.com/idensic/static/sns-websdk-builder.js';
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error('Failed to load Sumsub WebSDK'));
+    document.head.appendChild(script);
+  });
+}
+
+/**
+ * SumsubWebSdk — mounts the Sumsub verification widget.
+ * Uses the vanilla JS SDK loaded via script tag (no npm dependency needed).
+ */
+function SumsubWebSdk({
+  accessToken,
+  onComplete,
+  onError,
+}: {
+  accessToken: string;
+  onComplete: () => void;
+  onError: (msg: string) => void;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const sdkRef = useRef<unknown>(null);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function init() {
+      try {
+        await loadSumsubScript();
+        if (!mounted || !containerRef.current) return;
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const snsWebSdkBuilder = (window as any).snsWebSdk;
+        if (!snsWebSdkBuilder) {
+          onError('Sumsub SDK failed to initialize');
+          return;
+        }
+
+        const sdk = snsWebSdkBuilder
+          .init(accessToken, () => Promise.resolve(accessToken))
+          .withConf({ lang: document.documentElement.lang || 'en' })
+          .withOptions({ addViewportTag: false, adaptIframeHeight: true })
+          .on('idCheck.onStepCompleted', () => {
+            // Step completed — verification is in progress
+          })
+          .on('idCheck.onApplicantStatusChanged', () => {
+            onComplete();
+          })
+          .on('idCheck.onError', (error: unknown) => {
+            onError(String(error));
+          })
+          .build();
+
+        sdk.launch('#sumsub-container');
+        sdkRef.current = sdk;
+      } catch (err) {
+        if (mounted) onError(err instanceof Error ? err.message : 'SDK load failed');
+      }
+    }
+
+    init();
+
+    return () => {
+      mounted = false;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if (sdkRef.current && typeof (sdkRef.current as any).destroy === 'function') {
+        (sdkRef.current as any).destroy();
+      }
+    };
+  }, [accessToken, onComplete, onError]);
+
+  return (
+    <div
+      ref={containerRef}
+      id="sumsub-container"
+      className="min-h-[400px] bg-white/5 border border-white/10"
+    />
+  );
+}
+
 export default function KycPage() {
   const { t } = useTranslation();
-  const { status, loading, rejectionReason, createSession } = useKyc();
+  const { status, loading, rejectionReason, createSession, refresh } = useKyc();
+  const [sdkToken, setSdkToken] = useState<string | null>(null);
+  const [sdkError, setSdkError] = useState<string | null>(null);
 
   const handleStart = async () => {
+    setSdkError(null);
     const session = await createSession();
     if (session?.mock) {
       // Mock mode — auto-approved, just refresh
+      refresh();
       return;
     }
     if (session?.token) {
-      // In production, this would mount @sumsub/websdk-react
-      // For now, show pending state
+      setSdkToken(session.token);
     }
   };
+
+  const handleSdkComplete = useCallback(() => {
+    setSdkToken(null);
+    refresh();
+  }, [refresh]);
+
+  const handleSdkError = useCallback((msg: string) => {
+    setSdkError(msg);
+    setSdkToken(null);
+  }, []);
+
+  // Auto-dismiss SDK on status change to APPROVED
+  useEffect(() => {
+    if (status === 'APPROVED' || status === 'REJECTED') {
+      setSdkToken(null);
+    }
+  }, [status]);
 
   return (
     <div className="space-y-6">
@@ -32,8 +144,23 @@ export default function KycPage() {
       <h1 className="text-2xl font-bold uppercase tracking-tight">{t('kyc.title')}</h1>
       <p className="text-sm text-white/40">{t('kyc.subtitle')}</p>
 
+      {sdkError && (
+        <div className="bg-red-900/20 border border-red-500/30 px-4 py-3">
+          <p className="text-red-400 text-xs">{sdkError}</p>
+        </div>
+      )}
+
+      {/* Sumsub WebSDK mounted here when token is available */}
+      {sdkToken && (
+        <SumsubWebSdk
+          accessToken={sdkToken}
+          onComplete={handleSdkComplete}
+          onError={handleSdkError}
+        />
+      )}
+
       {/* UNVERIFIED */}
-      {status === 'UNVERIFIED' && (
+      {status === 'UNVERIFIED' && !sdkToken && (
         <div className="card space-y-4">
           <div className="w-16 h-16 border border-gold-500/30 flex items-center justify-center mx-auto">
             <svg
@@ -62,7 +189,7 @@ export default function KycPage() {
       )}
 
       {/* PENDING */}
-      {status === 'PENDING' && (
+      {status === 'PENDING' && !sdkToken && (
         <div className="card text-center space-y-4">
           <div className="w-8 h-8 border-2 border-gold-500 border-t-transparent rounded-full animate-spin mx-auto" />
           <h3 className="text-lg font-bold">{t('kyc.pending')}</h3>
@@ -94,7 +221,7 @@ export default function KycPage() {
       )}
 
       {/* REJECTED */}
-      {status === 'REJECTED' && (
+      {status === 'REJECTED' && !sdkToken && (
         <div className="card space-y-4">
           <div className="w-16 h-16 border border-red-500/30 bg-red-500/10 flex items-center justify-center mx-auto">
             <svg
@@ -128,7 +255,7 @@ export default function KycPage() {
       )}
 
       {/* EXPIRED */}
-      {status === 'EXPIRED' && (
+      {status === 'EXPIRED' && !sdkToken && (
         <div className="card space-y-4 text-center">
           <h3 className="text-lg font-bold text-yellow-400">{t('kyc.title')}</h3>
           <p className="text-sm text-white/40">{t('kyc.verifyDesc')}</p>

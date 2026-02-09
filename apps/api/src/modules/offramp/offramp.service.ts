@@ -278,7 +278,7 @@ export class OfframpService {
         const newStatus = statusMap[event.status] || payout.status;
 
         if (newStatus !== payout.status) {
-          await this.prisma.payout.update({
+          const updated = await this.prisma.payout.update({
             where: { id: payoutId },
             data: {
               status: newStatus as (typeof payout)['status'],
@@ -286,7 +286,7 @@ export class OfframpService {
             },
           });
 
-          return { ...payout, status: newStatus };
+          return updated;
         }
       } catch {
         // If Airtm event check fails, return cached status

@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../common/prisma.service';
+import { SolanaService } from '../wallet/solana.service';
 import { randomUUID } from 'crypto';
 
 interface ReloadlyToken {
@@ -28,7 +29,8 @@ export class TopUpService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly config: ConfigService
+    private readonly config: ConfigService,
+    private readonly solana: SolanaService
   ) {
     const isSandbox = this.config.get('RELOADLY_SANDBOX') !== 'false';
     this.baseUrl = isSandbox
@@ -140,6 +142,20 @@ export class TopUpService {
     operatorId: number,
     amountUsd: number
   ) {
+    // CRITICAL: Verify user has sufficient USDC balance before executing top-up.
+    // In self-custody mode, users sign their own transactions. The top-up cost
+    // is deducted via a separate USDC transfer that must be confirmed before
+    // or alongside the Reloadly call. For now, we validate balance to prevent
+    // abuse — the actual deduction happens when users fund the top-up on-chain.
+    const USDC_MINT = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
+    const tokenAccounts = await this.solana.getTokenAccounts(walletAddress).catch(() => []);
+    const usdcBalance = tokenAccounts.find((t) => t.mint === USDC_MINT)?.amount ?? 0;
+    if (usdcBalance < amountUsd) {
+      throw new BadRequestException(
+        `Insufficient USDC balance: ${usdcBalance.toFixed(2)} available, ${amountUsd.toFixed(2)} required`
+      );
+    }
+
     const customIdentifier = `mvga-${randomUUID()}`;
 
     // Create DB record first (PENDING)

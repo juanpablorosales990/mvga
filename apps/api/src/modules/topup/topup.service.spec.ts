@@ -6,6 +6,7 @@ describe('TopUpService', () => {
   let service: TopUpService;
   let mockPrisma: any;
   let mockConfig: any;
+  let mockSolana: any;
   const originalFetch = global.fetch;
 
   beforeEach(() => {
@@ -26,7 +27,15 @@ describe('TopUpService', () => {
       }),
     };
 
-    service = new TopUpService(mockPrisma, mockConfig);
+    mockSolana = {
+      getTokenAccounts: jest
+        .fn()
+        .mockResolvedValue([
+          { mint: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', amount: 1000 },
+        ]),
+    };
+
+    service = new TopUpService(mockPrisma, mockConfig, mockSolana);
   });
 
   afterEach(() => {
@@ -60,7 +69,7 @@ describe('TopUpService', () => {
 
     it('throws when Reloadly credentials missing', async () => {
       mockConfig.get = jest.fn(() => undefined);
-      service = new TopUpService(mockPrisma, mockConfig);
+      service = new TopUpService(mockPrisma, mockConfig, mockSolana);
 
       // First fetch call will try to auth and fail with missing creds
       await expect(service.getOperators('VE')).rejects.toThrow(BadRequestException);
@@ -118,6 +127,17 @@ describe('TopUpService', () => {
           data: expect.objectContaining({ status: 'SUCCESSFUL' }),
         })
       );
+    });
+
+    it('rejects when USDC balance is insufficient', async () => {
+      mockSolana.getTokenAccounts.mockResolvedValue([
+        { mint: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', amount: 1 },
+      ]);
+
+      await expect(service.topUp('wallet1', '+584121234567', 'VE', 1, 5)).rejects.toThrow(
+        'Insufficient USDC balance'
+      );
+      expect(mockPrisma.topUp.create).not.toHaveBeenCalled();
     });
 
     it('marks as FAILED on reloadly error', async () => {

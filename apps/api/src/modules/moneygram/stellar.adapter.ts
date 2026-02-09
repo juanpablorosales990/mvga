@@ -251,7 +251,7 @@ export class StellarAdapter {
     }
 
     try {
-      const { Keypair, Server, TransactionBuilder, Asset, Memo, Networks, Operation } =
+      const { Keypair, Horizon, TransactionBuilder, Asset, Memo, Networks, Operation } =
         await import('@stellar/stellar-sdk');
 
       const fundsKeypair = Keypair.fromSecret(this.fundsSecret!);
@@ -262,7 +262,7 @@ export class StellarAdapter {
           ? 'https://horizon.stellar.org'
           : 'https://horizon-testnet.stellar.org';
 
-      const server = new Server(horizonUrl);
+      const server = new Horizon.Server(horizonUrl);
       const account = await server.loadAccount(fundsKeypair.publicKey());
 
       const tx = new TransactionBuilder(account, {

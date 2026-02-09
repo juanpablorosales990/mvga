@@ -4,7 +4,9 @@ import { PrismaService } from '../../common/prisma.service';
 import { StellarAdapter } from './stellar.adapter';
 import { AllbridgeAdapter } from './allbridge.adapter';
 
-const TERMINAL_STATUSES = ['COMPLETED', 'FAILED', 'CANCELLED', 'EXPIRED'];
+import { MoneygramStatus } from '@prisma/client';
+
+const TERMINAL_STATUSES: MoneygramStatus[] = ['COMPLETED', 'FAILED', 'CANCELLED', 'EXPIRED'];
 const MAX_RETRIES = 5;
 const POLL_COOLDOWN_MS = 2 * 60 * 1000; // 2 min between polls per tx
 

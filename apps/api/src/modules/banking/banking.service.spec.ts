@@ -208,12 +208,14 @@ describe('BankingService', () => {
       await expect(service.freezeCard('abc')).rejects.toThrow(NotFoundException);
     });
 
-    it('freezes card and updates status', async () => {
+    it('freezes card and returns card details', async () => {
       mockPrisma.cardApplication.findFirst.mockResolvedValue({ id: '1', rainCardId: 'card-1' });
       mockPrisma.cardApplication.update.mockResolvedValue({});
 
       const result = await service.freezeCard('abc');
-      expect(result).toEqual({ status: 'FROZEN' });
+      expect(result.status).toBe('frozen');
+      expect(result.brand).toBe('visa');
+      expect(result.id).toBe('card-1');
       expect(mockPrisma.cardApplication.update).toHaveBeenCalledWith(
         expect.objectContaining({ data: { status: 'FROZEN' } })
       );
@@ -226,37 +228,44 @@ describe('BankingService', () => {
       await expect(service.unfreezeCard('abc')).rejects.toThrow(NotFoundException);
     });
 
-    it('unfreezes card and updates status', async () => {
+    it('unfreezes card and returns card details', async () => {
       mockPrisma.cardApplication.findFirst.mockResolvedValue({ id: '1', rainCardId: 'card-1' });
       mockPrisma.cardApplication.update.mockResolvedValue({});
 
       const result = await service.unfreezeCard('abc');
-      expect(result).toEqual({ status: 'CARD_ISSUED' });
+      expect(result.status).toBe('active');
+      expect(result.brand).toBe('visa');
+      expect(result.id).toBe('card-1');
     });
   });
 
-  describe('getFundingAddress', () => {
+  describe('fundCard', () => {
     it('throws NotFoundException when no card', async () => {
       mockPrisma.cardApplication.findFirst.mockResolvedValue(null);
-      await expect(service.getFundingAddress('abc')).rejects.toThrow(NotFoundException);
+      await expect(service.fundCard('abc')).rejects.toThrow(NotFoundException);
     });
 
-    it('returns cached deposit address', async () => {
+    it('returns cached deposit address with balance', async () => {
       mockPrisma.cardApplication.findFirst.mockResolvedValue({
         depositAddr: '0xabc',
         chainId: 'solana',
+        rainUserId: null,
       });
-      const result = await service.getFundingAddress('abc');
-      expect(result).toEqual({ depositAddress: '0xabc', chainId: 'solana' });
+      const result = await service.fundCard('abc');
+      expect(result.success).toBe(true);
+      expect(result.depositAddress).toBe('0xabc');
+      expect(result.newBalance).toEqual({ available: 0, pending: 0 });
     });
 
-    it('returns null depositAddress when rain disabled', async () => {
+    it('returns success false when no deposit address and rain disabled', async () => {
       mockPrisma.cardApplication.findFirst.mockResolvedValue({
         rainUserId: null,
         depositAddr: null,
       });
-      const result = await service.getFundingAddress('abc');
-      expect(result).toEqual({ depositAddress: null });
+      const result = await service.fundCard('abc');
+      expect(result.success).toBe(false);
+      expect(result.depositAddress).toBeNull();
+      expect(result.newBalance).toEqual({ available: 0, pending: 0 });
     });
   });
 });

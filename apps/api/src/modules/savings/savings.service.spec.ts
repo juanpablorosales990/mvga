@@ -50,11 +50,15 @@ describe('SavingsService', () => {
     };
 
     mockKamino = {
+      isEnabled: true,
       getRates: jest
         .fn()
         .mockResolvedValue([{ protocol: 'KAMINO', token: 'USDC', supplyApy: 5.5 }]),
       buildDepositTx: jest.fn().mockResolvedValue({ instructions: [] }),
       buildWithdrawTx: jest.fn().mockResolvedValue({ instructions: [] }),
+      getUserPosition: jest
+        .fn()
+        .mockResolvedValue({ deposited: 0n, current: 0n, kTokenBalance: 0n }),
     };
 
     mockCronLock = {

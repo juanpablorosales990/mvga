@@ -48,12 +48,36 @@ export class SavingsService {
     return this.kamino.getRates();
   }
 
-  /** Get a user's savings positions and earnings. */
+  /** Get a user's savings positions and earnings. Refreshes on-chain balance for ACTIVE positions. */
   async getPositions(walletAddress: string) {
     const positions = await this.prisma.savingsPosition.findMany({
       where: { walletAddress, status: { notIn: ['CLOSED'] } },
       orderBy: { createdAt: 'desc' },
     });
+
+    // Refresh on-chain balance for ACTIVE positions (best-effort)
+    const activePositions = positions.filter((p) => p.status === 'ACTIVE');
+    if (activePositions.length > 0 && this.kamino.isEnabled) {
+      try {
+        const onChainPosition = await this.kamino.getUserPosition(
+          new PublicKey(walletAddress),
+          'USDC'
+        );
+        // Update the most recent active position with live on-chain data
+        if (onChainPosition.current > 0n) {
+          const primary = activePositions[0];
+          if (primary.currentAmount !== onChainPosition.current) {
+            await this.prisma.savingsPosition.update({
+              where: { id: primary.id },
+              data: { currentAmount: onChainPosition.current },
+            });
+            primary.currentAmount = onChainPosition.current;
+          }
+        }
+      } catch (err) {
+        this.logger.warn(`Failed to refresh on-chain position for ${walletAddress}: ${err}`);
+      }
+    }
 
     // Get latest rates for APY display
     const rates = await this.getRates();
@@ -181,6 +205,25 @@ export class SavingsService {
     const position = await this.prisma.savingsPosition.findUnique({
       where: { id: positionId },
     });
+
+    // Refresh on-chain balance before validating withdrawal amount
+    if (this.kamino.isEnabled) {
+      try {
+        const onChain = await this.kamino.getUserPosition(
+          new PublicKey(walletAddress),
+          position!.token
+        );
+        if (onChain.current > 0n && onChain.current !== position!.currentAmount) {
+          await this.prisma.savingsPosition.update({
+            where: { id: positionId },
+            data: { currentAmount: onChain.current },
+          });
+          position!.currentAmount = onChain.current;
+        }
+      } catch (err) {
+        this.logger.warn(`Failed to refresh position before withdraw: ${err}`);
+      }
+    }
 
     const withdrawAmount = amount ? BigInt(Math.round(amount * 1e6)) : position!.currentAmount;
 

@@ -49,6 +49,11 @@ export class KaminoAdapter {
     this.connection = new Connection(rpcUrl, 'confirmed');
   }
 
+  /** Adapter is enabled if we have an RPC URL (not just the public fallback). */
+  get isEnabled(): boolean {
+    return !!this.config.get<string>('SOLANA_RPC_URL');
+  }
+
   /**
    * Load (or return cached) KaminoMarket instance.
    * Cache expires after 5 minutes to keep reserve data reasonably fresh.

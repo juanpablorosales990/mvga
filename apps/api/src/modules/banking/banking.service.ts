@@ -224,7 +224,30 @@ export class BankingService {
       where: { id: app.id },
       data: { status: 'FROZEN' },
     });
-    return { status: 'FROZEN' };
+
+    // Return full card details so wallet can update its state directly
+    if (this.rain.isEnabled && app.rainUserId) {
+      const card = await this.rain.getCard(app.rainUserId);
+      if (card)
+        return {
+          ...card,
+          status: 'frozen',
+          brand: 'visa' as const,
+          cardholderName: 'MVGA USER',
+          type: card.type,
+          pan: undefined,
+        };
+    }
+    return {
+      id: app.rainCardId,
+      last4: '****',
+      expirationMonth: 0,
+      expirationYear: 0,
+      brand: 'visa' as const,
+      status: 'frozen',
+      cardholderName: 'MVGA USER',
+      type: 'virtual' as const,
+    };
   }
 
   async unfreezeCard(walletAddress: string) {
@@ -239,30 +262,70 @@ export class BankingService {
       where: { id: app.id },
       data: { status: 'CARD_ISSUED' },
     });
-    return { status: 'CARD_ISSUED' };
+
+    // Return full card details so wallet can update its state directly
+    if (this.rain.isEnabled && app.rainUserId) {
+      const card = await this.rain.getCard(app.rainUserId);
+      if (card)
+        return {
+          ...card,
+          status: 'active',
+          brand: 'visa' as const,
+          cardholderName: 'MVGA USER',
+          type: card.type,
+          pan: undefined,
+        };
+    }
+    return {
+      id: app.rainCardId,
+      last4: '****',
+      expirationMonth: 0,
+      expirationYear: 0,
+      brand: 'visa' as const,
+      status: 'active',
+      cardholderName: 'MVGA USER',
+      type: 'virtual' as const,
+    };
   }
 
-  async getFundingAddress(walletAddress: string) {
+  async fundCard(walletAddress: string, _amountUsdc?: number) {
     const app = await this.prisma.cardApplication.findFirst({
       where: { walletAddress, status: { in: ['CARD_ISSUED', 'FROZEN'] } },
     });
     if (!app) throw new NotFoundException('No card found');
 
-    if (app.depositAddr) {
-      return { depositAddress: app.depositAddr, chainId: app.chainId };
+    // Resolve deposit address
+    let depositAddress = app.depositAddr;
+    let chainId = app.chainId;
+
+    if (!depositAddress && app.rainUserId && this.rain.isEnabled) {
+      const contracts = await this.rain.getContracts(app.rainUserId);
+      if (contracts.length > 0) {
+        depositAddress = contracts[0].depositAddress;
+        chainId = contracts[0].chainId;
+        await this.prisma.cardApplication.update({
+          where: { id: app.id },
+          data: { depositAddr: depositAddress, chainId },
+        });
+      }
     }
 
-    if (!app.rainUserId || !this.rain.isEnabled) return { depositAddress: null };
+    // Get current balance
+    const balance =
+      app.rainUserId && this.rain.isEnabled
+        ? await this.rain
+            .getBalance(app.rainUserId)
+            .catch(() => ({ spendingPower: 0, balanceDue: 0 }))
+        : { spendingPower: 0, balanceDue: 0 };
 
-    const contracts = await this.rain.getContracts(app.rainUserId);
-    if (contracts.length > 0) {
-      await this.prisma.cardApplication.update({
-        where: { id: app.id },
-        data: { depositAddr: contracts[0].depositAddress, chainId: contracts[0].chainId },
-      });
-      return { depositAddress: contracts[0].depositAddress, chainId: contracts[0].chainId };
-    }
-
-    return { depositAddress: null };
+    return {
+      success: !!depositAddress,
+      depositAddress: depositAddress || null,
+      chainId: chainId || null,
+      newBalance: {
+        available: balance.spendingPower / 100,
+        pending: balance.balanceDue / 100,
+      },
+    };
   }
 }

@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import { useTranslation } from 'react-i18next';
 import { buildSolanaPayUrl } from '../utils/solana-pay';
+import { apiFetch } from '../lib/apiClient';
 import { API_URL } from '../config';
 
 const PayPalButtons = lazy(() =>
@@ -57,8 +58,7 @@ export default function PayPage() {
 
   // Check if PayPal is enabled
   useEffect(() => {
-    fetch(`${API_URL}/paypal/status`)
-      .then((r) => r.json())
+    apiFetch<{ enabled: boolean }>('/paypal/status')
       .then((d) => setPaypalEnabled(d.enabled))
       .catch(() => {});
   }, []);
@@ -200,9 +200,8 @@ export default function PayPage() {
                     <PayPalButtons
                       style={{ layout: 'vertical', color: 'gold', shape: 'rect', label: 'pay' }}
                       createOrder={async () => {
-                        const res = await fetch(`${API_URL}/paypal/order/payment`, {
+                        const data = await apiFetch<{ orderId: string }>('/paypal/order/payment', {
                           method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
                           body: JSON.stringify({
                             paymentRequestId: request.id,
                             amountUsd: request.amount,
@@ -210,15 +209,13 @@ export default function PayPage() {
                               request.memo || `Payment: ${request.amount} ${request.token}`,
                           }),
                         });
-                        const data = await res.json();
                         return data.orderId;
                       }}
                       onApprove={async (data) => {
                         setPaypalProcessing(true);
                         try {
-                          await fetch(`${API_URL}/paypal/capture/payment`, {
+                          await apiFetch('/paypal/capture/payment', {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
                               orderId: data.orderID,
                               paymentRequestId: request.id,
