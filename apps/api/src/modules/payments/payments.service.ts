@@ -8,6 +8,12 @@ const TOKEN_DECIMALS: Record<string, number> = {
   MVGA: 9,
 };
 
+const TOKEN_MINTS: Record<string, string> = {
+  USDC: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+  USDT: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB',
+  MVGA: 'DRX65kM2n5CLTpdjJCemZvkUwE98ou4RpHrd8Z3GH5Qh',
+};
+
 @Injectable()
 export class PaymentsService {
   private readonly connection: Connection;
@@ -61,15 +67,8 @@ export class PaymentsService {
   async verifyPayment(id: string, signature: string) {
     const request = await this.prisma.paymentRequest.findUnique({ where: { id } });
     if (!request) throw new NotFoundException('Payment request not found');
-    if (request.status !== 'PENDING') {
+    if (request.status !== 'PENDING' && request.status !== 'EXPIRED') {
       throw new BadRequestException(`Payment request is ${request.status}`);
-    }
-    if (request.expiresAt < new Date()) {
-      await this.prisma.paymentRequest.update({
-        where: { id },
-        data: { status: 'EXPIRED' },
-      });
-      throw new BadRequestException('Payment request has expired');
     }
 
     // Verify transaction exists on-chain
@@ -79,17 +78,73 @@ export class PaymentsService {
     if (!tx) throw new BadRequestException('Transaction not found on-chain');
     if (tx.meta?.err) throw new BadRequestException('Transaction failed on-chain');
 
-    // Mark as paid (atomic to prevent double-claim)
-    const updated = await this.prisma.paymentRequest.updateMany({
-      where: { id, status: 'PENDING' },
-      data: { status: 'PAID', paymentTx: signature },
-    });
+    const txTime = tx.blockTime ? new Date(tx.blockTime * 1000) : null;
+    if (!txTime) throw new BadRequestException('Transaction missing blockTime');
+
+    // Allow a small skew for blockTime precision.
+    const earliest = new Date(request.createdAt.getTime() - 2 * 60_000);
+    const latest = new Date(request.expiresAt.getTime() + 2 * 60_000);
+
+    if (txTime < earliest) {
+      throw new BadRequestException('Transaction is older than payment request');
+    }
+    if (txTime > latest) {
+      throw new BadRequestException('Transaction is after payment request expiry');
+    }
+
+    const mint = TOKEN_MINTS[request.token];
+    if (!mint) throw new BadRequestException('Unsupported token');
+
+    const received = this.getNetTokenDelta(tx, request.recipientAddress, mint);
+    if (received < request.amount) {
+      throw new BadRequestException('Transaction does not pay the requested amount');
+    }
+
+    // Mark as paid (atomic to prevent double-claim; DB enforces unique paymentTx)
+    let updated: { count: number };
+    try {
+      updated = await this.prisma.paymentRequest.updateMany({
+        where: { id, status: { in: ['PENDING', 'EXPIRED'] } },
+        data: { status: 'PAID', paymentTx: signature },
+      });
+    } catch (err: any) {
+      // Prisma unique constraint (e.g., signature already used on another request)
+      if (err?.code === 'P2002') {
+        throw new BadRequestException('Transaction signature already used');
+      }
+      throw err;
+    }
 
     if (updated.count === 0) {
       throw new BadRequestException('Payment request already processed');
     }
 
     return { status: 'PAID', signature };
+  }
+
+  private getNetTokenDelta(tx: any, ownerAddress: string, mintAddress: string): bigint {
+    const meta = tx?.meta;
+    const pre: any[] = meta?.preTokenBalances ?? [];
+    const post: any[] = meta?.postTokenBalances ?? [];
+
+    const sumForOwner = (balances: any[]): bigint => {
+      let sum = 0n;
+      for (const b of balances) {
+        if (!b) continue;
+        if (b.mint !== mintAddress) continue;
+        if (b.owner !== ownerAddress) continue;
+        const amt = b.uiTokenAmount?.amount;
+        if (typeof amt !== 'string') continue;
+        try {
+          sum += BigInt(amt);
+        } catch {
+          // ignore malformed amounts
+        }
+      }
+      return sum;
+    };
+
+    return sumForOwner(post) - sumForOwner(pre);
   }
 
   private formatRequest(request: {
