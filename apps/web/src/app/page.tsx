@@ -140,8 +140,8 @@ export default function Home() {
                 },
                 {
                   num: '03',
-                  title: 'No Banking Access',
-                  desc: 'Millions of Venezuelans are unbanked or underbanked. International services like PayPal and Zelle don\u2019t fully work in Venezuela. MVGA works with just a phone.',
+                  title: 'Limited Options',
+                  desc: 'Millions of Venezuelans are unbanked. PayPal and Zelle don\u2019t work in Venezuela. The few dollar wallets that exist are custodial, charge monthly fees, and cap your limits at $1,500-$3,000/month. You deserve better.',
                 },
               ].map((card) => (
                 <div
@@ -302,8 +302,8 @@ export default function Home() {
             </p>
             <h2 className="text-3xl md:text-5xl font-bold mb-4">Stop losing money to middlemen.</h2>
             <p className="text-white/40 mb-16 max-w-2xl">
-              Traditional remittance services charge 5-15% in fees. MVGA charges zero platform fees
-              on transfers. See how we compare.
+              Remittance services charge 5-15% in fees. Dollar wallets charge monthly fees and cap
+              your limits. MVGA charges zero platform fees with no limits. See how we stack up.
             </p>
 
             <div className="overflow-x-auto">
@@ -325,7 +325,7 @@ export default function Home() {
                       Zelle / PayPal
                     </th>
                     <th className="py-4 px-4 text-center text-sm text-white/30 font-mono uppercase tracking-wider">
-                      Other Dollar Wallets
+                      Dollar Wallets (Meru, Zinli, etc.)
                     </th>
                   </tr>
                 </thead>
@@ -336,14 +336,14 @@ export default function Home() {
                       mvga: '$0',
                       wu: '$5-15',
                       zelle: '$0 (US only)',
-                      other: '1% crypto fee',
+                      other: '$0-1%',
                     },
                     {
                       feature: 'Exchange Rate Markup',
                       mvga: '0%',
                       wu: '3-8%',
                       zelle: 'N/A',
-                      other: '0.5-1%',
+                      other: '0.5-4%',
                     },
                     {
                       feature: 'Transfer Speed',
@@ -357,21 +357,42 @@ export default function Home() {
                       mvga: '$200 received',
                       wu: '~$170 received',
                       zelle: 'Not available',
-                      other: '~$197 received',
+                      other: '$192-198 received',
+                    },
+                    {
+                      feature: 'Monthly Fee',
+                      mvga: '$0',
+                      wu: 'N/A',
+                      zelle: 'N/A',
+                      other: '$0-0.99/mo',
+                    },
+                    {
+                      feature: 'VES Cash-Out Fee',
+                      mvga: 'Via Airtm',
+                      wu: '3-8% markup',
+                      zelle: 'N/A',
+                      other: 'Up to 4%',
+                    },
+                    {
+                      feature: 'Monthly Limits',
+                      mvga: 'Unlimited',
+                      wu: '$5,000',
+                      zelle: '$2,000/wk',
+                      other: '$1,500-3,000',
                     },
                     {
                       feature: 'Works in Venezuela',
                       mvga: 'Yes',
                       wu: 'Limited',
                       zelle: 'No',
-                      other: 'Limited',
+                      other: 'Varies',
                     },
                     {
                       feature: 'Debit Card',
                       mvga: 'Visa',
                       wu: 'No',
                       zelle: 'No',
-                      other: 'Select markets',
+                      other: 'Visa/MC (select)',
                     },
                     {
                       feature: 'Phone Top-Ups',
@@ -385,14 +406,14 @@ export default function Home() {
                       mvga: 'Up to 8% APY',
                       wu: 'No',
                       zelle: 'No',
-                      other: '1-2% APY',
+                      other: 'No',
                     },
                     {
                       feature: 'Self-Custody',
-                      mvga: 'Yes',
+                      mvga: 'Yes — your keys',
                       wu: 'N/A',
                       zelle: 'N/A',
-                      other: 'No',
+                      other: 'No — custodial',
                     },
                     {
                       feature: 'P2P Escrow',
@@ -439,7 +460,8 @@ export default function Home() {
             </p>
             <h2 className="text-3xl md:text-5xl font-bold mb-4">Why choose MVGA.</h2>
             <p className="text-white/40 mb-16 max-w-2xl">
-              Not just lower fees. A fundamentally different architecture that puts you in control.
+              Other dollar wallets in Venezuela use custodial architectures where they control your
+              money. MVGA is built differently from the ground up.
             </p>
 
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-px bg-white/10 stagger">
@@ -447,22 +469,42 @@ export default function Home() {
                 {
                   icon: '\uD83D\uDD10',
                   title: 'Self-Custody by Default',
-                  desc: 'Your keys never leave your device. No one — not even MVGA — can freeze your account or move your funds.',
+                  desc: 'Your private keys live on your device. Other wallets hold your funds in their accounts — if they go down, so does your money. With MVGA, no one can freeze or seize your balance.',
                 },
                 {
                   icon: '\uD83D\uDD0D',
                   title: 'On-Chain Transparency',
-                  desc: 'Every transaction is verifiable on Solana. No black boxes. No hidden ledgers. Full auditability.',
+                  desc: 'Every transaction is verifiable on Solana Explorer. No internal ledgers. No hidden fees. Unlike custodial wallets that move money off-chain, MVGA keeps everything on-chain and auditable.',
                 },
                 {
                   icon: '\uD83D\uDEE1\uFE0F',
                   title: 'P2P Escrow Protection',
-                  desc: 'Smart contract locks funds until both parties confirm. No trust required. No chargebacks.',
+                  desc: 'Smart contract locks funds until both parties confirm. Most dollar wallets in Venezuela have no P2P at all — and the ones that do use trust-based systems with no protection.',
                 },
                 {
                   icon: '\uD83D\uDCC8',
                   title: 'Real DeFi Yields',
-                  desc: 'Earn through Solana DeFi protocols, not a company treasury. Transparent, auditable returns.',
+                  desc: 'Earn up to 8% APY through Solana DeFi protocols. Competing wallets offer zero interest on your balance. Your money should work for you, not sit idle in someone else\u2019s account.',
+                },
+                {
+                  icon: '\uD83D\uDCF1',
+                  title: 'Phone Top-Ups Built In',
+                  desc: 'Recharge Movistar, Digitel, or Movilnet directly from your wallet. No other dollar wallet in Venezuela offers this. Send airtime to family from anywhere in the world.',
+                },
+                {
+                  icon: '\uD83D\uDCBB',
+                  title: 'Fully Open Source',
+                  desc: 'Every line of code is public on GitHub. 14 security audit rounds. Zero competing dollar wallets are open source. Transparency is not a feature — it\u2019s a commitment.',
+                },
+                {
+                  icon: '\u267B\uFE0F',
+                  title: 'No Monthly Fees',
+                  desc: 'Some competitors charge $0.99/month just to hold your money, plus up to 4% on VES withdrawals. MVGA has zero platform fees on P2P and zero monthly charges.',
+                },
+                {
+                  icon: '\u221E',
+                  title: 'No Arbitrary Limits',
+                  desc: 'Competing wallets cap you at $1,500-$3,000/month. MVGA has no artificial limits on how much you can hold, send, or receive. Your money, your rules.',
                 },
               ].map((card) => (
                 <div
@@ -877,7 +919,7 @@ export default function Home() {
               {[
                 {
                   q: 'Is MVGA safe?',
-                  a: 'Yes. Your money is secured by your own private keys on your device \u2014 MVGA never holds your funds. P2P exchanges use smart contract escrow that automatically releases funds when both parties confirm. The entire platform is open source and has been through 14 security audit rounds.',
+                  a: 'Yes. Unlike custodial wallets where the company holds your money, MVGA is self-custody \u2014 your private keys stay on your device and MVGA never holds your funds. P2P exchanges use smart contract escrow that automatically releases funds when both parties confirm. The entire platform is open source and has been through 14 security audit rounds.',
                 },
                 {
                   q: 'What does it cost?',
@@ -904,8 +946,12 @@ export default function Home() {
                   a: 'You earn rewards for using the platform and referring friends. Higher reward tiers unlock fee discounts (up to 100% off), cashback, and priority support. Rewards come from real platform revenue, not inflation.',
                 },
                 {
+                  q: 'How is MVGA different from Meru, Zinli, or Wally?',
+                  a: 'Those wallets are custodial \u2014 they hold your money in their accounts. If they shut down, your funds are at risk. They also charge monthly fees (up to $0.99/mo), VES withdrawal fees (up to 4%), and impose low monthly limits ($1,500-$3,000). MVGA is self-custody (you hold your own keys), has zero platform fees, no monthly charges, no arbitrary limits, and offers DeFi yields, phone top-ups, and on-chain P2P escrow \u2014 features none of them have.',
+                },
+                {
                   q: 'Is MVGA open source?',
-                  a: 'Yes. The entire platform \u2014 API, wallet app, and this website \u2014 is public on GitHub. Anyone can audit the code and verify exactly what the platform does. 14 security audits completed with zero known vulnerabilities.',
+                  a: 'Yes. The entire platform \u2014 API, wallet app, and this website \u2014 is public on GitHub. Anyone can audit the code and verify exactly what the platform does. 14 security audits completed with zero known vulnerabilities. No other dollar wallet targeting Venezuela is open source.',
                 },
               ].map((faq, i) => (
                 <details key={i} className="fade-up group border-b border-white/10">
