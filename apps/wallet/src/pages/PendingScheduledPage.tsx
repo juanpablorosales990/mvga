@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useConnection } from '@solana/wallet-adapter-react';
 import { useSelfCustodyWallet } from '../contexts/WalletContext';
-import { PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { PublicKey, Transaction, SystemProgram } from '@solana/web3.js';
 import {
   createTransferInstruction,
   getAssociatedTokenAddress,

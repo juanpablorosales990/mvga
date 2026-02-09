@@ -24,9 +24,35 @@ const TEST_PASSWORD = 'Str0ng!Pass99';
 async function clearWallet(page: Page) {
   await page.evaluate(() => {
     localStorage.removeItem('mvga-encrypted-keypair');
-    localStorage.removeItem('mvga-wallet-store');
+    // zustand persist key (apps/wallet/src/stores/walletStore.ts)
+    localStorage.removeItem('mvga-wallet-storage');
   });
   await page.reload();
+}
+
+async function skipWelcomeTourIfPresent(page: Page) {
+  const header = page.locator('header');
+  // WelcomeTour uses i18n `tour.skip` (e.g. "Skip" / "Saltar").
+  const skip = page.getByRole('button', { name: /^(skip|saltar)$/i });
+
+  await Promise.race([
+    header.waitFor({ state: 'visible', timeout: 8000 }).catch(() => {}),
+    skip.waitFor({ state: 'visible', timeout: 8000 }).catch(() => {}),
+  ]);
+
+  if (await skip.isVisible().catch(() => false)) await skip.click();
+}
+
+async function skipBiometricsSetupIfPresent(page: Page) {
+  const header = page.locator('header');
+  const skip = page.getByRole('button', { name: /skip for now|omitir por ahora/i });
+
+  await Promise.race([
+    header.waitFor({ state: 'visible', timeout: 8000 }).catch(() => {}),
+    skip.waitFor({ state: 'visible', timeout: 8000 }).catch(() => {}),
+  ]);
+
+  if (await skip.isVisible().catch(() => false)) await skip.click();
 }
 
 // ---------------------------------------------------------------------------
@@ -87,6 +113,12 @@ async function confirmMnemonic(page: Page, words: string[]) {
 
   // Click confirm
   await page.getByRole('button', { name: /confirm/i }).click();
+
+  // New users may see an optional biometrics setup step. Skip it in tests.
+  await skipBiometricsSetupIfPresent(page);
+
+  // First-time users see the WelcomeTour overlay; skip it to reach the app shell.
+  await skipWelcomeTourIfPresent(page);
 }
 
 // ---------------------------------------------------------------------------
@@ -351,6 +383,9 @@ test.describe('Import Wallet via Mnemonic', () => {
     await page.locator('input[type="password"]').fill(TEST_PASSWORD);
     await page.getByRole('button', { name: /import wallet/i }).click();
 
+    // Fresh storage reset clears `tourCompleted`, so the WelcomeTour may show again after import.
+    await skipWelcomeTourIfPresent(page);
+
     // Should land on dashboard with same address
     await expect(page.locator('header').getByText(/\w{4}\.\.\.\w{4}/)).toBeVisible({
       timeout: 10000,
@@ -491,7 +526,7 @@ test.describe('Deposit Page', () => {
     });
 
     // Use client-side navigation (not page.goto which reloads and locks wallet)
-    await page.locator('a[href="/deposit"]').click();
+    await page.getByRole('link', { name: /^\$?\s*deposit$/i }).click();
     await page.waitForURL('**/deposit');
   });
 
@@ -550,13 +585,14 @@ test.describe('Navigation After Wallet Connected', () => {
 
   test('wallet page shows quick action buttons when connected', async ({ page }) => {
     // Quick actions grid has Send, Receive, Swap, Deposit, Charge links
-    const quickActions = page.locator('.grid a');
-    await expect(quickActions).toHaveCount(5);
-    await expect(page.locator('a[href="/send"]').first()).toBeVisible();
-    await expect(page.locator('a[href="/receive"]').first()).toBeVisible();
-    await expect(page.locator('a[href="/swap"]').first()).toBeVisible();
-    await expect(page.locator('a[href="/deposit"]')).toBeVisible();
-    await expect(page.locator('a[href="/charge"]')).toBeVisible();
+    const quickActions = page.locator('div.grid.grid-cols-6');
+    await expect(quickActions.locator('a')).toHaveCount(6);
+    await expect(quickActions.locator('a[href="/send"]')).toBeVisible();
+    await expect(quickActions.locator('a[href="/receive"]')).toBeVisible();
+    await expect(quickActions.locator('a[href="/swap"]')).toBeVisible();
+    await expect(quickActions.locator('a[href="/deposit"]')).toBeVisible();
+    await expect(quickActions.locator('a[href="/charge"]')).toBeVisible();
+    await expect(quickActions.locator('a[href="/referral"]')).toBeVisible();
   });
 
   test('send page loads without connect prompt when connected', async ({ page }) => {

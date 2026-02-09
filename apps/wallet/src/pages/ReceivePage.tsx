@@ -4,8 +4,6 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { buildSolanaPayUrl, SUPPORTED_TOKENS } from '../utils/solana-pay';
 
-const TOKEN_OPTIONS = ['', ...Object.keys(SUPPORTED_TOKENS)];
-
 export default function ReceivePage() {
   const { t } = useTranslation();
   const { connected, publicKey } = useSelfCustodyWallet();

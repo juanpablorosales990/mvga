@@ -6,9 +6,63 @@ const TEST_PASSWORD = 'Str0ng!Pass99';
 export async function clearWallet(page: Page) {
   await page.evaluate(() => {
     localStorage.removeItem('mvga-encrypted-keypair');
-    localStorage.removeItem('mvga-wallet-store');
+    // zustand persist key (apps/wallet/src/stores/walletStore.ts)
+    localStorage.removeItem('mvga-wallet-storage');
   });
   await page.reload();
+}
+
+async function skipWelcomeTourIfPresent(page: Page): Promise<boolean> {
+  // WelcomeTour uses i18n `tour.skip` (e.g. "Skip" / "Saltar").
+  const skip = page.getByRole('button', { name: /^(skip|saltar)$/i });
+
+  if (!(await skip.isVisible().catch(() => false))) return false;
+  await skip.scrollIntoViewIfNeeded().catch(() => {});
+  await skip.click({ timeout: 5000 });
+  return true;
+}
+
+async function skipBiometricsSetupIfPresent(page: Page): Promise<boolean> {
+  // Onboarding "Enable biometrics" step has an explicit "Skip for now" button.
+  const skip = page.getByRole('button', { name: /skip for now|omitir por ahora/i });
+
+  if (!(await skip.isVisible().catch(() => false))) return false;
+  await skip.scrollIntoViewIfNeeded().catch(() => {});
+  await skip.click({ timeout: 5000 });
+  return true;
+}
+
+async function unlockIfLocked(page: Page): Promise<boolean> {
+  const passwordInput = page.getByPlaceholder(/enter password|ingresa tu contraseña/i);
+  if (!(await passwordInput.isVisible().catch(() => false))) return false;
+
+  await passwordInput.fill(TEST_PASSWORD);
+  await page.getByRole('button', { name: /unlock|desbloquear/i }).click();
+  return true;
+}
+
+async function waitForAppShell(page: Page) {
+  const header = page.locator('header');
+  const deadline = Date.now() + 30000;
+
+  while (Date.now() < deadline) {
+    if (await header.isVisible().catch(() => false)) return;
+
+    // Handle whichever blocking screen is currently visible.
+    const acted =
+      (await skipBiometricsSetupIfPresent(page)) ||
+      (await unlockIfLocked(page)) ||
+      (await skipWelcomeTourIfPresent(page));
+
+    if (acted) {
+      await page.waitForTimeout(250);
+      continue;
+    }
+
+    await page.waitForTimeout(250);
+  }
+
+  await expect(header).toBeVisible({ timeout: 10000 });
 }
 
 /** Create a new wallet through the onboarding UI, confirm mnemonic, and land on dashboard */
@@ -66,8 +120,11 @@ export async function createWalletAndUnlock(page: Page) {
   }
 
   // Click confirm
-  await page.getByRole('button', { name: /confirm|confirmar/i }).click();
+  const confirm = page.getByRole('button', { name: /confirm/i });
+  await confirm.scrollIntoViewIfNeeded().catch(() => {});
+  await confirm.click({ timeout: 10000 });
 
-  // Should land on dashboard (header visible)
-  await expect(page.locator('header')).toBeVisible({ timeout: 10000 });
+  // After confirmation, the app may show: optional biometrics setup, WelcomeTour,
+  // or (if a full reload happened) the LockScreen. Normalize to the main shell.
+  await waitForAppShell(page);
 }

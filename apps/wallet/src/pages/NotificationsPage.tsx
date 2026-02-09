@@ -89,7 +89,6 @@ export default function NotificationsPage() {
   // Fetch notification preferences
   useEffect(() => {
     if (!connected || !publicKey || !isSubscribed) return;
-    const addr = publicKey.toBase58();
     fetch(`${API_URL}/notifications/preferences`, { credentials: 'include' })
       .then((r) => r.json())
       .then((data) =>

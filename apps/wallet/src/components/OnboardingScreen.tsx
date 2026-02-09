@@ -1,12 +1,15 @@
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSelfCustodyWallet } from '../contexts/WalletContext';
+import { useBiometric } from '../hooks/useBiometric';
 
 type Step =
   | 'CHOICE'
   | 'CREATE_PASSWORD'
   | 'SHOW_MNEMONIC'
   | 'CONFIRM_MNEMONIC'
+  | 'ENABLE_BIOMETRIC'
+  | 'BIOMETRIC_SUCCESS'
   | 'IMPORT_CHOICE'
   | 'IMPORT_MNEMONIC'
   | 'IMPORT_KEY';
@@ -18,6 +21,7 @@ export default function OnboardingScreen() {
   const { t } = useTranslation();
   const { createWallet, completeOnboarding, importFromMnemonic, importFromSecretKey } =
     useSelfCustodyWallet();
+  const { isAvailable: biometricAvailable, isEnabled: biometricEnabled, register } = useBiometric();
   const [step, setStep] = useState<Step>('CHOICE');
 
   // Create flow
@@ -34,6 +38,10 @@ export default function OnboardingScreen() {
   const [importWords, setImportWords] = useState<string[]>(Array(12).fill(''));
   const [importKey, setImportKey] = useState('');
   const [importPassword, setImportPassword] = useState('');
+
+  // Optional: bind password to biometric unlock (WebAuthn)
+  const [biometricPassword, setBiometricPassword] = useState('');
+  const [biometricError, setBiometricError] = useState('');
 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -89,7 +97,55 @@ export default function OnboardingScreen() {
     // Mnemonic confirmed — clear sensitive data from component state
     setMnemonicWords([]);
     setConfirmAnswers({});
+
+    // Clear password fields once the wallet is created (reduce sensitive data lifetime in memory).
+    setPassword('');
+    setConfirmPassword('');
+
+    // Offer biometric/passkey unlock right after backup confirmation (optional).
+    // This mirrors best-in-class onboarding (security setup before "home").
+    if (biometricAvailable && !biometricEnabled) {
+      setBiometricPassword('');
+      setBiometricError('');
+      setStep('ENABLE_BIOMETRIC');
+      return;
+    }
+
     // Transition wallet state from NO_WALLET → UNLOCKED
+    completeOnboarding();
+  };
+
+  const handleEnableBiometric = async () => {
+    if (!biometricAvailable) {
+      setBiometricError(t('onboarding.biometricsUnavailable'));
+      return;
+    }
+    if (!biometricPassword || biometricPassword.length < 6) {
+      setBiometricError(t('onboarding.passwordTooShort'));
+      return;
+    }
+
+    setBiometricError('');
+    setLoading(true);
+    try {
+      const ok = await register(biometricPassword);
+      if (!ok) {
+        setBiometricError(t('onboarding.biometricsFailed'));
+        return;
+      }
+      setStep('BIOMETRIC_SUCCESS');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const finishOnboarding = () => {
+    // Clear local password fields before leaving onboarding.
+    setPassword('');
+    setConfirmPassword('');
+    setImportPassword('');
+    setBiometricPassword('');
+    setBiometricError('');
     completeOnboarding();
   };
 
@@ -142,7 +198,7 @@ export default function OnboardingScreen() {
     setTimeout(() => {
       navigator.clipboard.writeText('').catch(() => {});
       setCopied(false);
-    }, 5000);
+    }, 30000);
   };
 
   const goBack = (target: Step) => {
@@ -297,6 +353,72 @@ export default function OnboardingScreen() {
               className="w-full text-white/30 text-xs font-mono hover:text-white/50 transition py-2"
             >
               &larr; {t('onboarding.showWordsAgain')}
+            </button>
+          </div>
+        )}
+
+        {/* ── ENABLE BIOMETRIC (optional) ───────── */}
+        {step === 'ENABLE_BIOMETRIC' && (
+          <div className="space-y-4">
+            <p className="text-xs tracking-[0.3em] text-gold-500 uppercase font-mono mb-2">
+              {t('onboarding.enableBiometrics')}
+            </p>
+            <p className="text-white/40 text-xs mb-4">{t('onboarding.enableBiometricsDesc')}</p>
+
+            <div className="bg-white/5 border border-white/10 px-4 py-3">
+              <p className="text-white/30 text-xs font-mono">
+                {t('onboarding.enableBiometricsNote')}
+              </p>
+            </div>
+
+            <input
+              type="password"
+              placeholder={t('onboarding.passwordPlaceholder')}
+              value={biometricPassword}
+              onChange={(e) => setBiometricPassword(e.target.value)}
+              className={INPUT_CLASS}
+              onKeyDown={(e) => e.key === 'Enter' && handleEnableBiometric()}
+            />
+
+            {biometricError && <p className="text-red-400 text-xs font-mono">{biometricError}</p>}
+
+            <button
+              onClick={handleEnableBiometric}
+              disabled={loading}
+              className="w-full btn-primary disabled:opacity-50"
+            >
+              {loading ? t('common.loading') : t('onboarding.enableBiometricsCta')}
+            </button>
+            <button onClick={finishOnboarding} className="w-full btn-secondary text-sm">
+              {t('onboarding.skipForNow')}
+            </button>
+          </div>
+        )}
+
+        {/* ── BIOMETRIC SUCCESS ─────────────────── */}
+        {step === 'BIOMETRIC_SUCCESS' && (
+          <div className="space-y-6 text-center">
+            <div className="mx-auto w-16 h-16 border border-emerald-500/30 bg-emerald-500/10 flex items-center justify-center">
+              <svg
+                className="w-8 h-8 text-emerald-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-xl font-bold">{t('onboarding.biometricsEnabled')}</h2>
+              <p className="text-white/40 text-sm">{t('onboarding.biometricsEnabledDesc')}</p>
+            </div>
+            <button onClick={finishOnboarding} className="w-full btn-primary">
+              {t('onboarding.goToHome')}
             </button>
           </div>
         )}
