@@ -8,7 +8,7 @@ interface ReloadlyToken {
   expiresAt: number;
 }
 
-interface ReloadlyOperator {
+export interface ReloadlyOperator {
   operatorId: number;
   name: string;
   denominationType: string;

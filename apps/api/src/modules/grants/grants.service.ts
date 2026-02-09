@@ -392,6 +392,7 @@ export class GrantsService {
     const proposal = await this.prisma.grantProposal.findUnique({
       where: { id: proposalId },
     });
+    if (!proposal) throw new NotFoundException('Proposal not found');
 
     if (!this.humanitarianFundKeypair) {
       // Revert status since we can't actually disburse
@@ -403,11 +404,11 @@ export class GrantsService {
     }
 
     // Amount is stored as USD * AMOUNT_SCALE, convert to USDC (6 decimals)
-    const usdAmount = Number(proposal!.requestedAmount) / AMOUNT_SCALE;
+    const usdAmount = Number(proposal.requestedAmount) / AMOUNT_SCALE;
     const usdcRawAmount = BigInt(Math.round(usdAmount * 10 ** USDC_DECIMALS));
 
     const connection = this.solana.getConnection();
-    const recipientPubkey = new PublicKey(proposal!.applicantAddress);
+    const recipientPubkey = new PublicKey(proposal.applicantAddress);
 
     const fundAta = await getAssociatedTokenAddress(
       this.usdcMint,
