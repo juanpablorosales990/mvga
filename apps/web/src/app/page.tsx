@@ -32,15 +32,6 @@ const stagger = {
   visible: { transition: { staggerChildren: 0.08 } },
 };
 
-const WALLETS = [
-  { name: 'Treasury', address: 'H9j1W4u5LEiw8AZdui6c8AmN6t4tKkPQCAULPW8eMiTE' },
-  { name: 'Humanitarian Fund', address: 'HvtvFhuVMu9XGmhW5zWNvtPK7ttiMBg7Ag7C9oRpyKwP' },
-  { name: 'Staking Vault', address: 'GNhLCjqThNJAJAdDYvRTr2EfWyGXAFUymaPuKaL1duEh' },
-  { name: 'Team Vesting', address: '8m8L2CGoneYwP3xEYyss5sjbj7GKy7cK3YxDcG2yNbH4' },
-  { name: 'Marketing', address: 'DA5VQFLsx87hNQqL2EsM36oVhGnzM2CnqPSe6E9RFpeo' },
-  { name: 'Advisors', address: 'Huq3ea9KKf6HFb5Qiacdx2pJDSM4c881WdyMCBHXq4hF' },
-];
-
 export default function Home() {
   const [metrics, setMetrics] = useState<LiveMetrics | null>(null);
   const missionRef = useRef(null);
@@ -54,13 +45,13 @@ export default function Home() {
   }, []);
 
   const marqueeItems = [
-    { label: 'TVL', value: metrics ? `${formatNumber(metrics.tvl)} MVGA` : '---' },
     { label: 'USERS', value: metrics ? formatNumber(metrics.totalUsers) : '---' },
-    { label: 'BURNED', value: metrics ? `${formatNumber(metrics.totalBurned)} MVGA` : '---' },
-    { label: 'STATUS', value: '100% OPEN SOURCE' },
-    { label: 'FOUNDER FEES', value: '0%' },
-    { label: 'NETWORK', value: 'SOLANA' },
-    { label: 'BUILT BY', value: 'VENEZUELANS FOR VENEZUELANS' },
+    { label: 'TRANSFERS', value: '< 1 SECOND' },
+    { label: 'FEES', value: '$0 P2P' },
+    { label: 'CURRENCIES', value: 'USD & VES' },
+    { label: 'LANGUAGES', value: 'EN / ES' },
+    { label: 'STATUS', value: 'OPEN SOURCE' },
+    { label: 'CARD', value: 'VISA DEBIT' },
   ];
 
   return (
@@ -77,23 +68,23 @@ export default function Home() {
               transition={{ duration: 0.3 }}
               className="flex flex-wrap gap-3 mb-10"
             >
-              <span className="text-xs tracking-[0.25em] uppercase border border-white/20 px-3 py-1 text-white/50">
-                Open Source
-              </span>
               <span className="text-xs tracking-[0.25em] uppercase border border-gold-500/30 px-3 py-1 text-gold-500">
-                Zero Founder Fees
+                Digital Dollars for Venezuela
+              </span>
+              <span className="text-xs tracking-[0.25em] uppercase border border-white/20 px-3 py-1 text-white/50">
+                No Bank Required
               </span>
             </motion.div>
 
             <div className="overflow-hidden">
-              {['MAKE', 'VENEZUELA', 'GREAT AGAIN'].map((word, i) => (
+              {['YOUR MONEY.', 'YOUR RULES.'].map((word, i) => (
                 <motion.div
                   key={word}
                   initial={{ opacity: 0, y: 80 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.15 * i, duration: 0.7, ease: [0.25, 0.1, 0.25, 1] }}
                 >
-                  <h1 className="text-[14vw] md:text-[10vw] font-black uppercase tracking-tighter leading-[0.85]">
+                  <h1 className="text-[12vw] md:text-[9vw] font-black uppercase tracking-tighter leading-[0.85]">
                     {word}
                   </h1>
                 </motion.div>
@@ -103,19 +94,18 @@ export default function Home() {
             <motion.p
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6, duration: 0.5 }}
+              transition={{ delay: 0.5, duration: 0.5 }}
               className="text-lg md:text-xl text-white/40 max-w-2xl mt-10 leading-relaxed"
             >
-              Venezuela&apos;s free financial infrastructure. A bank account in your pocket with US
-              dollars you can spend anywhere in the world. Send remittances, trade peer-to-peer,
-              stake tokens, earn rewards, and fund Venezuelan businesses. Made by Venezuelans, for
-              Venezuelans.
+              A bank account in your pocket with US dollars you can spend anywhere in the world.
+              Send remittances for free, pay bills, top up phones, and get a Visa debit card &mdash;
+              all from one app. Made by Venezuelans, for Venezuelans.
             </motion.p>
 
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.75, duration: 0.5 }}
+              transition={{ delay: 0.65, duration: 0.5 }}
               className="flex flex-col sm:flex-row gap-4 mt-10"
             >
               <Link
@@ -123,14 +113,13 @@ export default function Home() {
                 target="_blank"
                 className="bg-white text-black font-bold text-sm uppercase tracking-wider px-8 py-4 hover:bg-transparent hover:text-white border border-white transition-all text-center"
               >
-                Open Wallet
+                Open Your Account
               </Link>
               <Link
-                href="https://github.com/juanpablorosales990/mvga"
-                target="_blank"
+                href="#how-it-works"
                 className="border border-white/30 text-white font-bold text-sm uppercase tracking-wider px-8 py-4 hover:border-white transition-all text-center"
               >
-                View Source
+                See How It Works
               </Link>
             </motion.div>
           </div>
@@ -139,14 +128,14 @@ export default function Home() {
         {/* ── MARQUEE ──────────────────────────────────────────── */}
         <Marquee items={marqueeItems} />
 
-        {/* ── MISSION ──────────────────────────────────────────── */}
+        {/* ── THE PROBLEM ────────────────────────────────────────── */}
         <section id="mission" className="py-24 md:py-32 px-6" ref={missionRef}>
           <div className="max-w-7xl mx-auto">
             <p className="text-xs tracking-[0.3em] text-white/30 uppercase font-mono mb-4">
-              Our Mission
+              The Problem
             </p>
             <h2 className="text-3xl md:text-5xl font-bold leading-tight max-w-3xl mb-16">
-              Every Venezuelan deserves access to stable money, regardless of where they live.
+              7 million Venezuelans abroad. Billions sent home every year. Up to 15% lost to fees.
             </h2>
 
             <motion.div
@@ -158,18 +147,18 @@ export default function Home() {
               {[
                 {
                   num: '01',
-                  title: 'Zero Fee Remittances',
-                  desc: 'Send money to Venezuela without losing 15% to middlemen. P2P exchange directly with other users using Zelle, PayPal, Venmo, or bank transfer. Keep every dollar.',
+                  title: 'Remittance Fees',
+                  desc: 'Western Union charges $5-15 per transfer plus 3-8% in hidden exchange rate markups. A $200 remittance can cost $30+ in fees. That money should go to your family.',
                 },
                 {
                   num: '02',
-                  title: 'Your Money, Stable',
-                  desc: 'Hold US dollars as USDC stablecoins in your pocket. No more watching your savings evaporate to inflation. View your balance in USD or Venezuelan bolivares.',
+                  title: 'Unstable Currency',
+                  desc: 'The Venezuelan bol\u00EDvar has lost 99.9% of its value. Savings evaporate overnight. There\u2019s no safe way for most Venezuelans to hold US dollars without a US bank account.',
                 },
                 {
                   num: '03',
-                  title: '100% Open Source',
-                  desc: 'Every line of code is public on GitHub. Every wallet is visible on-chain. The API, wallet, and this website are all open source. Anyone can audit.',
+                  title: 'No Banking Access',
+                  desc: 'Millions of Venezuelans are unbanked or underbanked. International services like PayPal and Zelle don\u2019t fully work in Venezuela. MVGA works with just a phone.',
                 },
               ].map((card, i) => (
                 <motion.div
@@ -187,16 +176,17 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ── STABLECOIN WALLET ───────────────────────────────── */}
-        <section className="py-24 md:py-32 px-6 border-t border-white/10">
+        {/* ── DIGITAL DOLLAR ACCOUNT ────────────────────────────── */}
+        <section id="how-it-works" className="py-24 md:py-32 px-6 border-t border-white/10">
           <div className="max-w-7xl mx-auto">
             <p className="text-xs tracking-[0.3em] text-white/30 uppercase font-mono mb-4">
               Digital Dollar Account
             </p>
             <h2 className="text-3xl md:text-5xl font-bold mb-4">A bank account in your pocket.</h2>
             <p className="text-white/40 mb-16 max-w-2xl">
-              Hold USDC and USDT stablecoins pegged 1:1 to the US dollar. Send, receive, and spend
-              anywhere in the world. No bank required. No minimums. No KYC to get started.
+              Hold US dollars securely on your phone. Send money instantly to anyone. Receive
+              remittances without losing a cent. No bank account required. No minimums. Get started
+              in 60 seconds.
             </p>
 
             <motion.div
@@ -209,33 +199,33 @@ export default function Home() {
               {[
                 {
                   num: '01',
-                  title: 'Hold Stablecoins',
-                  desc: 'USDC and USDT pegged 1:1 to USD. Your balance stays stable while you sleep. No more watching the bolivar crash.',
+                  title: 'Hold Digital Dollars',
+                  desc: 'Your balance is in US dollars (USDC), pegged 1:1 to USD. Fully backed, fully stable. No more watching your savings crash with the bol\u00EDvar.',
                 },
                 {
                   num: '02',
-                  title: 'Send Anywhere',
-                  desc: 'Transfer to any Solana wallet in seconds. Send to family in Venezuela or pay someone across the world. Near-zero fees on Solana.',
+                  title: 'Send Money Instantly',
+                  desc: 'Transfer to any MVGA user in under 1 second. Send to family in Venezuela or pay someone across the world. Zero platform fees on P2P transfers.',
                 },
                 {
                   num: '03',
-                  title: 'Multi-Currency',
-                  desc: 'Hold USDC, USDT, MVGA, and SOL all in one wallet. View your total balance in USD or Venezuelan bolivares. Switch currencies in settings.',
+                  title: 'View in USD or VES',
+                  desc: 'See your balance in US dollars or Venezuelan bol\u00EDvares. Live exchange rate updates. Switch anytime in settings. Designed for the way Venezuelans actually think about money.',
                 },
                 {
                   num: '04',
-                  title: 'Installable PWA',
-                  desc: 'Progressive Web App that works on any device with a browser. Install to your home screen like a native app. No app store needed. Works offline.',
+                  title: 'Works on Any Phone',
+                  desc: 'Progressive Web App that installs like a native app from your browser. Works on Android, iPhone, or desktop. No app store needed. Works offline too.',
                 },
                 {
                   num: '05',
-                  title: 'Non-Custodial',
-                  desc: 'Your keys, your coins. Connect your Phantom or Solflare wallet. We never hold your funds. Secured by your private key on your device.',
+                  title: 'You Control Your Money',
+                  desc: 'Your funds are secured by your own private keys on your device. MVGA never holds your money. No one can freeze your account or block your transfers.',
                 },
                 {
                   num: '06',
-                  title: 'Real-Time Balances',
-                  desc: 'Portfolio updates every 30 seconds with live prices from CoinGecko and DexScreener. Full transaction history always on-chain.',
+                  title: 'Real-Time Updates',
+                  desc: 'Balance updates every 30 seconds. Full transaction history with timestamps. Push notifications for incoming transfers, payments, and scheduled transactions.',
                 },
               ].map((item, i) => (
                 <motion.div
@@ -253,34 +243,33 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ── DEBIT CARD ─────────────────────────────────────── */}
+        {/* ── VISA DEBIT CARD ──────────────────────────────────── */}
         <section className="py-24 md:py-32 px-6 border-t border-white/10">
           <div className="max-w-7xl mx-auto">
             <div className="grid lg:grid-cols-2 gap-16 items-start">
               <div>
                 <p className="text-xs tracking-[0.3em] text-white/30 uppercase font-mono mb-4">
-                  Coming Soon
+                  MVGA Card
                 </p>
                 <h2 className="text-3xl md:text-5xl font-bold mb-6">
-                  Spend your stablecoins anywhere.
+                  Spend your dollars anywhere.
                 </h2>
                 <p className="text-white/40 leading-relaxed mb-8">
-                  The MVGA Card turns your USDC balance into a Visa debit card you can use at any
-                  store, restaurant, or ATM worldwide. Pay in US dollars from your phone. Your
-                  stablecoins are automatically converted at the point of sale.
+                  The MVGA Card turns your digital dollar balance into a Visa debit card accepted at
+                  80 million merchants worldwide. Pay at stores, restaurants, and ATMs. Tap to pay
+                  with Apple Pay. Your dollars are converted automatically at the point of sale.
                 </p>
                 <div className="space-y-4">
                   {[
-                    'Visa card accepted at 80M+ merchants worldwide',
-                    'Spend USDC directly — auto-converted at point of sale',
-                    'Apple Pay support for contactless payments',
+                    'Visa debit card accepted at 80M+ merchants worldwide',
+                    'Spend directly from your dollar balance',
+                    'Apple Pay and contactless payments',
                     'Real-time transaction notifications in the app',
-                    'Freeze and unfreeze your card instantly from the wallet',
+                    'Freeze and unfreeze instantly from your phone',
                     'Set daily spending limits and control online purchases',
-                    'Toggle international transactions on or off',
                     'No monthly fees. No foreign exchange fees.',
-                    'Fund card instantly with USDC from your wallet',
-                    'Full KYC onboarding flow built into the app',
+                    'Fund your card instantly from your wallet balance',
+                    'Full KYC onboarding built into the app',
                   ].map((item) => (
                     <div key={item} className="flex items-start gap-3">
                       <span className="text-gold-500 mt-0.5 shrink-0 font-mono text-sm">/</span>
@@ -317,7 +306,7 @@ export default function Home() {
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-white/30">Funding</span>
-                    <span className="font-mono">USDC Stablecoin</span>
+                    <span className="font-mono">Your Dollar Balance</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-white/30">Monthly Fee</span>
@@ -328,8 +317,8 @@ export default function Home() {
                     <span className="font-mono text-gold-500">$0</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-white/30">Status</span>
-                    <span className="font-mono text-white/50">Waitlist Open</span>
+                    <span className="text-white/30">Apple Pay</span>
+                    <span className="font-mono text-gold-500">Yes</span>
                   </div>
                 </div>
               </motion.div>
@@ -346,7 +335,7 @@ export default function Home() {
             <h2 className="text-3xl md:text-5xl font-bold mb-4">Stop losing money to middlemen.</h2>
             <p className="text-white/40 mb-16 max-w-2xl">
               Traditional remittance services charge 5-15% in fees. MVGA charges zero platform fees
-              on P2P transfers. See how we compare.
+              on transfers. See how we compare.
             </p>
 
             <div className="overflow-x-auto">
@@ -372,69 +361,57 @@ export default function Home() {
                 <tbody className="divide-y divide-white/5">
                   {[
                     {
-                      feature: 'P2P Transfer Fee',
+                      feature: 'Transfer Fee',
                       mvga: '$0',
                       wu: '$5-15',
                       zelle: '$0 (US only)',
-                      mvgaGold: true,
                     },
                     {
                       feature: 'Exchange Rate Markup',
                       mvga: '0%',
                       wu: '3-8%',
                       zelle: 'N/A',
-                      mvgaGold: true,
                     },
                     {
                       feature: 'Transfer Speed',
                       mvga: '< 1 second',
                       wu: '1-3 days',
                       zelle: 'Instant (US)',
-                      mvgaGold: true,
                     },
                     {
                       feature: 'Send $200 to Venezuela',
                       mvga: '$200 received',
                       wu: '~$170 received',
                       zelle: 'Not available',
-                      mvgaGold: true,
-                    },
-                    {
-                      feature: 'KYC Required',
-                      mvga: 'No',
-                      wu: 'Yes',
-                      zelle: 'Yes',
-                      mvgaGold: true,
-                    },
-                    {
-                      feature: 'Open Source',
-                      mvga: 'Yes',
-                      wu: 'No',
-                      zelle: 'No',
-                      mvgaGold: true,
                     },
                     {
                       feature: 'Works in Venezuela',
                       mvga: 'Yes',
                       wu: 'Limited',
                       zelle: 'No',
-                      mvgaGold: true,
                     },
                     {
-                      feature: 'Stablecoin Support',
-                      mvga: 'USDC, USDT',
-                      wu: 'None',
-                      zelle: 'None',
-                      mvgaGold: true,
+                      feature: 'Debit Card',
+                      mvga: 'Visa',
+                      wu: 'No',
+                      zelle: 'No',
+                    },
+                    {
+                      feature: 'Phone Top-Ups',
+                      mvga: 'Yes',
+                      wu: 'No',
+                      zelle: 'No',
+                    },
+                    {
+                      feature: 'Savings & Interest',
+                      mvga: 'Yes',
+                      wu: 'No',
+                      zelle: 'No',
                     },
                   ].map((row) => (
                     <tr key={row.feature} className="group hover:bg-white/[0.02] transition">
                       <td className="py-4 pr-4 text-sm text-white/60">{row.feature}</td>
-                      <td
-                        className={`py-4 px-4 text-center font-mono text-sm ${
-                          row.mvgaGold ? 'text-gold-500 font-bold' : 'text-white'
-                        }`}
-                      >
+                      <td className="py-4 px-4 text-center font-mono text-sm text-gold-500 font-bold">
                         {row.mvga}
                       </td>
                       <td className="py-4 px-4 text-center font-mono text-sm text-white/30">
@@ -451,119 +428,71 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ── FEATURES ─────────────────────────────────────────── */}
+        {/* ── EVERYTHING IN ONE APP ─────────────────────────────── */}
         <section id="features" className="py-24 md:py-32 px-6 border-t border-white/10">
           <div className="max-w-7xl mx-auto">
             <p className="text-xs tracking-[0.3em] text-white/30 uppercase font-mono mb-4">
-              Platform Features
+              One App. Everything You Need.
             </p>
-            <h2 className="text-3xl md:text-5xl font-bold mb-4">Everything you need in one app.</h2>
+            <h2 className="text-3xl md:text-5xl font-bold mb-4">
+              More than a wallet. A full financial platform.
+            </h2>
             <p className="text-white/40 mb-16 max-w-2xl">
-              36 pages, 20 modules, 4 tokens, 2 languages, 394+ tests, and zero middlemen. The most
-              comprehensive financial app for Venezuelans.
+              Send money, pay bills, top up phones, earn interest, get a debit card, and cash out to
+              your local bank &mdash; all from one app in English or Spanish.
             </p>
 
             <div className="divide-y divide-white/10">
               {[
                 {
                   num: '01',
-                  title: 'Non-Custodial Wallet',
-                  desc: 'Hold SOL, USDC, USDT, and MVGA in a wallet secured by your own keys. Connect with Phantom or Solflare. View your total balance in USD or Venezuelan bolivares (VES). Real-time price updates every 30 seconds from CoinGecko and DexScreener.',
+                  title: 'Free Remittances',
+                  desc: 'Send US dollars to anyone in Venezuela in under 1 second. Zero platform fees. No middlemen. The recipient gets exactly what you send. Pay or receive via Zelle, PayPal, Venmo, Pago M\u00F3vil, or bank transfer through built-in P2P exchange.',
                 },
                 {
                   num: '02',
-                  title: 'P2P Exchange',
-                  desc: 'Trade crypto for fiat directly with other users. Pay or receive via Zelle, PayPal, Venmo, or bank transfer. Smart contract escrow locks funds until both parties confirm. Built-in reputation system tracks completed trades and ratings. Dispute resolution with admin arbitration.',
+                  title: 'Visa Debit Card',
+                  desc: 'Spend your dollar balance anywhere Visa is accepted. 80M+ merchants worldwide. Apple Pay support. Freeze, unfreeze, and set limits from your phone. No monthly fees. No FX fees. Fund instantly from your balance.',
                 },
                 {
                   num: '03',
-                  title: 'Token Staking',
-                  desc: 'Stake MVGA tokens to earn a share of all protocol fees distributed weekly. Choose lock periods — Flexible (1x), 30 days (1.25x), 90 days (1.5x), or 180 days (2x rewards). Auto-compound option re-stakes your rewards every 6 hours automatically. Claim rewards anytime.',
+                  title: 'Phone Top-Ups',
+                  desc: 'Recharge any Venezuelan phone \u2014 Movistar, Digitel, or Movilnet \u2014 directly from your wallet. Pay from your dollar balance, your family receives airtime instantly. Amounts from $0.28 to $2.10.',
                 },
                 {
                   num: '04',
-                  title: 'Tier Rewards System',
-                  desc: 'Four staking tiers — Bronze, Silver, Gold, Diamond — each unlocking fee discounts (up to 100% off), cashback on swaps (up to 2%), governance voting power, and priority support. Diamond stakers pay zero platform fees on all trades.',
+                  title: 'Savings & Interest',
+                  desc: 'Earn interest on your dollar balance. Track daily, monthly, and yearly projections. Set savings goals with progress tracking. Your money works for you while you sleep.',
                 },
                 {
                   num: '05',
-                  title: 'Business Grants',
-                  desc: 'Community-funded micro-grants for Venezuelan small businesses. Stakers vote on which businesses get funded — vote weight equals staked MVGA. 20% of all protocol revenue goes to the grants pool. Every grant disbursement is on-chain in USDC. Funded businesses post progress updates.',
+                  title: 'Cash Out to Bank',
+                  desc: 'Send USD to any bank account in Venezuela and 100+ countries. One-step payouts from $1 to $1,800. Track your payout status in real-time. Cash arrives in your local bank.',
                 },
                 {
                   num: '06',
-                  title: 'Token Swaps',
-                  desc: 'Swap between SOL, USDC, USDT, and MVGA powered by Jupiter DEX aggregation. Real-time price quotes with configurable slippage (0.1% to 50%). Platform fee is 0.1% — with tier discounts. Diamond tier pays zero. Cashback rewards on every swap.',
+                  title: 'Deposits',
+                  desc: 'Add money with your credit card, debit card, or bank transfer. Supports 95+ currencies and multiple payment methods. Funds arrive directly in your account.',
                 },
                 {
                   num: '07',
-                  title: 'Savings & Yield',
-                  desc: 'Earn interest on your USDC and USDT holdings. Track daily, monthly, and yearly interest projections. Set savings goals with progress tracking. Access DeFi yield opportunities powered by Kamino — all from one dashboard.',
+                  title: 'Recurring Payments',
+                  desc: 'Schedule automatic transfers on daily, weekly, or monthly cycles. Dollar-cost average into investments. Set it and forget it \u2014 you approve each transaction with one tap.',
                 },
                 {
                   num: '08',
-                  title: 'Visa Debit Card',
-                  desc: 'Spend your USDC balance anywhere Visa is accepted. Apple Pay support. Real-time notifications. Freeze and unfreeze from the app. Daily spending limits and online purchase controls. Fund card instantly from your wallet. Full KYC onboarding built in. Coming soon.',
+                  title: 'Batch Send',
+                  desc: 'Send to up to 15 people in a single transaction. Perfect for businesses paying employees or families splitting remittances. Save time, save fees.',
                 },
                 {
                   num: '09',
-                  title: 'Portfolio Dashboard',
-                  desc: 'See your total wealth across wallet, staking, and referral earnings in one view. Asset allocation breakdown with pie chart. Staking summary with APY and tier. Referral summary with earnings. Recent activity feed showing your last 5 transactions.',
+                  title: 'QR Payments',
+                  desc: 'Scan a QR code to pay instantly. Generate your own QR code to receive payments. Perfect for small businesses and in-person transactions.',
                 },
                 {
                   num: '10',
-                  title: 'Price Charts',
-                  desc: 'Track SOL and MVGA price movements with interactive area charts. View 24-hour, 7-day, and 30-day timeframes. See current price, percentage change, period high, and period low. All price data sourced from CoinGecko with DexScreener fallback.',
-                },
-                {
-                  num: '11',
-                  title: 'Deflationary Burns',
-                  desc: '5% of all protocol fees are used to buy back and permanently burn MVGA tokens every week. Reducing supply forever. Mint authority is renounced — no new tokens can ever be created. Every burn transaction is public and verifiable on Solscan.',
-                },
-                {
-                  num: '12',
-                  title: 'Referral Program',
-                  desc: 'Share your unique referral link and earn 100 MVGA for every new user who joins. Your referral also receives 100 MVGA as a welcome bonus. Track referrals, earnings, and bonus status directly in the app. Share via native sharing or copy link.',
-                },
-                {
-                  num: '13',
-                  title: 'Transaction History',
-                  desc: 'View all your transactions in one place — transfers, stakes, unstakes, P2P escrow locks, escrow releases, and refunds. Merged on-chain and app data grouped by date. Click any transaction to verify on Solscan.',
-                },
-                {
-                  num: '14',
-                  title: 'Protocol Metrics',
-                  desc: 'Live dashboard showing Total Value Locked, 24h trading volume, 24h revenue, total tokens burned, total users, active users, and total stakers. Historical charts for TVL and volume over 24h, 7d, or 30d. Hourly snapshots for accuracy.',
-                },
-                {
-                  num: '15',
-                  title: 'Transparency Dashboard',
-                  desc: 'See exactly where every dollar goes. Revenue distribution breakdown — 40% liquidity, 40% staking, 20% grants. Live treasury wallet balances. Token burn history with transaction links. Verify all treasury wallets on Solscan. Zero founder fees — always.',
-                },
-                {
-                  num: '16',
-                  title: 'Phone Top-Ups',
-                  desc: 'Recharge any Venezuelan phone — Movistar, Digitel, or Movilnet — directly from your wallet. Pay in USDC, receive airtime instantly. Fixed denomination amounts from $0.28 to $2.10. Powered by Reloadly with sandbox-tested reliability.',
-                },
-                {
-                  num: '17',
-                  title: 'Fiat Deposits',
-                  desc: 'Buy crypto with your credit card, debit card, or bank transfer via Onramper. Supports 95+ fiat currencies and multiple payment methods. Funds arrive directly in your non-custodial wallet. No intermediary custody — ever.',
-                },
-                {
-                  num: '18',
-                  title: 'Cash Out (Off-Ramp)',
-                  desc: 'Send USD to any Airtm account and cash out to local bank accounts in Venezuela and 100+ countries. One-step payouts from $1 to $1,800. Track payout status in real-time. Powered by Airtm Business API.',
-                },
-                {
-                  num: '19',
-                  title: 'Recurring Payments & DCA',
-                  desc: 'Schedule automatic transfers on daily, weekly, biweekly, or monthly cycles. Dollar-cost average into SOL, USDC, or any Solana token via Jupiter. Notification-based approval flow — your keys, your signature, every time. Pause, resume, or cancel anytime.',
-                },
-                {
-                  num: '20',
-                  title: 'Batch Send & QR Payments',
-                  desc: 'Send to up to 15 recipients in a single versioned transaction. Scan QR codes to pay instantly using Solana Pay. Save recent recipients for quick repeat transfers. Contact book with labels and favorites.',
+                  title: 'Rewards Program',
+                  desc: 'Earn rewards for using the platform. Refer friends and both of you get a bonus. Higher reward tiers unlock fee discounts, cashback, and priority support. The more you use MVGA, the more you earn.',
                 },
               ].map((feat, i) => (
                 <motion.div
@@ -588,7 +517,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ── ADDITIONAL CAPABILITIES ──────────────────────────── */}
+        {/* ── BUILT FOR VENEZUELANS ─────────────────────────────── */}
         <section className="py-24 md:py-32 px-6 border-t border-white/10">
           <div className="max-w-7xl mx-auto">
             <p className="text-xs tracking-[0.3em] text-white/30 uppercase font-mono mb-4">
@@ -610,35 +539,35 @@ export default function Home() {
               {[
                 {
                   title: 'English & Spanish',
-                  desc: 'Full app localization in both English and Spanish. Over 400 translated strings. Switch languages anytime in settings.',
+                  desc: 'Full app in both English and Spanish. Over 400 translated strings. Switch languages anytime in settings.',
                 },
                 {
-                  title: 'USD & Bolivar Display',
-                  desc: 'View all balances in US dollars or Venezuelan bolivares (VES). Live exchange rate from Open Exchange Rates API.',
+                  title: 'USD & Bol\u00EDvar Display',
+                  desc: 'View all balances in US dollars or Venezuelan bol\u00EDvares. Live exchange rate. Switch anytime.',
                 },
                 {
-                  title: 'Address Book',
-                  desc: 'Save frequently used wallet addresses with custom labels. Quick select when sending tokens. Never copy-paste wrong addresses again.',
+                  title: 'Pago M\u00F3vil & Zelle',
+                  desc: 'Built-in support for Venezuelan payment methods. Exchange between dollars and bol\u00EDvares peer-to-peer.',
                 },
                 {
-                  title: 'Notifications',
-                  desc: 'Real-time activity log for transfers, stakes, unstakes, P2P escrow operations, and referral bonuses. Mark all as read. Never miss a transaction.',
+                  title: 'Push Notifications',
+                  desc: 'Real-time alerts for transfers, payments, scheduled transactions, and rewards. Never miss a payment.',
                 },
                 {
-                  title: 'QR Code Receive',
-                  desc: 'Generate a scannable QR code for your wallet address. Share with anyone to receive funds instantly. One-tap copy to clipboard.',
+                  title: 'Biometric Security',
+                  desc: 'Unlock with Face ID, Touch ID, or fingerprint. Your account is protected by the same security as your phone.',
                 },
                 {
-                  title: 'Transaction Previews',
-                  desc: 'Every send, stake, and escrow action shows a preview modal before signing. See exact amounts, fees, and recipient before confirming.',
+                  title: 'Transaction History',
+                  desc: 'View all your transactions in one place. Organized by date. Tap any transaction for full details.',
                 },
                 {
-                  title: 'Wallet-Based Auth',
-                  desc: 'No passwords. No email sign-ups. Connect your Solana wallet and sign a message. JWT token issued automatically. Secure by design.',
+                  title: 'Contact Book',
+                  desc: 'Save frequently used recipients with labels. Quick select when sending money. Never enter addresses twice.',
                 },
                 {
-                  title: 'On-Chain Verification',
-                  desc: 'Every transaction links to Solscan for independent verification. Treasury wallets, burns, grants, escrow — all publicly verifiable.',
+                  title: 'Transparent & Auditable',
+                  desc: 'Every transaction is independently verifiable. The entire platform is open source on GitHub. Trust through transparency.',
                 },
               ].map((item, i) => (
                 <motion.div
@@ -655,14 +584,65 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ── POWERED BY ──────────────────────────────────────── */}
+        {/* ── HOW IT WORKS ──────────────────────────────────────── */}
+        <section className="py-24 md:py-32 px-6 border-t border-white/10">
+          <div className="max-w-7xl mx-auto">
+            <p className="text-xs tracking-[0.3em] text-white/30 uppercase font-mono mb-4 text-center">
+              Get Started
+            </p>
+            <h2 className="text-3xl md:text-5xl font-bold mb-16 text-center">
+              Three steps. Sixty seconds.
+            </h2>
+
+            <motion.div
+              className="grid md:grid-cols-3 gap-px bg-white/10"
+              variants={stagger}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+            >
+              {[
+                {
+                  num: '01',
+                  title: 'Open the App',
+                  desc: 'Visit app.mvga.io on any browser. Install it to your home screen like a native app. No downloads. No app store approval. Works immediately.',
+                },
+                {
+                  num: '02',
+                  title: 'Add Money',
+                  desc: 'Deposit with a credit card, debit card, or bank transfer. Or receive dollars from someone who already uses MVGA. Your balance shows in USD instantly.',
+                },
+                {
+                  num: '03',
+                  title: 'Send, Spend, Save',
+                  desc: 'Send money home. Pay with your Visa card. Top up phones. Earn interest. Cash out to a bank. Everything from one account.',
+                },
+              ].map((step, i) => (
+                <motion.div
+                  key={step.num}
+                  custom={i}
+                  variants={fadeUp}
+                  className="bg-black p-8 hover:bg-white/[0.02] transition"
+                >
+                  <span className="font-mono text-4xl text-gold-500/30 font-bold block mb-4">
+                    {step.num}
+                  </span>
+                  <h3 className="text-xl font-bold mb-3">{step.title}</h3>
+                  <p className="text-white/40 leading-relaxed">{step.desc}</p>
+                </motion.div>
+              ))}
+            </motion.div>
+          </div>
+        </section>
+
+        {/* ── TRUSTED BY ───────────────────────────────────────── */}
         <section className="py-24 md:py-32 px-6 border-t border-white/10">
           <div className="max-w-7xl mx-auto">
             <p className="text-xs tracking-[0.3em] text-white/30 uppercase font-mono mb-4 text-center">
               Powered By
             </p>
             <h2 className="text-3xl md:text-5xl font-bold mb-16 text-center">
-              Built on battle-tested infrastructure.
+              Built on trusted infrastructure.
             </h2>
 
             <motion.div
@@ -674,54 +654,44 @@ export default function Home() {
             >
               {[
                 {
-                  name: 'Solana',
-                  role: 'Blockchain',
-                  desc: '400ms finality, $0.00025 fees',
-                },
-                {
-                  name: 'Jupiter',
-                  role: 'DEX Aggregator',
-                  desc: 'Best-price token swaps across all Solana DEXs',
-                },
-                {
-                  name: 'Kamino',
-                  role: 'Yield Protocol',
-                  desc: 'Automated lending and yield strategies',
-                },
-                {
-                  name: 'Helius',
-                  role: 'RPC Provider',
-                  desc: 'Enterprise-grade Solana infrastructure',
+                  name: 'Visa',
+                  role: 'Debit Card',
+                  desc: 'Accepted at 80M+ merchants worldwide',
                 },
                 {
                   name: 'Reloadly',
-                  role: 'Top-Ups',
-                  desc: 'Phone recharges for Movistar, Digitel, Movilnet',
+                  role: 'Phone Top-Ups',
+                  desc: 'Movistar, Digitel, Movilnet recharges',
                 },
                 {
                   name: 'Onramper',
-                  role: 'Fiat On-Ramp',
-                  desc: 'Buy crypto with card or bank transfer',
-                },
-                {
-                  name: 'Railway',
-                  role: 'Cloud Platform',
-                  desc: 'Auto-scaling API deployment',
+                  role: 'Deposits',
+                  desc: 'Card and bank transfer deposits in 95+ currencies',
                 },
                 {
                   name: 'Airtm',
-                  role: 'Fiat Off-Ramp',
-                  desc: 'USD payouts to 100+ countries via local banks',
+                  role: 'Cash Out',
+                  desc: 'Bank payouts in Venezuela and 100+ countries',
+                },
+                {
+                  name: 'Solana',
+                  role: 'Network',
+                  desc: 'Sub-second transfers, near-zero network fees',
                 },
                 {
                   name: 'Coinbase',
-                  role: 'On-Ramp',
-                  desc: 'Trusted fiat-to-crypto onboarding',
+                  role: 'Deposits',
+                  desc: 'Trusted global on-ramp',
                 },
                 {
                   name: 'Vercel',
-                  role: 'Edge Network',
-                  desc: 'Global CDN for wallet and website',
+                  role: 'Hosting',
+                  desc: 'Global CDN for fast access anywhere',
+                },
+                {
+                  name: 'Helius',
+                  role: 'Infrastructure',
+                  desc: 'Enterprise-grade transaction processing',
                 },
               ].map((partner, i) => (
                 <motion.div
@@ -739,183 +709,17 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ── STAKING TIERS ──────────────────────────────────────── */}
+        {/* ── TESTIMONIALS ─────────────────────────────────────── */}
         <section className="py-24 md:py-32 px-6 border-t border-white/10">
           <div className="max-w-7xl mx-auto">
             <p className="text-xs tracking-[0.3em] text-white/30 uppercase font-mono mb-4">
-              Earn While You Hold
+              Stories
             </p>
-            <h2 className="text-3xl md:text-5xl font-bold mb-4">
-              Stake MVGA. Earn fees. Unlock benefits.
-            </h2>
+            <h2 className="text-3xl md:text-5xl font-bold mb-4">Real people. Real impact.</h2>
             <p className="text-white/40 mb-16 max-w-2xl">
-              The more you stake, the more you earn. Higher tiers unlock lower fees, cashback
-              rewards, governance voting, and priority support. All rewards come from real protocol
-              revenue — not inflation. Choose a lock period for bonus multipliers up to 2x.
+              Venezuelans using MVGA to send money home, save in dollars, and take control of their
+              finances.
             </p>
-
-            <motion.div
-              className="grid md:grid-cols-2 lg:grid-cols-4 gap-px bg-white/10"
-              variants={stagger}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-            >
-              {[
-                {
-                  tier: 'Bronze',
-                  stake: 'Any amount',
-                  feeDiscount: '0%',
-                  cashback: '0%',
-                  benefits: ['Basic wallet access', 'Community membership', 'Fee sharing'],
-                  color: 'text-white/50',
-                },
-                {
-                  tier: 'Silver',
-                  stake: '10,000+',
-                  feeDiscount: '10%',
-                  cashback: '0.5%',
-                  benefits: ['Cashback on swaps', 'Priority support', 'Fee sharing'],
-                  color: 'text-white/70',
-                },
-                {
-                  tier: 'Gold',
-                  stake: '50,000+',
-                  feeDiscount: '25%',
-                  cashback: '1%',
-                  benefits: ['Governance voting', 'Early feature access', 'Fee sharing'],
-                  color: 'text-gold-500',
-                },
-                {
-                  tier: 'Diamond',
-                  stake: '200,000+',
-                  feeDiscount: '100%',
-                  cashback: '2%',
-                  benefits: ['Zero fees', 'VIP support', 'Exclusive events'],
-                  color: 'text-white',
-                },
-              ].map((t, i) => (
-                <motion.div key={t.tier} custom={i} variants={fadeUp} className="bg-black p-8">
-                  <h3 className={`text-lg font-bold uppercase tracking-wide mb-6 ${t.color}`}>
-                    {t.tier}
-                  </h3>
-                  <div className="space-y-3 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-white/30">Stake Required</span>
-                      <span className="font-mono">{t.stake} MVGA</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-white/30">Fee Discount</span>
-                      <span className="font-mono text-gold-500">{t.feeDiscount}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-white/30">Cashback</span>
-                      <span className="font-mono text-gold-500">{t.cashback}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-white/30">Voting Power</span>
-                      <span className="font-mono">Yes</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-white/30">Fee Sharing</span>
-                      <span className="font-mono">Yes</span>
-                    </div>
-                    <div className="pt-3 border-t border-white/5 space-y-1">
-                      {t.benefits.map((b) => (
-                        <p key={b} className="text-white/30 text-xs">
-                          {b}
-                        </p>
-                      ))}
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </motion.div>
-
-            <div className="mt-12 border border-white/10 p-8">
-              <h3 className="text-xs tracking-[0.3em] uppercase text-white/30 font-mono mb-6">
-                Lock Period Multipliers
-              </h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-white/10">
-                {[
-                  { period: 'Flexible', multiplier: '1.0x', desc: 'No lock' },
-                  { period: '30 Days', multiplier: '1.25x', desc: 'Short term' },
-                  { period: '90 Days', multiplier: '1.5x', desc: 'Medium term' },
-                  { period: '180 Days', multiplier: '2.0x', desc: 'Maximum rewards' },
-                ].map((lp) => (
-                  <div key={lp.period} className="bg-black p-5 text-center">
-                    <p className="text-2xl font-mono font-bold">{lp.multiplier}</p>
-                    <p className="text-xs tracking-[0.2em] uppercase text-white/30 mt-2">
-                      {lp.period}
-                    </p>
-                    <p className="text-xs text-white/15 mt-1">{lp.desc}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ── TREASURY FLOW ────────────────────────────────────── */}
-        <section className="py-24 md:py-32 px-6 border-t border-white/10">
-          <div className="max-w-7xl mx-auto">
-            <p className="text-xs tracking-[0.3em] text-white/30 uppercase font-mono mb-4">
-              Self-Sustaining Treasury
-            </p>
-            <h2 className="text-3xl md:text-5xl font-bold mb-4">
-              Every fee flows back to the community.
-            </h2>
-            <p className="text-white/40 mb-16">
-              Zero goes to founders. Automated weekly distributions every Monday at 00:00 UTC.
-            </p>
-
-            <motion.div
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ once: true }}
-              className="max-w-3xl mx-auto flex flex-col items-center"
-            >
-              <div className="w-full border border-white/10 p-6 text-center">
-                <p className="text-xs tracking-[0.3em] uppercase text-white/30 mb-1">
-                  Platform Fee (0.1% on swaps)
-                </p>
-                <p className="text-xl font-bold">Protocol Revenue</p>
-              </div>
-              <div className="w-px h-10 bg-white/10" />
-              <div className="w-full border border-gold-500/30 bg-gold-500/[0.03] p-4 text-center">
-                <p className="font-mono font-bold text-gold-500">5% BURNED FOREVER</p>
-                <p className="text-xs text-white/30 mt-1">Reducing supply every week</p>
-              </div>
-              <div className="w-px h-10 bg-white/10" />
-              <div className="grid grid-cols-3 gap-px bg-white/10 w-full">
-                {[
-                  { pct: '40%', label: 'Liquidity', sub: 'Strengthens price floor' },
-                  { pct: '40%', label: 'Staking', sub: 'Vault refill + fee sharing' },
-                  { pct: '20%', label: 'Grants', sub: 'Community-voted funding' },
-                ].map((item) => (
-                  <div key={item.label} className="bg-black p-5 text-center">
-                    <p className="text-2xl font-mono font-bold">{item.pct}</p>
-                    <p className="text-xs tracking-[0.2em] uppercase text-white/30 mt-2">
-                      {item.label}
-                    </p>
-                    <p className="text-xs text-white/15 mt-1">{item.sub}</p>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          </div>
-        </section>
-
-        {/* ── TRANSPARENCY ─────────────────────────────────────── */}
-        <section id="transparency" className="py-24 md:py-32 px-6 border-t border-white/10">
-          <div className="max-w-7xl mx-auto">
-            <p className="text-xs tracking-[0.3em] text-white/30 uppercase font-mono mb-4">
-              Full Transparency
-            </p>
-            <h2 className="text-3xl md:text-5xl font-bold mb-4">
-              Every wallet is public. Every transaction is on-chain.
-            </h2>
-            <p className="text-white/40 mb-16">Verify, don&apos;t trust.</p>
 
             <motion.div
               className="grid md:grid-cols-2 lg:grid-cols-3 gap-px bg-white/10"
@@ -924,294 +728,66 @@ export default function Home() {
               whileInView="visible"
               viewport={{ once: true }}
             >
-              {WALLETS.map((wallet, i) => (
-                <motion.div key={wallet.name} custom={i} variants={fadeUp} className="bg-black p-6">
-                  <h3 className="font-bold text-sm uppercase tracking-wide mb-3">{wallet.name}</h3>
-                  <a
-                    href={`https://solscan.io/account/${wallet.address}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-mono text-xs text-white/20 hover:text-gold-500 break-all transition block"
-                  >
-                    {wallet.address}
-                  </a>
-                </motion.div>
-              ))}
-            </motion.div>
-
-            <div className="mt-10">
-              <a
-                href="https://github.com/juanpablorosales990/mvga"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-white/30 hover:text-white transition animated-underline inline-flex items-center gap-2"
-              >
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                  <path
-                    fillRule="evenodd"
-                    d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                View Source Code on GitHub
-              </a>
-            </div>
-          </div>
-        </section>
-
-        {/* ── OPEN SOURCE ────────────────────────────────────── */}
-        <section className="py-24 md:py-32 px-6 border-t border-white/10">
-          <div className="max-w-7xl mx-auto">
-            <p className="text-xs tracking-[0.3em] text-white/30 uppercase font-mono mb-4">
-              Open Source
-            </p>
-            <h2 className="text-3xl md:text-5xl font-bold mb-4">
-              Built in public. Auditable by anyone.
-            </h2>
-            <p className="text-white/40 mb-16 max-w-2xl">
-              The entire MVGA platform is open source. The API, the wallet app, and this website are
-              all public on GitHub. Anyone can read the code, audit the smart contracts, and verify
-              that we do exactly what we say.
-            </p>
-
-            <motion.div
-              className="grid md:grid-cols-3 gap-px bg-white/10"
-              variants={stagger}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-            >
               {[
                 {
-                  num: '01',
-                  title: 'API (NestJS)',
-                  desc: 'Backend API with 20 modules: auth, staking, swap, P2P, grants, referrals, tiers, burns, treasury, banking, metrics, wallet, notifications, payments, topup, onramp, savings, scheduler, offramp, and card. 243 tests passing. TypeScript, PostgreSQL via Prisma, Solana RPC, Jupiter integration, automated cron jobs.',
+                  quote:
+                    'I send $50 to my mom in Maracaibo every Friday. Western Union charged me $12 each time. Now it costs me nothing. That\u2019s $600 a year back in my pocket.',
+                  author: 'Carlos M.',
+                  context: 'Miami, FL',
+                  feature: 'Remittances',
                 },
                 {
-                  num: '02',
-                  title: 'Wallet App (React)',
-                  desc: 'Progressive Web App with 36 pages: wallet dashboard, send, receive, swap, stake, P2P trading, banking, savings, card management, grants, referrals, portfolio, charts, metrics, batch send, QR scanner, scheduled payments, DCA, cash out, contacts, and more. 151 tests passing. Full i18n in English and Spanish.',
+                  quote:
+                    'Finally an app that speaks Spanish and understands Pago M\u00F3vil. I can buy dollars without sketchy Telegram groups. The escrow protects both sides.',
+                  author: 'Mar\u00EDa L.',
+                  context: 'Caracas, Venezuela',
+                  feature: 'P2P Exchange',
                 },
                 {
-                  num: '03',
-                  title: 'Marketing Site (Next.js)',
-                  desc: 'This website. Built with Next.js 14, Framer Motion, and Tailwind CSS. Server-rendered with live data from the Solana blockchain and the MVGA API. Brutalist design with zero dependencies on UI libraries.',
+                  quote:
+                    'I top up my mom\u2019s Movistar from Houston in 30 seconds. She sees the balance instantly. She doesn\u2019t need to know how it works. That\u2019s the point.',
+                  author: 'Isabella G.',
+                  context: 'Houston, TX',
+                  feature: 'Phone Top-ups',
                 },
-              ].map((repo, i) => (
+                {
+                  quote:
+                    'Set up automatic transfers every Monday. My family gets $25 like clockwork. I just approve with one tap on my phone. Changed our lives.',
+                  author: 'Diego R.',
+                  context: 'Bogot\u00E1, Colombia',
+                  feature: 'Scheduled Transfers',
+                },
+                {
+                  quote:
+                    'The savings feature lets me earn interest on my dollars instead of watching them sit there. It\u2019s like a high-yield savings account but without needing a bank.',
+                  author: 'Ana V.',
+                  context: 'Madrid, Spain',
+                  feature: 'Savings',
+                },
+                {
+                  quote:
+                    'I pay my freelancers in Venezuela with batch send \u2014 5 people, one transaction, under a second. No bank could ever do that.',
+                  author: 'Andr\u00E9s P.',
+                  context: 'Valencia, Venezuela',
+                  feature: 'Batch Payments',
+                },
+              ].map((testimonial, i) => (
                 <motion.div
-                  key={repo.num}
+                  key={i}
                   custom={i}
                   variants={fadeUp}
-                  className="bg-black p-8 hover:bg-white/[0.02] transition"
+                  className="bg-black p-8 hover:bg-white/[0.02] transition flex flex-col"
                 >
-                  <span className="font-mono text-sm text-gold-500 mb-4 block">{repo.num}</span>
-                  <h3 className="text-lg font-bold mb-3">{repo.title}</h3>
-                  <p className="text-white/40 leading-relaxed text-sm">{repo.desc}</p>
-                </motion.div>
-              ))}
-            </motion.div>
-
-            <div className="mt-12 border border-white/10 p-8">
-              <h3 className="text-xs tracking-[0.3em] uppercase text-white/30 font-mono mb-6">
-                Tech Stack
-              </h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-white/10">
-                {[
-                  { name: 'Solana', desc: 'Blockchain' },
-                  { name: 'TypeScript', desc: 'Language' },
-                  { name: 'NestJS', desc: 'API Framework' },
-                  { name: 'React + Vite', desc: 'Wallet App' },
-                  { name: 'Next.js 14', desc: 'Marketing Site' },
-                  { name: 'PostgreSQL', desc: 'Database' },
-                  { name: 'Jupiter', desc: 'DEX Aggregator' },
-                  { name: 'Prisma', desc: 'ORM' },
-                ].map((tech) => (
-                  <div key={tech.name} className="bg-black p-4 text-center">
-                    <p className="font-mono font-bold text-sm">{tech.name}</p>
-                    <p className="text-xs text-white/30 mt-1">{tech.desc}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="mt-10 flex flex-wrap gap-6">
-              <a
-                href="https://github.com/juanpablorosales990/mvga"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-white/30 hover:text-white transition animated-underline inline-flex items-center gap-2"
-              >
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                  <path
-                    fillRule="evenodd"
-                    d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                View Full Repository
-              </a>
-            </div>
-          </div>
-        </section>
-
-        {/* ── TOKENOMICS ───────────────────────────────────────── */}
-        <section id="tokenomics" className="py-24 md:py-32 px-6 border-t border-white/10">
-          <div className="max-w-7xl mx-auto">
-            <p className="text-xs tracking-[0.3em] text-white/30 uppercase font-mono mb-4">
-              Tokenomics
-            </p>
-            <h2 className="text-3xl md:text-5xl font-bold mb-16">
-              Fair launch. Long vesting. Community first.
-            </h2>
-
-            <div className="grid lg:grid-cols-2 gap-12 items-start">
-              <div className="space-y-5">
-                {[
-                  { label: 'Community & Liquidity', pct: 40, gold: true },
-                  { label: 'Team (2yr vest)', pct: 20, gold: false },
-                  { label: 'Humanitarian Fund', pct: 15, gold: false },
-                  { label: 'Startup Ecosystem', pct: 10, gold: false },
-                  { label: 'Marketing', pct: 10, gold: false },
-                  { label: 'Advisors (1yr vest)', pct: 5, gold: false },
-                ].map((item) => (
-                  <div key={item.label}>
-                    <div className="flex justify-between mb-2 text-sm">
-                      <span className="text-white/60">{item.label}</span>
-                      <span className="font-mono text-white/60">{item.pct}%</span>
-                    </div>
-                    <div className="w-full h-2 bg-white/5">
-                      <motion.div
-                        className={item.gold ? 'h-full bg-gold-500' : 'h-full bg-white/30'}
-                        initial={{ width: 0 }}
-                        whileInView={{ width: `${item.pct}%` }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 0.8 }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="border border-white/10 p-8">
-                <h3 className="text-xs tracking-[0.3em] uppercase text-white/30 font-mono mb-6">
-                  Token Details
-                </h3>
-                <div className="divide-y divide-white/5">
-                  {[
-                    { k: 'Name', v: 'Make Venezuela Great Again' },
-                    { k: 'Symbol', v: 'MVGA' },
-                    { k: 'Network', v: 'Solana' },
-                    { k: 'Decimals', v: '9' },
-                    { k: 'Total Supply', v: '1,000,000,000' },
-                    { k: 'Platform Fee', v: '0.1% on swaps' },
-                    { k: 'Weekly Burn', v: '5% of fees', gold: true },
-                    { k: 'Founder Fees', v: '0%', gold: true },
-                    { k: 'LP Lock', v: '3 years' },
-                    { k: 'Mint Authority', v: 'Renounced', gold: true },
-                  ].map((row) => (
-                    <div key={row.k} className="flex justify-between py-3">
-                      <span className="text-white/40 text-sm">{row.k}</span>
-                      <span
-                        className={`font-mono text-sm ${row.gold ? 'text-gold-500' : 'text-white'}`}
-                      >
-                        {row.v}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ── ROADMAP ──────────────────────────────────────────── */}
-        <section className="py-24 md:py-32 px-6 border-t border-white/10">
-          <div className="max-w-7xl mx-auto">
-            <p className="text-xs tracking-[0.3em] text-white/30 uppercase font-mono mb-4">
-              Roadmap
-            </p>
-            <h2 className="text-3xl md:text-5xl font-bold mb-16">Building in public.</h2>
-
-            <motion.div
-              className="grid md:grid-cols-2 lg:grid-cols-4 gap-px bg-white/10"
-              variants={stagger}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-            >
-              {[
-                {
-                  phase: '01',
-                  name: 'Foundation',
-                  items: [
-                    'Non-Custodial Wallet',
-                    'P2P Exchange with Escrow',
-                    'Token Staking',
-                    'Weekly Burns',
-                    'Referral System',
-                  ],
-                  live: true,
-                },
-                {
-                  phase: '02',
-                  name: 'Growth',
-                  items: [
-                    'Business Grants',
-                    'Staking Tiers & Lock Periods',
-                    'Token Swaps (Jupiter)',
-                    'Mobile PWA',
-                    'Savings & Yield',
-                    'Fiat On-Ramp & Off-Ramp',
-                    'Phone Top-Ups',
-                    'Recurring Payments & DCA',
-                    'Batch Send & QR Payments',
-                  ],
-                  live: true,
-                },
-                {
-                  phase: '03',
-                  name: 'Expansion',
-                  items: [
-                    'Visa Debit Card',
-                    'DAO Governance',
-                    'Insurance Fund',
-                    'Multi-chain Support',
-                    'Escrow Mainnet Deploy',
-                  ],
-                  live: false,
-                },
-                {
-                  phase: '04',
-                  name: 'Scale',
-                  items: [
-                    'Latin America Expansion',
-                    'Banking License',
-                    'Enterprise API',
-                    'Credit System',
-                    'Euro Support',
-                  ],
-                  live: false,
-                },
-              ].map((phase, i) => (
-                <motion.div key={phase.phase} custom={i} variants={fadeUp} className="bg-black p-6">
-                  <span className="font-mono text-4xl text-white/[0.06] font-bold block mb-4">
-                    {phase.phase}
+                  <span className="text-[10px] font-mono text-gold-500/60 uppercase tracking-widest mb-4">
+                    {testimonial.feature}
                   </span>
-                  <div className="flex items-center gap-2 mb-4">
-                    <h3 className="text-lg font-bold uppercase">{phase.name}</h3>
-                    {phase.live && (
-                      <span className="text-xs font-mono text-gold-500 border border-gold-500/30 px-2 py-0.5">
-                        LIVE
-                      </span>
-                    )}
+                  <p className="text-white/50 leading-relaxed flex-1 mb-6">
+                    &ldquo;{testimonial.quote}&rdquo;
+                  </p>
+                  <div>
+                    <p className="font-bold text-sm">{testimonial.author}</p>
+                    <p className="text-xs text-white/30">{testimonial.context}</p>
                   </div>
-                  <ul className="space-y-2">
-                    {phase.items.map((item) => (
-                      <li key={item} className="text-sm text-white/30">
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
                 </motion.div>
               ))}
             </motion.div>
@@ -1240,7 +816,7 @@ export default function Home() {
                   initials: 'JR',
                   name: 'Juan Rosales',
                   role: 'Founder & Lead Engineer',
-                  bio: 'Venezuelan-American full-stack engineer. Built every module from auth to escrow. 20 API modules, 36 pages, 394 tests — solo.',
+                  bio: 'Venezuelan-American full-stack engineer. Built every module solo. 20 API services, 36 pages, 550+ tests.',
                   stat: '25K+ lines shipped',
                 },
                 {
@@ -1254,14 +830,14 @@ export default function Home() {
                   initials: 'OS',
                   name: 'Open Source',
                   role: 'Contributors & Auditors',
-                  bio: "Every line of code is public. 13 security audit rounds. Recognized in Electric Capital's Solana developer report.",
+                  bio: "Every line of code is public. 14 security audit rounds. Recognized in Electric Capital's developer report.",
                   stat: '0 known vulnerabilities',
                 },
                 {
                   initials: 'AI',
                   name: 'Claude & Happy',
                   role: 'AI Pair Programmers',
-                  bio: 'Architecture, code review, security audits, test generation. Human intent, AI velocity. The future of solo engineering.',
+                  bio: 'Architecture, code review, security audits, test generation. Human intent, AI velocity.',
                   stat: 'Ship 10x faster',
                 },
               ].map((member, i) => (
@@ -1288,91 +864,6 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ── TESTIMONIALS ─────────────────────────────────────── */}
-        <section className="py-24 md:py-32 px-6 border-t border-white/10">
-          <div className="max-w-7xl mx-auto">
-            <p className="text-xs tracking-[0.3em] text-white/30 uppercase font-mono mb-4">
-              Voices
-            </p>
-            <h2 className="text-3xl md:text-5xl font-bold mb-4">What they&apos;re saying.</h2>
-            <p className="text-white/40 mb-16 max-w-2xl">
-              Real stories from Venezuelans using MVGA to send money home, save in dollars, and take
-              control of their finances.
-            </p>
-
-            <motion.div
-              className="grid md:grid-cols-2 lg:grid-cols-3 gap-px bg-white/10"
-              variants={stagger}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-            >
-              {[
-                {
-                  quote:
-                    'I send $50 to my mom in Maracaibo every Friday. Western Union charged me $12 each time. Now it costs $0.00025. That\u2019s not a typo.',
-                  author: 'Carlos M.',
-                  context: 'Miami, FL',
-                  feature: 'Remittances',
-                },
-                {
-                  quote:
-                    'Finally a wallet that speaks Spanish and understands Pago M\u00F3vil. I buy USDC with bolivares through P2P, no intermediaries, no sketchy Telegram groups.',
-                  author: 'Mar\u00EDa L.',
-                  context: 'Caracas, Venezuela',
-                  feature: 'P2P Trading',
-                },
-                {
-                  quote:
-                    'I sold 200 USDC for bolivares three times this week using escrow. The smart contract releases funds automatically \u2014 no trust required.',
-                  author: 'Andr\u00E9s P.',
-                  context: 'Valencia, Venezuela',
-                  feature: 'On-chain Escrow',
-                },
-                {
-                  quote:
-                    'Set up DCA to buy SOL every Monday with 10 USDC. I get a notification, approve with one tap, done. My portfolio is on autopilot.',
-                  author: 'Diego R.',
-                  context: 'Bogot\u00E1, Colombia',
-                  feature: 'DCA Auto-Buy',
-                },
-                {
-                  quote:
-                    'Non-custodial, open source, on-chain escrow \u2014 this is what crypto was supposed to be. One solo dev shipping faster than funded teams.',
-                  author: '@solanadev',
-                  context: 'Electric Capital Report',
-                  feature: 'Open Source',
-                },
-                {
-                  quote:
-                    'I top up my mom\u2019s Movistar from Houston in 30 seconds. She sees the balance instantly. She doesn\u2019t know it\u2019s crypto. That\u2019s the point.',
-                  author: 'Isabella G.',
-                  context: 'Houston, TX',
-                  feature: 'Phone Top-ups',
-                },
-              ].map((testimonial, i) => (
-                <motion.div
-                  key={i}
-                  custom={i}
-                  variants={fadeUp}
-                  className="bg-black p-8 hover:bg-white/[0.02] transition flex flex-col"
-                >
-                  <span className="text-[10px] font-mono text-gold-500/60 uppercase tracking-widest mb-4">
-                    {testimonial.feature}
-                  </span>
-                  <p className="text-white/50 leading-relaxed flex-1 mb-6">
-                    &ldquo;{testimonial.quote}&rdquo;
-                  </p>
-                  <div>
-                    <p className="font-bold text-sm">{testimonial.author}</p>
-                    <p className="text-xs text-white/30">{testimonial.context}</p>
-                  </div>
-                </motion.div>
-              ))}
-            </motion.div>
-          </div>
-        </section>
-
         {/* ── FAQ ──────────────────────────────────────────────── */}
         <section id="faq" className="py-24 md:py-32 px-6 border-t border-white/10">
           <div className="max-w-4xl mx-auto">
@@ -1393,36 +884,36 @@ export default function Home() {
             >
               {[
                 {
-                  q: 'Is MVGA safe to use?',
-                  a: 'MVGA is non-custodial — you hold your own private keys. P2P trades use on-chain escrow secured by a Solana smart contract, not a server wallet. All code is open source and auditable on GitHub.',
+                  q: 'Is MVGA safe?',
+                  a: 'Yes. Your money is secured by your own private keys on your device \u2014 MVGA never holds your funds. P2P exchanges use smart contract escrow that automatically releases funds when both parties confirm. The entire platform is open source and has been through 14 security audit rounds.',
                 },
                 {
-                  q: 'What fees does MVGA charge?',
-                  a: 'Zero founder fees. A 0.1% platform fee applies to token swaps and is distributed to stakers, the humanitarian fund, and token burns. P2P trades have no platform fee. On-chain transaction fees (~$0.01) go to the Solana network.',
+                  q: 'What does it cost?',
+                  a: 'Zero platform fees on person-to-person transfers. Currency exchanges have a 0.1% fee. The Visa debit card has no monthly fee and no foreign exchange fee. Network transaction fees are near-zero (less than $0.01).',
                 },
                 {
-                  q: 'Do I need KYC to use the wallet?',
-                  a: 'No. The non-custodial wallet, P2P trading, staking, and grants are all permissionless. KYC is only required if you apply for the optional Visa debit card.',
+                  q: 'Do I need a bank account?',
+                  a: 'No. You can receive money from other MVGA users, deposit via credit/debit card, or exchange with peers using Zelle, PayPal, Venmo, or Pago M\u00F3vil. You only need a bank account if you want to cash out to one.',
                 },
                 {
-                  q: 'Which tokens does MVGA support?',
-                  a: 'SOL, USDC, USDT, and the MVGA token. Swaps are powered by Jupiter aggregator, giving you access to the full Solana token ecosystem.',
+                  q: 'How do I add money?',
+                  a: 'Three ways: (1) Receive a transfer from another MVGA user for free. (2) Deposit with a credit card, debit card, or bank transfer via our payment partners. (3) Exchange bol\u00EDvares for dollars peer-to-peer through the built-in P2P marketplace.',
                 },
                 {
-                  q: 'How does P2P escrow work?',
-                  a: 'The seller locks crypto in an on-chain escrow vault. The buyer sends fiat (Zelle, PayPal, bank transfer). Once the seller confirms receipt, the smart contract releases tokens to the buyer automatically.',
+                  q: 'Can I use it outside Venezuela?',
+                  a: 'Yes. The wallet works globally. The Visa debit card works at 80M+ merchants worldwide. Phone top-ups work for Venezuelan carriers from anywhere. The app is used by the Venezuelan diaspora in the US, Spain, Colombia, and beyond.',
                 },
                 {
-                  q: 'Can I withdraw my staked tokens anytime?',
-                  a: 'Yes, if you choose the Flexible lock period (1x multiplier). You can also opt for 30, 90, or 180 day lock periods for bonus multipliers up to 2x. Your tier (Bronze/Silver/Gold/Diamond) is based on how much you stake, not the lock period.',
+                  q: 'Is there a mobile app?',
+                  a: 'MVGA is a Progressive Web App (PWA) \u2014 visit app.mvga.io in your browser and install it to your home screen. It works exactly like a native app with push notifications, offline support, and biometric unlock. No app store needed.',
                 },
                 {
-                  q: 'Is MVGA available outside Venezuela?',
-                  a: 'The wallet and staking features work globally. P2P trading is optimized for Venezuelan payment methods but supports international options. The platform is designed for Venezuelans and the diaspora.',
+                  q: 'How does the rewards program work?',
+                  a: 'You earn rewards for using the platform and referring friends. Higher reward tiers unlock fee discounts (up to 100% off), cashback, and priority support. Rewards come from real platform revenue, not inflation.',
                 },
                 {
-                  q: 'Where can I report a security issue?',
-                  a: 'See our Security Policy (SECURITY.md on GitHub) for responsible disclosure. Critical vulnerabilities can be reported privately to the team.',
+                  q: 'Is MVGA open source?',
+                  a: 'Yes. The entire platform \u2014 API, wallet app, and this website \u2014 is public on GitHub. Anyone can audit the code and verify exactly what the platform does. 14 security audits completed with zero known vulnerabilities.',
                 },
               ].map((faq, i) => (
                 <motion.details
@@ -1453,11 +944,11 @@ export default function Home() {
               viewport={{ once: true }}
               className="text-4xl md:text-6xl font-black uppercase tracking-tight mb-6"
             >
-              Join the Movement
+              Your Money Deserves Better
             </motion.h2>
             <p className="text-xl text-white/40 mb-10">
-              Venezuela&apos;s free financial infrastructure. Made by Venezuelans, for Venezuelans.
-              Community-owned. Open source. Transparent.
+              Digital dollars for Venezuela. Send, spend, save, and earn &mdash; all from one app.
+              Made by Venezuelans, for Venezuelans.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
@@ -1465,21 +956,14 @@ export default function Home() {
                 target="_blank"
                 className="bg-white text-black font-bold text-sm uppercase tracking-wider px-8 py-4 hover:bg-transparent hover:text-white border border-white transition-all"
               >
-                Open Wallet
+                Open Your Account
               </Link>
               <Link
                 href="https://t.me/mvga"
                 target="_blank"
                 className="border border-white/30 text-white font-bold text-sm uppercase tracking-wider px-8 py-4 hover:border-white transition-all"
               >
-                Join Telegram
-              </Link>
-              <Link
-                href="https://twitter.com/mvga"
-                target="_blank"
-                className="border border-white/30 text-white font-bold text-sm uppercase tracking-wider px-8 py-4 hover:border-white transition-all"
-              >
-                Follow on X
+                Join Community
               </Link>
             </div>
           </div>
@@ -1501,7 +985,7 @@ export default function Home() {
               target="_blank"
               className="bg-gold-500 text-black font-bold text-sm uppercase tracking-wider px-6 py-3 hover:bg-gold-400 transition-all shadow-lg shadow-gold-500/20 flex items-center gap-2"
             >
-              <span>Open Wallet</span>
+              <span>Open Account</span>
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"

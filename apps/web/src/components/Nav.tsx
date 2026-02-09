@@ -18,7 +18,7 @@ export default function Nav() {
             href="#mission"
             className="text-sm text-white/50 hover:text-white tracking-wide uppercase transition animated-underline"
           >
-            Mission
+            Why MVGA
           </Link>
           <Link
             href="#features"
@@ -27,16 +27,10 @@ export default function Nav() {
             Features
           </Link>
           <Link
-            href="#transparency"
+            href="#faq"
             className="text-sm text-white/50 hover:text-white tracking-wide uppercase transition animated-underline"
           >
-            Transparency
-          </Link>
-          <Link
-            href="#tokenomics"
-            className="text-sm text-white/50 hover:text-white tracking-wide uppercase transition animated-underline"
-          >
-            Tokenomics
+            FAQ
           </Link>
           <Link
             href="/grants"
@@ -52,7 +46,7 @@ export default function Nav() {
             target="_blank"
             className="hidden md:inline-block bg-white text-black font-bold text-sm uppercase tracking-wider px-6 py-2.5 hover:bg-white/90 transition"
           >
-            Launch App
+            Open Account
           </Link>
           <button
             onClick={() => setMenuOpen(!menuOpen)}
@@ -80,7 +74,7 @@ export default function Nav() {
               onClick={() => setMenuOpen(false)}
               className="text-sm text-white/50 hover:text-white uppercase tracking-wider"
             >
-              Mission
+              Why MVGA
             </Link>
             <Link
               href="#features"
@@ -90,18 +84,11 @@ export default function Nav() {
               Features
             </Link>
             <Link
-              href="#transparency"
+              href="#faq"
               onClick={() => setMenuOpen(false)}
               className="text-sm text-white/50 hover:text-white uppercase tracking-wider"
             >
-              Transparency
-            </Link>
-            <Link
-              href="#tokenomics"
-              onClick={() => setMenuOpen(false)}
-              className="text-sm text-white/50 hover:text-white uppercase tracking-wider"
-            >
-              Tokenomics
+              FAQ
             </Link>
             <Link
               href="/grants"
@@ -115,7 +102,7 @@ export default function Nav() {
               target="_blank"
               className="bg-white text-black font-bold text-sm uppercase tracking-wider px-6 py-3 text-center mt-2"
             >
-              Launch App
+              Open Account
             </Link>
           </div>
         </div>

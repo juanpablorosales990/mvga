@@ -21,26 +21,27 @@ const jetbrains = JetBrains_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://mvga.io'),
-  title: 'MVGA - Make Venezuela Great Again',
+  title: 'MVGA - Digital Dollars for Venezuela',
   description:
-    "Venezuela's open-source financial infrastructure. Send money, hold stable value, support small businesses. By Venezuelans, for Venezuelans.",
+    'Send money to Venezuela for free. Hold US dollars, get a Visa debit card, top up phones, earn interest, and cash out to local banks. Made by Venezuelans, for Venezuelans.',
   keywords: [
     'Venezuela',
-    'crypto',
     'remittances',
-    'wallet',
+    'send money Venezuela',
+    'digital dollars',
+    'neobank',
+    'Visa debit card',
+    'phone top-up Venezuela',
+    'P2P exchange',
     'USDC',
-    'Solana',
-    'humanitarian',
-    'DeFi',
-    'cryptocurrency exchange',
-    'staking rewards',
-    'Solana blockchain',
-    'P2P trading',
+    'Venezuelan diaspora',
+    'fintech Venezuela',
+    'mobile wallet',
   ],
   openGraph: {
-    title: 'MVGA - Make Venezuela Great Again',
-    description: "Venezuela's open-source financial infrastructure",
+    title: 'MVGA - Digital Dollars for Venezuela',
+    description:
+      'Send money for free, get a Visa card, top up phones, and earn interest. One app for the Venezuelan diaspora.',
     type: 'website',
     url: 'https://mvga.io',
     images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'MVGA' }],
@@ -48,7 +49,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     site: '@mvga',
-    images: [{ url: '/og-image.png', alt: 'MVGA - Make Venezuela Great Again' }],
+    images: [{ url: '/og-image.png', alt: 'MVGA - Digital Dollars for Venezuela' }],
   },
   icons: {
     icon: '/favicon.ico',
@@ -70,7 +71,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               url: 'https://mvga.io',
               logo: 'https://mvga.io/og-image.png',
               description:
-                "Venezuela's open-source financial infrastructure. Send money, hold stable value, support small businesses.",
+                'Digital dollars for Venezuela. Send money for free, get a Visa debit card, top up phones, earn interest, and cash out to local banks.',
               sameAs: ['https://twitter.com/mvga', 'https://github.com/juanpablorosales990/mvga'],
               foundingDate: '2026',
               areaServed: 'Venezuela',
