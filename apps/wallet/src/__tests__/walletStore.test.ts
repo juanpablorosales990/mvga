@@ -21,6 +21,9 @@ describe('walletStore', () => {
       balanceVersion: 0,
       recentRecipients: [],
       priceAlerts: [],
+      tourCompleted: false,
+      checklistDismissed: false,
+      firstSendCompleted: false,
     });
   });
 
@@ -303,6 +306,41 @@ describe('walletStore', () => {
       const id = useWalletStore.getState().priceAlerts[0].id;
       useWalletStore.getState().triggerPriceAlert(id);
       expect(useWalletStore.getState().priceAlerts[0].triggered).toBe(true);
+    });
+  });
+
+  describe('onboarding', () => {
+    it('starts with tour not completed', () => {
+      expect(useWalletStore.getState().tourCompleted).toBe(false);
+    });
+
+    it('completes tour', () => {
+      useWalletStore.getState().completeTour();
+      expect(useWalletStore.getState().tourCompleted).toBe(true);
+    });
+
+    it('starts with checklist not dismissed', () => {
+      expect(useWalletStore.getState().checklistDismissed).toBe(false);
+    });
+
+    it('dismisses checklist', () => {
+      useWalletStore.getState().dismissChecklist();
+      expect(useWalletStore.getState().checklistDismissed).toBe(true);
+    });
+
+    it('starts with first send not completed', () => {
+      expect(useWalletStore.getState().firstSendCompleted).toBe(false);
+    });
+
+    it('marks first send completed', () => {
+      useWalletStore.getState().markFirstSend();
+      expect(useWalletStore.getState().firstSendCompleted).toBe(true);
+    });
+
+    it('calling markFirstSend multiple times is idempotent', () => {
+      useWalletStore.getState().markFirstSend();
+      useWalletStore.getState().markFirstSend();
+      expect(useWalletStore.getState().firstSendCompleted).toBe(true);
     });
   });
 
