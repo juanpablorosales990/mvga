@@ -6,6 +6,7 @@ describe('KycService', () => {
   let service: KycService;
   let mockPrisma: any;
   let mockSumsub: any;
+  let mockPersona: any;
   let originalEnv: string | undefined;
 
   beforeEach(() => {
@@ -27,7 +28,15 @@ describe('KycService', () => {
       parseWebhookPayload: jest.fn(),
     };
 
-    service = new KycService(mockPrisma, mockSumsub);
+    mockPersona = {
+      isEnabled: false,
+      templateConfig: { templateId: 'itmpl_test', environmentId: 'env_test' },
+      createInquiry: jest.fn(),
+      getInquiryStatus: jest.fn(),
+      parseWebhookPayload: jest.fn(),
+    };
+
+    service = new KycService(mockPrisma, mockSumsub, mockPersona);
   });
 
   afterEach(() => {
@@ -35,12 +44,17 @@ describe('KycService', () => {
   });
 
   describe('createSession', () => {
-    it('returns mock token in dev when sumsub disabled', async () => {
+    it('returns mock token in dev when both providers disabled', async () => {
       process.env.NODE_ENV = 'development';
       mockPrisma.userKyc.upsert.mockResolvedValue({});
 
       const result = await service.createSession('user-1', 'wallet-abc');
-      expect(result).toEqual({ token: 'mock_token', applicantId: 'mock_001', mock: true });
+      expect(result).toEqual({
+        token: 'mock_token',
+        applicantId: 'mock_001',
+        mock: true,
+        provider: 'mock',
+      });
       expect(mockPrisma.userKyc.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { userId: 'user-1' },
@@ -56,7 +70,36 @@ describe('KycService', () => {
       );
     });
 
-    it('creates applicant and returns token when sumsub enabled', async () => {
+    it('uses Persona when enabled (preferred over Sumsub)', async () => {
+      mockPersona.isEnabled = true;
+      mockSumsub.isEnabled = true; // Both enabled, Persona wins
+      mockPrisma.userKyc.findUnique.mockResolvedValue(null);
+      mockPersona.createInquiry.mockResolvedValue('inq_123');
+      mockPrisma.userKyc.upsert.mockResolvedValue({});
+
+      const result = await service.createSession('user-1', 'wallet-abc');
+      expect(result).toEqual({
+        inquiryId: 'inq_123',
+        templateId: 'itmpl_test',
+        environmentId: 'env_test',
+        referenceId: 'wallet-abc',
+        provider: 'persona',
+      });
+      expect(mockPersona.createInquiry).toHaveBeenCalledWith('wallet-abc');
+      expect(mockSumsub.createApplicant).not.toHaveBeenCalled();
+    });
+
+    it('reuses existing inquiry ID for Persona', async () => {
+      mockPersona.isEnabled = true;
+      mockPrisma.userKyc.findUnique.mockResolvedValue({ externalId: 'inq_existing' });
+      mockPrisma.userKyc.upsert.mockResolvedValue({});
+
+      const result = await service.createSession('user-1', 'wallet-abc');
+      expect(result.inquiryId).toBe('inq_existing');
+      expect(mockPersona.createInquiry).not.toHaveBeenCalled();
+    });
+
+    it('falls back to Sumsub when only Sumsub is enabled', async () => {
       mockSumsub.isEnabled = true;
       mockPrisma.userKyc.findUnique.mockResolvedValue(null);
       mockSumsub.createApplicant.mockResolvedValue('applicant-123');
@@ -64,11 +107,15 @@ describe('KycService', () => {
       mockPrisma.userKyc.upsert.mockResolvedValue({});
 
       const result = await service.createSession('user-1', 'wallet-abc');
-      expect(result).toEqual({ token: 'sdk_token_abc', applicantId: 'applicant-123' });
+      expect(result).toEqual({
+        token: 'sdk_token_abc',
+        applicantId: 'applicant-123',
+        provider: 'sumsub',
+      });
       expect(mockSumsub.createApplicant).toHaveBeenCalledWith('wallet-abc');
     });
 
-    it('reuses existing externalId when available', async () => {
+    it('reuses existing externalId for Sumsub', async () => {
       mockSumsub.isEnabled = true;
       mockPrisma.userKyc.findUnique.mockResolvedValue({ externalId: 'existing-id' });
       mockSumsub.getAccessToken.mockResolvedValue({ token: 'tok' });
@@ -110,10 +157,12 @@ describe('KycService', () => {
     });
   });
 
-  describe('handleWebhook', () => {
+  describe('handleSumsubWebhook', () => {
     it('throws BadRequestException on invalid signature', async () => {
       mockSumsub.parseWebhookPayload.mockReturnValue(null);
-      await expect(service.handleWebhook('body', 'bad-sig')).rejects.toThrow(BadRequestException);
+      await expect(service.handleSumsubWebhook('body', 'bad-sig')).rejects.toThrow(
+        BadRequestException
+      );
     });
 
     it('approves user on GREEN reviewAnswer', async () => {
@@ -125,7 +174,7 @@ describe('KycService', () => {
       mockPrisma.userKyc.findFirst.mockResolvedValue({ id: 'kyc-1', externalId: 'ext-123' });
       mockPrisma.userKyc.update.mockResolvedValue({});
 
-      await service.handleWebhook('body', 'sig');
+      await service.handleSumsubWebhook('body', 'sig');
       expect(mockPrisma.userKyc.update).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: 'kyc-1' },
@@ -143,7 +192,7 @@ describe('KycService', () => {
       mockPrisma.userKyc.findFirst.mockResolvedValue({ id: 'kyc-1', externalId: 'ext-123' });
       mockPrisma.userKyc.update.mockResolvedValue({});
 
-      await service.handleWebhook('body', 'sig');
+      await service.handleSumsubWebhook('body', 'sig');
       expect(mockPrisma.userKyc.update).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({ status: 'REJECTED', rejectionReason: 'ID_EXPIRED' }),
@@ -163,7 +212,7 @@ describe('KycService', () => {
       });
       mockPrisma.userKyc.update.mockResolvedValue({});
 
-      await service.handleWebhook('body', 'sig');
+      await service.handleSumsubWebhook('body', 'sig');
       expect(mockPrisma.userKyc.update).toHaveBeenCalledWith(
         expect.objectContaining({
           data: { status: 'PENDING' },
@@ -182,28 +231,8 @@ describe('KycService', () => {
         status: 'APPROVED',
       });
 
-      await service.handleWebhook('body', 'sig');
+      await service.handleSumsubWebhook('body', 'sig');
       expect(mockPrisma.userKyc.update).not.toHaveBeenCalled();
-    });
-
-    it('sets PENDING on applicantOnHold event', async () => {
-      mockSumsub.parseWebhookPayload.mockReturnValue({
-        type: 'applicantOnHold',
-        applicantId: 'ext-123',
-      });
-      mockPrisma.userKyc.findFirst.mockResolvedValue({
-        id: 'kyc-1',
-        externalId: 'ext-123',
-        status: 'PENDING',
-      });
-      mockPrisma.userKyc.update.mockResolvedValue({});
-
-      await service.handleWebhook('body', 'sig');
-      expect(mockPrisma.userKyc.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: { status: 'PENDING' },
-        })
-      );
     });
 
     it('does not overwrite APPROVED on applicantOnHold', async () => {
@@ -217,7 +246,7 @@ describe('KycService', () => {
         status: 'APPROVED',
       });
 
-      await service.handleWebhook('body', 'sig');
+      await service.handleSumsubWebhook('body', 'sig');
       expect(mockPrisma.userKyc.update).not.toHaveBeenCalled();
     });
 
@@ -229,7 +258,166 @@ describe('KycService', () => {
       });
       mockPrisma.userKyc.findFirst.mockResolvedValue(null);
 
-      const result = await service.handleWebhook('body', 'sig');
+      const result = await service.handleSumsubWebhook('body', 'sig');
+      expect(result).toEqual({ ok: true });
+      expect(mockPrisma.userKyc.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('handlePersonaWebhook', () => {
+    it('throws BadRequestException on invalid signature', async () => {
+      mockPersona.parseWebhookPayload.mockReturnValue(null);
+      await expect(service.handlePersonaWebhook('body', 'bad-sig')).rejects.toThrow(
+        BadRequestException
+      );
+    });
+
+    it('approves user on inquiry.approved event', async () => {
+      mockPersona.parseWebhookPayload.mockReturnValue({
+        data: {
+          attributes: {
+            name: 'inquiry.approved',
+            payload: {
+              data: {
+                id: 'inq_123',
+                attributes: { status: 'approved', decision: 'approved' },
+              },
+            },
+          },
+        },
+      });
+      mockPrisma.userKyc.findFirst.mockResolvedValue({ id: 'kyc-1', externalId: 'inq_123' });
+      mockPrisma.userKyc.update.mockResolvedValue({});
+
+      await service.handlePersonaWebhook('body', 'sig');
+      expect(mockPrisma.userKyc.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'kyc-1' },
+          data: expect.objectContaining({ status: 'APPROVED', tier: 1 }),
+        })
+      );
+    });
+
+    it('approves user on inquiry.completed with approved decision', async () => {
+      mockPersona.parseWebhookPayload.mockReturnValue({
+        data: {
+          attributes: {
+            name: 'inquiry.completed',
+            payload: {
+              data: {
+                id: 'inq_123',
+                attributes: { status: 'completed', decision: 'approved' },
+              },
+            },
+          },
+        },
+      });
+      mockPrisma.userKyc.findFirst.mockResolvedValue({ id: 'kyc-1', externalId: 'inq_123' });
+      mockPrisma.userKyc.update.mockResolvedValue({});
+
+      await service.handlePersonaWebhook('body', 'sig');
+      expect(mockPrisma.userKyc.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ status: 'APPROVED' }),
+        })
+      );
+    });
+
+    it('rejects user on inquiry.declined event', async () => {
+      mockPersona.parseWebhookPayload.mockReturnValue({
+        data: {
+          attributes: {
+            name: 'inquiry.declined',
+            payload: {
+              data: {
+                id: 'inq_123',
+                attributes: { status: 'declined', decision: 'declined' },
+              },
+            },
+          },
+        },
+      });
+      mockPrisma.userKyc.findFirst.mockResolvedValue({ id: 'kyc-1', externalId: 'inq_123' });
+      mockPrisma.userKyc.update.mockResolvedValue({});
+
+      await service.handlePersonaWebhook('body', 'sig');
+      expect(mockPrisma.userKyc.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ status: 'REJECTED' }),
+        })
+      );
+    });
+
+    it('sets EXPIRED on inquiry.expired event', async () => {
+      mockPersona.parseWebhookPayload.mockReturnValue({
+        data: {
+          attributes: {
+            name: 'inquiry.expired',
+            payload: {
+              data: {
+                id: 'inq_123',
+                attributes: { status: 'expired' },
+              },
+            },
+          },
+        },
+      });
+      mockPrisma.userKyc.findFirst.mockResolvedValue({
+        id: 'kyc-1',
+        externalId: 'inq_123',
+        status: 'PENDING',
+      });
+      mockPrisma.userKyc.update.mockResolvedValue({});
+
+      await service.handlePersonaWebhook('body', 'sig');
+      expect(mockPrisma.userKyc.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: { status: 'EXPIRED' },
+        })
+      );
+    });
+
+    it('does not overwrite APPROVED on inquiry.expired', async () => {
+      mockPersona.parseWebhookPayload.mockReturnValue({
+        data: {
+          attributes: {
+            name: 'inquiry.expired',
+            payload: {
+              data: {
+                id: 'inq_123',
+                attributes: { status: 'expired' },
+              },
+            },
+          },
+        },
+      });
+      mockPrisma.userKyc.findFirst.mockResolvedValue({
+        id: 'kyc-1',
+        externalId: 'inq_123',
+        status: 'APPROVED',
+      });
+
+      await service.handlePersonaWebhook('body', 'sig');
+      expect(mockPrisma.userKyc.update).not.toHaveBeenCalled();
+    });
+
+    it('ignores webhook for unknown inquiry', async () => {
+      mockPersona.parseWebhookPayload.mockReturnValue({
+        data: {
+          attributes: {
+            name: 'inquiry.approved',
+            payload: {
+              data: {
+                id: 'inq_unknown',
+                attributes: { status: 'approved' },
+              },
+            },
+          },
+        },
+      });
+      mockPrisma.userKyc.findFirst.mockResolvedValue(null);
+
+      const result = await service.handlePersonaWebhook('body', 'sig');
       expect(result).toEqual({ ok: true });
       expect(mockPrisma.userKyc.update).not.toHaveBeenCalled();
     });

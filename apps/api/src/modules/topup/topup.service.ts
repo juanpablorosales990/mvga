@@ -3,6 +3,8 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../common/prisma.service';
 import { SolanaService } from '../wallet/solana.service';
 import { randomUUID } from 'crypto';
+import { PublicKey } from '@solana/web3.js';
+import { getAssociatedTokenAddress } from '@solana/spl-token';
 
 interface ReloadlyToken {
   accessToken: string;
@@ -27,6 +29,9 @@ export class TopUpService {
   private readonly baseUrl: string;
   private readonly authUrl = 'https://auth.reloadly.com/oauth/token';
 
+  private readonly USDC_MINT = new PublicKey('EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v');
+  private readonly USDC_DECIMALS = 6;
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
@@ -36,6 +41,95 @@ export class TopUpService {
     this.baseUrl = isSandbox
       ? 'https://topups-sandbox.reloadly.com'
       : 'https://topups.reloadly.com';
+  }
+
+  get isEnabled(): boolean {
+    const clientId = this.config.get('RELOADLY_CLIENT_ID');
+    const clientSecret = this.config.get('RELOADLY_CLIENT_SECRET');
+    const treasuryWallet = this.config.get('TREASURY_WALLET');
+    return Boolean(clientId && clientSecret && treasuryWallet);
+  }
+
+  getStatus() {
+    const treasuryWallet = this.config.get<string>('TREASURY_WALLET');
+    return {
+      enabled: this.isEnabled,
+      usdcMint: this.USDC_MINT.toBase58(),
+      treasuryWallet: this.isEnabled ? treasuryWallet : undefined,
+    };
+  }
+
+  private amountToRaw(amount: number): bigint {
+    // Amount is validated by DTO; still defensively clamp and round.
+    const factor = 10 ** this.USDC_DECIMALS;
+    return BigInt(Math.round(amount * factor));
+  }
+
+  private async verifyTreasuryPayment(params: {
+    signature: string;
+    fromWallet: string;
+    toTreasuryWallet: string;
+    minAmountUsd: number;
+  }) {
+    const { signature, fromWallet, toTreasuryWallet, minAmountUsd } = params;
+
+    const fromOwner = new PublicKey(fromWallet);
+    const toOwner = new PublicKey(toTreasuryWallet);
+    const expectedSource = await getAssociatedTokenAddress(this.USDC_MINT, fromOwner);
+    const expectedDest = await getAssociatedTokenAddress(this.USDC_MINT, toOwner);
+    const minRaw = this.amountToRaw(minAmountUsd);
+
+    const conn = this.solana.getConnection();
+    const tx = await conn.getParsedTransaction(signature, {
+      maxSupportedTransactionVersion: 0,
+    });
+    if (!tx) {
+      throw new BadRequestException('Payment transaction not found');
+    }
+    if (tx.meta?.err) {
+      throw new BadRequestException('Payment transaction failed');
+    }
+
+    const instructions = tx.transaction.message.instructions as Array<any>;
+    let paidRaw = 0n;
+
+    for (const ix of instructions) {
+      if (ix?.program !== 'spl-token') continue;
+      const parsed = ix?.parsed;
+      const info = parsed?.info;
+      if (!info) continue;
+
+      const source = String(info.source || '');
+      const destination = String(info.destination || '');
+      const authority = info.authority ? String(info.authority) : '';
+      const mint = info.mint ? String(info.mint) : '';
+
+      // Ensure this is a USDC transfer from the user's ATA to the treasury ATA.
+      if (source !== expectedSource.toBase58()) continue;
+      if (destination !== expectedDest.toBase58()) continue;
+      if (authority && authority !== fromOwner.toBase58()) continue;
+      if (mint && mint !== this.USDC_MINT.toBase58()) continue;
+
+      const rawStr =
+        typeof info.amount === 'string'
+          ? info.amount
+          : typeof info?.tokenAmount?.amount === 'string'
+            ? info.tokenAmount.amount
+            : null;
+      if (!rawStr) continue;
+
+      try {
+        paidRaw += BigInt(rawStr);
+      } catch {
+        // ignore malformed
+      }
+    }
+
+    if (paidRaw < minRaw) {
+      throw new BadRequestException('Insufficient payment amount');
+    }
+
+    return { paidRaw };
   }
 
   private async getAccessToken(): Promise<string> {
@@ -140,23 +234,43 @@ export class TopUpService {
     phone: string,
     countryCode: string,
     operatorId: number,
-    amountUsd: number
+    amountUsd: number,
+    paymentSignature: string
   ) {
-    // CRITICAL: Verify user has sufficient USDC balance before executing top-up.
-    // In self-custody mode, users sign their own transactions. The top-up cost
-    // is deducted via a separate USDC transfer that must be confirmed before
-    // or alongside the Reloadly call. For now, we validate balance to prevent
-    // abuse — the actual deduction happens when users fund the top-up on-chain.
-    const USDC_MINT = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
-    const tokenAccounts = await this.solana.getTokenAccounts(walletAddress).catch(() => []);
-    const usdcBalance = tokenAccounts.find((t) => t.mint === USDC_MINT)?.amount ?? 0;
-    if (usdcBalance < amountUsd) {
-      throw new BadRequestException(
-        `Insufficient USDC balance: ${usdcBalance.toFixed(2)} available, ${amountUsd.toFixed(2)} required`
-      );
+    if (!this.isEnabled) {
+      throw new BadRequestException('Top-ups are not available');
     }
 
-    const customIdentifier = `mvga-${randomUUID()}`;
+    const treasuryWallet = this.config.get<string>('TREASURY_WALLET');
+    if (!treasuryWallet) {
+      throw new BadRequestException('Treasury wallet not configured');
+    }
+
+    await this.verifyTreasuryPayment({
+      signature: paymentSignature,
+      fromWallet: walletAddress,
+      toTreasuryWallet: treasuryWallet,
+      minAmountUsd: amountUsd,
+    });
+
+    // Use the payment signature for idempotency and to prevent replay.
+    const customIdentifier = `mvga-usdc-${paymentSignature}`;
+
+    // If the signature was already used, return the existing record.
+    const existing = await this.prisma.topUp.findFirst({
+      where: { customIdentifier },
+    });
+    if (existing) {
+      return {
+        id: existing.id,
+        status: existing.status,
+        operatorName: existing.operatorName,
+        amountUsd: existing.amountUsd,
+        deliveredAmount: existing.deliveredAmount,
+        deliveredCurrency: existing.deliveredCurrency,
+        reloadlyTxId: existing.reloadlyTxId,
+      };
+    }
 
     // Create DB record first (PENDING)
     const topup = await this.prisma.topUp.create({

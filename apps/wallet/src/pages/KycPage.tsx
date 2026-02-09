@@ -3,10 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { useKyc } from '../hooks/useKyc';
 
-/**
- * Load the Sumsub WebSDK script dynamically.
- * Returns a promise that resolves when the script is loaded.
- */
+// ─── Sumsub WebSDK (script tag) ──────────────────────────────────────
+
 function loadSumsubScript(): Promise<void> {
   if (document.getElementById('sumsub-websdk-script')) {
     return Promise.resolve();
@@ -21,10 +19,6 @@ function loadSumsubScript(): Promise<void> {
   });
 }
 
-/**
- * SumsubWebSdk — mounts the Sumsub verification widget.
- * Uses the vanilla JS SDK loaded via script tag (no npm dependency needed).
- */
 function SumsubWebSdk({
   accessToken,
   onRefreshToken,
@@ -58,9 +52,7 @@ function SumsubWebSdk({
           .init(accessToken, onRefreshToken)
           .withConf({ lang: document.documentElement.lang || 'en' })
           .withOptions({ addViewportTag: false, adaptIframeHeight: true })
-          .on('idCheck.onStepCompleted', () => {
-            // Step completed — verification is in progress
-          })
+          .on('idCheck.onStepCompleted', () => {})
           .on('idCheck.onApplicantStatusChanged', () => {
             onComplete();
           })
@@ -96,46 +88,160 @@ function SumsubWebSdk({
   );
 }
 
+// ─── Persona Embedded Flow (npm SDK loaded dynamically) ──────────────
+
+function PersonaFlow({
+  templateId,
+  environmentId,
+  referenceId,
+  inquiryId,
+  onComplete,
+  onError,
+}: {
+  templateId: string;
+  environmentId: string;
+  referenceId: string;
+  inquiryId?: string;
+  onComplete: () => void;
+  onError: (msg: string) => void;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    let client: { destroy?: () => void } | null = null;
+
+    async function init() {
+      try {
+        const PersonaModule = await import('persona');
+        const Persona = PersonaModule.default || PersonaModule;
+
+        if (!mounted) return;
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const ClientClass = (Persona as any).Client || Persona;
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const config: Record<string, any> = {
+          templateId,
+          environmentId,
+          referenceId,
+          onReady: () => {
+            // SDK is loaded — it renders inline automatically
+          },
+          onComplete: ({ inquiryId: _id, status }: { inquiryId: string; status: string }) => {
+            if (status === 'completed') {
+              onComplete();
+            }
+          },
+          onCancel: () => {
+            // User cancelled — do nothing, they can restart
+          },
+          onError: (error: Error) => {
+            if (mounted) onError(error.message || 'Persona verification failed');
+          },
+        };
+
+        // If we have an existing inquiry, resume it
+        if (inquiryId) {
+          config.inquiryId = inquiryId;
+        }
+
+        client = new ClientClass(config);
+
+        // Open the modal
+        if (client && typeof (client as { open?: () => void }).open === 'function') {
+          (client as { open: () => void }).open();
+        }
+      } catch (err) {
+        if (mounted) onError(err instanceof Error ? err.message : 'Failed to load Persona SDK');
+      }
+    }
+
+    init();
+
+    return () => {
+      mounted = false;
+      if (client && typeof client.destroy === 'function') {
+        client.destroy();
+      }
+    };
+  }, [templateId, environmentId, referenceId, inquiryId, onComplete, onError]);
+
+  return (
+    <div
+      ref={containerRef}
+      className="min-h-[400px] bg-white/5 border border-white/10 flex items-center justify-center"
+    >
+      <div className="text-center space-y-3">
+        <div className="w-8 h-8 border-2 border-gold-500 border-t-transparent rounded-full animate-spin mx-auto" />
+        <p className="text-sm text-white/40">Loading verification...</p>
+      </div>
+    </div>
+  );
+}
+
+// ─── KycPage ─────────────────────────────────────────────────────────
+
+interface SessionData {
+  provider: 'persona' | 'sumsub' | 'mock';
+  // Sumsub
+  token?: string;
+  // Persona
+  templateId?: string;
+  environmentId?: string;
+  referenceId?: string;
+  inquiryId?: string;
+}
+
 export default function KycPage() {
   const { t } = useTranslation();
   const { status, loading, rejectionReason, createSession, refresh } = useKyc();
-  const [sdkToken, setSdkToken] = useState<string | null>(null);
+  const [session, setSession] = useState<SessionData | null>(null);
   const [sdkError, setSdkError] = useState<string | null>(null);
 
   const handleStart = async () => {
     setSdkError(null);
-    const session = await createSession();
-    if (session?.mock) {
-      // Mock mode — auto-approved, just refresh
+    const result = await createSession();
+    if (result?.mock) {
       refresh();
       return;
     }
-    if (session?.token) {
-      setSdkToken(session.token);
+    if (result) {
+      setSession({
+        provider: result.provider,
+        token: result.token,
+        templateId: result.templateId,
+        environmentId: result.environmentId,
+        referenceId: result.referenceId,
+        inquiryId: result.inquiryId,
+      });
     }
   };
 
   const handleSdkComplete = useCallback(() => {
-    setSdkToken(null);
+    setSession(null);
     refresh();
   }, [refresh]);
 
   const handleRefreshToken = useCallback(async (): Promise<string> => {
-    const session = await createSession();
-    return session?.token ?? '';
+    const result = await createSession();
+    return result?.token ?? '';
   }, [createSession]);
 
   const handleSdkError = useCallback((msg: string) => {
     setSdkError(msg);
-    setSdkToken(null);
+    setSession(null);
   }, []);
 
   // Auto-dismiss SDK on status change to APPROVED
   useEffect(() => {
     if (status === 'APPROVED' || status === 'REJECTED') {
-      setSdkToken(null);
+      setSession(null);
     }
   }, [status]);
+
+  const showingSdk = !!session;
 
   return (
     <div className="space-y-6">
@@ -157,18 +263,29 @@ export default function KycPage() {
         </div>
       )}
 
-      {/* Sumsub WebSDK mounted here when token is available */}
-      {sdkToken && (
+      {/* SDK Widget — Sumsub or Persona */}
+      {session?.provider === 'sumsub' && session.token && (
         <SumsubWebSdk
-          accessToken={sdkToken}
+          accessToken={session.token}
           onRefreshToken={handleRefreshToken}
           onComplete={handleSdkComplete}
           onError={handleSdkError}
         />
       )}
 
+      {session?.provider === 'persona' && session.templateId && (
+        <PersonaFlow
+          templateId={session.templateId}
+          environmentId={session.environmentId || ''}
+          referenceId={session.referenceId || ''}
+          inquiryId={session.inquiryId}
+          onComplete={handleSdkComplete}
+          onError={handleSdkError}
+        />
+      )}
+
       {/* UNVERIFIED */}
-      {status === 'UNVERIFIED' && !sdkToken && (
+      {status === 'UNVERIFIED' && !showingSdk && (
         <div className="card space-y-4">
           <div className="w-16 h-16 border border-gold-500/30 flex items-center justify-center mx-auto">
             <svg
@@ -197,7 +314,7 @@ export default function KycPage() {
       )}
 
       {/* PENDING */}
-      {status === 'PENDING' && !sdkToken && (
+      {status === 'PENDING' && !showingSdk && (
         <div className="card text-center space-y-4">
           <div className="w-8 h-8 border-2 border-gold-500 border-t-transparent rounded-full animate-spin mx-auto" />
           <h3 className="text-lg font-bold">{t('kyc.pending')}</h3>
@@ -229,7 +346,7 @@ export default function KycPage() {
       )}
 
       {/* REJECTED */}
-      {status === 'REJECTED' && !sdkToken && (
+      {status === 'REJECTED' && !showingSdk && (
         <div className="card space-y-4">
           <div className="w-16 h-16 border border-red-500/30 bg-red-500/10 flex items-center justify-center mx-auto">
             <svg
@@ -263,7 +380,7 @@ export default function KycPage() {
       )}
 
       {/* EXPIRED */}
-      {status === 'EXPIRED' && !sdkToken && (
+      {status === 'EXPIRED' && !showingSdk && (
         <div className="card space-y-4 text-center">
           <h3 className="text-lg font-bold text-yellow-400">{t('kyc.title')}</h3>
           <p className="text-sm text-white/40">{t('kyc.verifyDesc')}</p>

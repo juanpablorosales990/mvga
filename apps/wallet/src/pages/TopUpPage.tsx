@@ -1,8 +1,11 @@
-import { useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useConnection } from '@solana/wallet-adapter-react';
 import { useSelfCustodyWallet } from '../contexts/WalletContext';
 import { apiFetch } from '../lib/apiClient';
 import { showToast } from '../hooks/useToast';
+import { PublicKey, Transaction } from '@solana/web3.js';
+import { createTransferInstruction, getAssociatedTokenAddress } from '@solana/spl-token';
 
 interface Operator {
   operatorId: number;
@@ -28,10 +31,39 @@ interface TopUpRecord {
 
 const COUNTRY_CODE = 'VE';
 const PRESET_AMOUNTS = [1, 2, 5, 10];
+const USDC_MINT = new PublicKey('EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v');
+const USDC_DECIMALS = 6;
+
+function amountToRaw(amount: number): bigint {
+  const factor = 10 ** USDC_DECIMALS;
+  return BigInt(Math.round(amount * factor));
+}
 
 export default function TopUpPage() {
   const { t } = useTranslation();
-  const { connected } = useSelfCustodyWallet();
+  const { connected, publicKey, sendTransaction } = useSelfCustodyWallet();
+  const { connection } = useConnection();
+
+  const [status, setStatus] = useState<{ enabled: boolean; treasuryWallet?: string } | null>(null);
+  const [statusLoading, setStatusLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      setStatusLoading(true);
+      try {
+        const s = await apiFetch<{ enabled: boolean; treasuryWallet?: string }>('/topup/status');
+        if (mounted) setStatus(s);
+      } catch {
+        if (mounted) setStatus({ enabled: false });
+      } finally {
+        if (mounted) setStatusLoading(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const [phone, setPhone] = useState('');
   const [operator, setOperator] = useState<Operator | null>(null);
@@ -62,8 +94,29 @@ export default function TopUpPage() {
 
   const handleTopUp = async () => {
     if (!operator || !finalAmount) return;
+    if (!status?.enabled || !status.treasuryWallet) {
+      showToast('error', t('topup.unavailable'));
+      return;
+    }
+    if (!publicKey) {
+      showToast('error', t('send.walletNotConnected'));
+      return;
+    }
     setSending(true);
     try {
+      // 1) Pay treasury on-chain in USDC to prevent free Reloadly top-ups.
+      const treasuryOwner = new PublicKey(status.treasuryWallet);
+      const fromAta = await getAssociatedTokenAddress(USDC_MINT, publicKey);
+      const toAta = await getAssociatedTokenAddress(USDC_MINT, treasuryOwner);
+
+      const rawAmount = amountToRaw(finalAmount);
+      const tx = new Transaction();
+      tx.add(createTransferInstruction(fromAta, toAta, publicKey, rawAmount));
+
+      const paymentSignature = await sendTransaction(tx, connection);
+      await connection.confirmTransaction(paymentSignature, 'confirmed');
+
+      // 2) Execute top-up. Backend verifies `paymentSignature` on-chain.
       const result = await apiFetch<{
         status: string;
         deliveredAmount: number;
@@ -75,6 +128,7 @@ export default function TopUpPage() {
           countryCode: COUNTRY_CODE,
           operatorId: operator.operatorId,
           amount: finalAmount,
+          paymentSignature,
         }),
       });
       showToast(
@@ -120,10 +174,24 @@ export default function TopUpPage() {
     );
   }
 
+  if (statusLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
+        <p className="text-gray-400">{t('common.loading')}</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       <h1 className="text-lg font-bold uppercase tracking-tight">{t('topup.title')}</h1>
       <p className="text-white/40 text-xs">{t('topup.subtitle')}</p>
+
+      {!status?.enabled && (
+        <div className="card border border-red-500/20 bg-red-500/5 text-red-300 text-sm">
+          {t('topup.unavailable')}
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="flex gap-2">

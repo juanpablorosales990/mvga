@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { BadRequestException } from '@nestjs/common';
+import { Keypair, PublicKey } from '@solana/web3.js';
+import { getAssociatedTokenAddress } from '@solana/spl-token';
 import { TopUpService } from './topup.service';
 
 describe('TopUpService', () => {
@@ -7,14 +9,27 @@ describe('TopUpService', () => {
   let mockPrisma: any;
   let mockConfig: any;
   let mockSolana: any;
+  let mockConnection: any;
+  let wallet: string;
+  let treasuryWallet: string;
   const originalFetch = global.fetch;
 
   beforeEach(() => {
+    wallet = Keypair.generate().publicKey.toBase58();
+    treasuryWallet = Keypair.generate().publicKey.toBase58();
+    mockConnection = {
+      getParsedTransaction: jest.fn(),
+    };
+
     mockPrisma = {
       topUp: {
         create: jest.fn(),
         update: jest.fn(),
         findMany: jest.fn(),
+        findFirst: jest.fn(),
+      },
+      payout: {
+        findFirst: jest.fn(),
       },
     };
 
@@ -23,16 +38,13 @@ describe('TopUpService', () => {
         if (key === 'RELOADLY_SANDBOX') return 'true';
         if (key === 'RELOADLY_CLIENT_ID') return 'test-client-id';
         if (key === 'RELOADLY_CLIENT_SECRET') return 'test-secret';
+        if (key === 'TREASURY_WALLET') return treasuryWallet;
         return undefined;
       }),
     };
 
     mockSolana = {
-      getTokenAccounts: jest
-        .fn()
-        .mockResolvedValue([
-          { mint: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', amount: 1000 },
-        ]),
+      getConnection: jest.fn(() => mockConnection),
     };
 
     service = new TopUpService(mockPrisma, mockConfig, mockSolana);
@@ -103,9 +115,36 @@ describe('TopUpService', () => {
     it('creates pending record then updates on success', async () => {
       mockPrisma.topUp.create.mockResolvedValue({ id: 'topup-1' });
       mockPrisma.topUp.update.mockResolvedValue({});
+      mockPrisma.topUp.findFirst.mockResolvedValue(null);
+      mockPrisma.payout.findFirst.mockResolvedValue(null);
 
       // Set cached token to skip auth
       (service as any).token = { accessToken: 'tok', expiresAt: Date.now() + 600_000 };
+
+      const USDC_MINT = new PublicKey('EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v');
+      const userAta = await getAssociatedTokenAddress(USDC_MINT, new PublicKey(wallet));
+      const treasuryAta = await getAssociatedTokenAddress(USDC_MINT, new PublicKey(treasuryWallet));
+      mockConnection.getParsedTransaction.mockResolvedValue({
+        meta: { err: null },
+        transaction: {
+          message: {
+            instructions: [
+              {
+                program: 'spl-token',
+                parsed: {
+                  type: 'transfer',
+                  info: {
+                    source: userAta.toBase58(),
+                    destination: treasuryAta.toBase58(),
+                    authority: wallet,
+                    amount: '2000000', // 2 USDC (raw)
+                  },
+                },
+              },
+            ],
+          },
+        },
+      });
 
       global.fetch = jest.fn().mockResolvedValue({
         ok: true,
@@ -118,7 +157,7 @@ describe('TopUpService', () => {
           }),
       });
 
-      const result = await service.topUp('wallet1', '+584121234567', 'VE', 1, 2);
+      const result = await service.topUp(wallet, '+584121234567', 'VE', 1, 2, 'paymentSig123');
       expect(result.status).toBe('SUCCESSFUL');
       expect(result.deliveredCurrency).toBe('VES');
       expect(mockPrisma.topUp.create).toHaveBeenCalled();
@@ -129,20 +168,45 @@ describe('TopUpService', () => {
       );
     });
 
-    it('rejects when USDC balance is insufficient', async () => {
-      mockSolana.getTokenAccounts.mockResolvedValue([
-        { mint: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', amount: 1 },
-      ]);
+    it('rejects when payment tx is missing', async () => {
+      mockConnection.getParsedTransaction.mockResolvedValue(null);
 
-      await expect(service.topUp('wallet1', '+584121234567', 'VE', 1, 5)).rejects.toThrow(
-        'Insufficient USDC balance'
-      );
+      await expect(
+        service.topUp(wallet, '+584121234567', 'VE', 1, 5, 'missingSig')
+      ).rejects.toThrow('Payment transaction not found');
       expect(mockPrisma.topUp.create).not.toHaveBeenCalled();
     });
 
     it('marks as FAILED on reloadly error', async () => {
       mockPrisma.topUp.create.mockResolvedValue({ id: 'topup-2' });
       mockPrisma.topUp.update.mockResolvedValue({});
+      mockPrisma.topUp.findFirst.mockResolvedValue(null);
+      mockPrisma.payout.findFirst.mockResolvedValue(null);
+
+      const USDC_MINT = new PublicKey('EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v');
+      const userAta = await getAssociatedTokenAddress(USDC_MINT, new PublicKey(wallet));
+      const treasuryAta = await getAssociatedTokenAddress(USDC_MINT, new PublicKey(treasuryWallet));
+      mockConnection.getParsedTransaction.mockResolvedValue({
+        meta: { err: null },
+        transaction: {
+          message: {
+            instructions: [
+              {
+                program: 'spl-token',
+                parsed: {
+                  type: 'transfer',
+                  info: {
+                    source: userAta.toBase58(),
+                    destination: treasuryAta.toBase58(),
+                    authority: wallet,
+                    amount: '2000000', // 2 USDC
+                  },
+                },
+              },
+            ],
+          },
+        },
+      });
 
       (service as any).token = { accessToken: 'tok', expiresAt: Date.now() + 600_000 };
       global.fetch = jest.fn().mockResolvedValue({
@@ -150,7 +214,7 @@ describe('TopUpService', () => {
         text: () => Promise.resolve('Insufficient balance'),
       });
 
-      await expect(service.topUp('wallet1', '+58412', 'VE', 1, 2)).rejects.toThrow(
+      await expect(service.topUp(wallet, '+58412', 'VE', 1, 2, 'paymentSig123')).rejects.toThrow(
         BadRequestException
       );
       expect(mockPrisma.topUp.update).toHaveBeenCalledWith(

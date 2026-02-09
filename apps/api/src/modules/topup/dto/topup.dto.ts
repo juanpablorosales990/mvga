@@ -34,4 +34,12 @@ export class CreateTopUpDto {
   @Min(0.01)
   @Max(50)
   amount: number;
+
+  @ApiProperty({
+    description:
+      'Solana transaction signature proving a USDC transfer to the MVGA treasury (prevents free top-ups)',
+  })
+  @IsString()
+  @MaxLength(128)
+  paymentSignature: string;
 }

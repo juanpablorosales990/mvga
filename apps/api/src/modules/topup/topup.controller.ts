@@ -10,6 +10,11 @@ import { DetectOperatorDto, CreateTopUpDto } from './dto/topup.dto';
 export class TopUpController {
   constructor(private readonly topUpService: TopUpService) {}
 
+  @Get('status')
+  getStatus() {
+    return this.topUpService.getStatus();
+  }
+
   @Get('operators/:countryCode')
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
@@ -28,7 +33,14 @@ export class TopUpController {
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
   async topUp(@CurrentUser('wallet') wallet: string, @Body() dto: CreateTopUpDto) {
-    return this.topUpService.topUp(wallet, dto.phone, dto.countryCode, dto.operatorId, dto.amount);
+    return this.topUpService.topUp(
+      wallet,
+      dto.phone,
+      dto.countryCode,
+      dto.operatorId,
+      dto.amount,
+      dto.paymentSignature
+    );
   }
 
   @Get('history')

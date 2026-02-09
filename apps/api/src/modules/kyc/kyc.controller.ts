@@ -30,16 +30,27 @@ export class KycController {
     return this.kycService.getStatus(userId);
   }
 
+  /** Sumsub webhook — uses x-payload-digest header for HMAC. */
   @Post('webhook')
   @Throttle({ default: { ttl: 60000, limit: 50 } })
   async handleWebhook(@Req() req: RawBodyRequest<Request>) {
-    // Use the raw body bytes for HMAC verification — JSON.stringify(req.body)
-    // produces different bytes than what Sumsub signed (key ordering, whitespace).
     if (!req.rawBody) {
       throw new BadRequestException('Missing request body');
     }
     const rawBody = req.rawBody.toString('utf-8');
     const signature = (req.headers['x-payload-digest'] as string) || '';
-    return this.kycService.handleWebhook(rawBody, signature);
+    return this.kycService.handleSumsubWebhook(rawBody, signature);
+  }
+
+  /** Persona webhook — uses persona-signature header for HMAC. */
+  @Post('webhook/persona')
+  @Throttle({ default: { ttl: 60000, limit: 50 } })
+  async handlePersonaWebhook(@Req() req: RawBodyRequest<Request>) {
+    if (!req.rawBody) {
+      throw new BadRequestException('Missing request body');
+    }
+    const rawBody = req.rawBody.toString('utf-8');
+    const signatureHeader = (req.headers['persona-signature'] as string) || '';
+    return this.kycService.handlePersonaWebhook(rawBody, signatureHeader);
   }
 }

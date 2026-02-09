@@ -10,9 +10,17 @@ interface KycStatusResponse {
 }
 
 interface KycSessionResponse {
-  token: string;
-  applicantId: string;
+  // Common
+  provider: 'persona' | 'sumsub' | 'mock';
   mock?: boolean;
+  // Sumsub
+  token?: string;
+  applicantId?: string;
+  // Persona
+  inquiryId?: string;
+  templateId?: string;
+  environmentId?: string;
+  referenceId?: string;
 }
 
 export function useKyc() {
