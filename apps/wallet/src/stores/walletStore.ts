@@ -18,6 +18,12 @@ export interface AddressBookEntry {
   createdAt: number;
 }
 
+export interface RecentRecipient {
+  address: string;
+  label?: string;
+  lastUsed: number;
+}
+
 export interface PriceAlert {
   id: string;
   token: string; // SOL, USDC, MVGA
@@ -54,6 +60,9 @@ interface WalletState {
   savingsGoal: { targetAmount: number; label: string } | null;
   cardStatus: CardStatus;
 
+  // Recent Recipients
+  recentRecipients: RecentRecipient[];
+
   // Price Alerts
   priceAlerts: PriceAlert[];
 
@@ -76,6 +85,7 @@ interface WalletState {
   invalidateBalances: () => void;
   addAddress: (entry: Omit<AddressBookEntry, 'createdAt'>) => void;
   removeAddress: (address: string) => void;
+  addRecentRecipient: (address: string, label?: string) => void;
   addPriceAlert: (alert: Omit<PriceAlert, 'id' | 'triggered' | 'createdAt'>) => void;
   removePriceAlert: (id: string) => void;
   triggerPriceAlert: (id: string) => void;
@@ -94,6 +104,7 @@ export const useWalletStore = create<WalletState>()(
       activeTab: 'wallet',
       preferredCurrency: 'USD',
       addressBook: [],
+      recentRecipients: [],
       priceAlerts: [],
       autoCompoundDefault: false,
       readNotifications: [],
@@ -138,6 +149,13 @@ export const useWalletStore = create<WalletState>()(
         set((state) => ({
           addressBook: state.addressBook.filter((a) => a.address !== address),
         })),
+      addRecentRecipient: (address, label) =>
+        set((state) => {
+          const filtered = state.recentRecipients.filter((r) => r.address !== address);
+          return {
+            recentRecipients: [{ address, label, lastUsed: Date.now() }, ...filtered].slice(0, 5),
+          };
+        }),
       addPriceAlert: (alert) =>
         set((state) => ({
           priceAlerts: [
@@ -167,6 +185,7 @@ export const useWalletStore = create<WalletState>()(
         publicKey: state.publicKey,
         preferredCurrency: state.preferredCurrency,
         addressBook: state.addressBook,
+        recentRecipients: state.recentRecipients,
         priceAlerts: state.priceAlerts,
         autoCompoundDefault: state.autoCompoundDefault,
         readNotifications: state.readNotifications,

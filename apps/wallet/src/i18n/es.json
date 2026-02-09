@@ -64,6 +64,16 @@
     "txFailed": "Transacción fallida",
     "insufficientSolForFee": "No hay suficiente SOL para la comisión de transacción",
     "insufficientSolForFeeAndAta": "No hay suficiente SOL para la comisión + creación de cuenta de token (~0.002 SOL)",
+    "recentRecipients": "Recientes",
+    "scanQR": "Escanear QR",
+    "scannerTitle": "Escanear codigo QR",
+    "cameraPermissionDenied": "Acceso a camara denegado",
+    "qrScanned": "Codigo QR escaneado!",
+    "invalidQR": "Codigo QR invalido",
+    "browseContacts": "Ver contactos",
+    "sendingTo": "Enviando a: {{name}}",
+    "fromContacts": "Desde contactos",
+    "batchSend": "Envio masivo",
     "solLabel": "SOL - Solana",
     "usdcLabel": "USDC - USD Coin",
     "mvgaLabel": "MVGA - Make Venezuela Great Again"
@@ -287,7 +297,8 @@
     "charge": "Cobrar",
     "topup": "Recarga",
     "contacts": "Contactos",
-    "priceAlerts": "Alertas de Precio"
+    "priceAlerts": "Alertas de Precio",
+    "batchSend": "Envio Masivo"
   },
   "grants": {
     "title": "Subvenciones",
@@ -808,6 +819,24 @@
     "alertTriggered": "{{token}} está ahora en ${{price}} (objetivo: ${{target}})",
     "delete": "Eliminar",
     "currentPrice": "Actual: ${{price}}"
+  },
+  "batchSend": {
+    "title": "Envio Masivo",
+    "subtitle": "Envia a multiples destinatarios en una transaccion",
+    "addRecipient": "Agregar Destinatario",
+    "removeRecipient": "Eliminar",
+    "maxRecipients": "Maximo 15 destinatarios por lote",
+    "totalAmount": "Monto Total",
+    "preview": "Vista Previa y Enviar",
+    "sending": "Enviando a {{count}} destinatarios...",
+    "success": "Enviado a {{count}} destinatarios!",
+    "importFromContacts": "Desde Contactos",
+    "recipient": "Destinatario #{{number}}",
+    "amount": "Monto",
+    "address": "Direccion",
+    "insufficientBalance": "Balance insuficiente de {{token}}. Necesitas {{required}}, tienes {{available}}",
+    "noRecipients": "Agrega al menos un destinatario",
+    "connectPrompt": "Conecta tu billetera para usar envio masivo"
   },
   "topup": {
     "title": "Recarga Telefónica",

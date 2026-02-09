@@ -34,6 +34,39 @@ export function buildSolanaPayUrl(
   return qs ? `${base}?${qs}` : base;
 }
 
+/** Reverse-parse a `solana:` URL back into structured data */
+export function parseSolanaPayUrl(
+  url: string
+): { address: string; amount?: number; token?: string; memo?: string } | null {
+  if (!url.startsWith('solana:')) return null;
+
+  const withoutScheme = url.slice('solana:'.length);
+  const [addressPart, queryString] = withoutScheme.split('?', 2);
+  if (!addressPart) return null;
+
+  const result: { address: string; amount?: number; token?: string; memo?: string } = {
+    address: addressPart,
+  };
+
+  if (queryString) {
+    const params = new URLSearchParams(queryString);
+    const amountStr = params.get('amount');
+    if (amountStr) {
+      const parsed = parseFloat(amountStr);
+      if (!isNaN(parsed) && parsed > 0) result.amount = parsed;
+    }
+    const splToken = params.get('spl-token');
+    if (splToken) {
+      const entry = Object.entries(SUPPORTED_TOKENS).find(([, v]) => v.mint === splToken);
+      result.token = entry ? entry[0] : undefined;
+    }
+    const memo = params.get('memo');
+    if (memo) result.memo = memo;
+  }
+
+  return result;
+}
+
 export function formatTokenAmount(amount: number, token: string): string {
   const decimals = SUPPORTED_TOKENS[token]?.decimals ?? 6;
   return amount.toFixed(decimals <= 6 ? 2 : 4);

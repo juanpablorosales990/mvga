@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useConnection } from '@solana/wallet-adapter-react';
 import { useSelfCustodyWallet } from '../contexts/WalletContext';
 import { PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
@@ -12,7 +12,10 @@ import { useTranslation } from 'react-i18next';
 import FiatValue from '../components/FiatValue';
 import TransactionPreviewModal from '../components/TransactionPreviewModal';
 import AddressBookModal from '../components/AddressBookModal';
+import QRScannerModal from '../components/QRScannerModal';
 import { useWalletStore } from '../stores/walletStore';
+import { parseSolanaPayUrl } from '../utils/solana-pay';
+import { showToast } from '../hooks/useToast';
 
 const TOKEN_MINTS: Record<string, { mint: string; decimals: number }> = {
   USDC: { mint: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', decimals: 6 },
@@ -25,6 +28,9 @@ export default function SendPage() {
   const { connected, publicKey, sendTransaction } = useSelfCustodyWallet();
   const { connection } = useConnection();
   const invalidateBalances = useWalletStore((s) => s.invalidateBalances);
+  const recentRecipients = useWalletStore((s) => s.recentRecipients);
+  const addRecentRecipient = useWalletStore((s) => s.addRecentRecipient);
+  const addressBook = useWalletStore((s) => s.addressBook);
 
   const [searchParams] = useSearchParams();
   const [recipient, setRecipient] = useState('');
@@ -42,8 +48,35 @@ export default function SendPage() {
   const [error, setError] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [showAddressBook, setShowAddressBook] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
 
   const [checkingBalance, setCheckingBalance] = useState(false);
+
+  // Resolve contact name for current recipient
+  const contactMatch = recipient ? addressBook.find((c) => c.address === recipient) : undefined;
+
+  const handleQRScan = useCallback(
+    (data: string) => {
+      // Try Solana Pay URL first
+      const parsed = parseSolanaPayUrl(data);
+      if (parsed) {
+        setRecipient(parsed.address);
+        if (parsed.amount) setAmount(String(parsed.amount));
+        if (parsed.token && parsed.token in TOKEN_MINTS) setToken(parsed.token);
+        showToast('success', t('send.qrScanned'));
+        return;
+      }
+      // Try plain base58 address
+      try {
+        new PublicKey(data);
+        setRecipient(data);
+        showToast('success', t('send.qrScanned'));
+      } catch {
+        showToast('error', t('send.invalidQR'));
+      }
+    },
+    [t]
+  );
 
   const openPreview = async () => {
     if (!recipient || !amount) {
@@ -225,6 +258,9 @@ export default function SendPage() {
         setTxSignature(signature);
       }
 
+      // Track recent recipient
+      addRecentRecipient(recipient, contactMatch?.label);
+
       setRecipient('');
       setAmount('');
       invalidateBalances();
@@ -266,14 +302,30 @@ export default function SendPage() {
         {/* Recipient */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <label className="text-sm text-gray-400">{t('send.recipientAddress')}</label>
-            <button
-              type="button"
-              onClick={() => setShowAddressBook(true)}
-              className="text-xs text-gold-500 hover:text-gold-400"
-            >
-              {t('addressBook.title')}
-            </button>
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-gray-400">{t('send.recipientAddress')}</label>
+              {searchParams.get('to') && recipient === searchParams.get('to') && (
+                <span className="text-[10px] px-1.5 py-0.5 bg-gold-500/20 text-gold-400 rounded">
+                  {t('send.fromContacts')}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setShowScanner(true)}
+                className="text-xs text-gold-500 hover:text-gold-400"
+              >
+                {t('send.scanQR')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowAddressBook(true)}
+                className="text-xs text-gold-500 hover:text-gold-400"
+              >
+                {t('addressBook.title')}
+              </button>
+            </div>
           </div>
           <input
             type="text"
@@ -282,7 +334,35 @@ export default function SendPage() {
             placeholder={t('send.enterAddress')}
             className="w-full bg-white/5 border border-white/10 px-4 py-3 focus:outline-none focus:border-gold-500"
           />
+          {/* Contact name display */}
+          {contactMatch && (
+            <p className="text-xs text-gold-400 mt-1">
+              {t('send.sendingTo', { name: contactMatch.label })}
+            </p>
+          )}
         </div>
+
+        {/* Recent Recipients */}
+        {recentRecipients.length > 0 && !recipient && (
+          <div>
+            <label className="block text-xs text-gray-500 mb-2">{t('send.recentRecipients')}</label>
+            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+              {recentRecipients.map((r) => {
+                const bookEntry = addressBook.find((c) => c.address === r.address);
+                const displayLabel = bookEntry?.label || r.label;
+                return (
+                  <button
+                    key={r.address}
+                    onClick={() => setRecipient(r.address)}
+                    className="flex-shrink-0 px-3 py-1.5 bg-white/5 border border-white/10 rounded-full text-xs text-gray-300 hover:bg-white/10 hover:border-white/20 transition"
+                  >
+                    {displayLabel || `${r.address.slice(0, 4)}...${r.address.slice(-4)}`}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Amount */}
         <div>
@@ -344,6 +424,14 @@ export default function SendPage() {
               ? t('common.loading')
               : t('send.sendButton')}
         </button>
+
+        {/* Batch Send Link */}
+        <Link
+          to="/batch-send"
+          className="block text-center text-xs text-gray-500 hover:text-gray-300 transition"
+        >
+          {t('send.batchSend')} →
+        </Link>
       </div>
 
       <TransactionPreviewModal
@@ -364,6 +452,12 @@ export default function SendPage() {
         open={showAddressBook}
         onClose={() => setShowAddressBook(false)}
         onSelect={(addr) => setRecipient(addr)}
+      />
+
+      <QRScannerModal
+        open={showScanner}
+        onClose={() => setShowScanner(false)}
+        onScan={handleQRScan}
       />
     </div>
   );

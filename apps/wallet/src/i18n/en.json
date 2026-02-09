@@ -64,6 +64,16 @@
     "txFailed": "Transaction failed",
     "insufficientSolForFee": "Not enough SOL for transaction fee",
     "insufficientSolForFeeAndAta": "Not enough SOL for transaction fee + token account creation (~0.002 SOL)",
+    "recentRecipients": "Recent",
+    "scanQR": "Scan QR",
+    "scannerTitle": "Scan QR Code",
+    "cameraPermissionDenied": "Camera access denied",
+    "qrScanned": "QR code scanned!",
+    "invalidQR": "Invalid QR code",
+    "browseContacts": "Browse Contacts",
+    "sendingTo": "Sending to: {{name}}",
+    "fromContacts": "From Contacts",
+    "batchSend": "Batch Send",
     "solLabel": "SOL - Solana",
     "usdcLabel": "USDC - USD Coin",
     "mvgaLabel": "MVGA - Make Venezuela Great Again"
@@ -287,7 +297,8 @@
     "charge": "Charge",
     "topup": "Top-Up",
     "contacts": "Contacts",
-    "priceAlerts": "Price Alerts"
+    "priceAlerts": "Price Alerts",
+    "batchSend": "Batch Send"
   },
   "grants": {
     "title": "Grants",
@@ -808,6 +819,24 @@
     "alertTriggered": "{{token}} is now ${{price}} (target: ${{target}})",
     "delete": "Delete",
     "currentPrice": "Current: ${{price}}"
+  },
+  "batchSend": {
+    "title": "Batch Send",
+    "subtitle": "Send to multiple recipients in one transaction",
+    "addRecipient": "Add Recipient",
+    "removeRecipient": "Remove",
+    "maxRecipients": "Maximum 15 recipients per batch",
+    "totalAmount": "Total Amount",
+    "preview": "Preview & Send",
+    "sending": "Sending to {{count}} recipients...",
+    "success": "Sent to {{count}} recipients!",
+    "importFromContacts": "From Contacts",
+    "recipient": "Recipient #{{number}}",
+    "amount": "Amount",
+    "address": "Address",
+    "insufficientBalance": "Insufficient {{token}} balance. Need {{required}}, have {{available}}",
+    "noRecipients": "Add at least one recipient",
+    "connectPrompt": "Connect your wallet to use batch send"
   },
   "topup": {
     "title": "Phone Top-Up",
