@@ -6,6 +6,7 @@ import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { useTranslation } from 'react-i18next';
 import TokenCard from '../components/TokenCard';
+import GettingStartedCard from '../components/GettingStartedCard';
 import { usePrices } from '../hooks/usePrices';
 import { useWalletStore, TokenBalance } from '../stores/walletStore';
 import { showToast } from '../hooks/useToast';
@@ -200,6 +201,9 @@ export default function WalletPage() {
           {publicKey?.toBase58().slice(0, 8)}...{publicKey?.toBase58().slice(-8)}
         </p>
       </div>
+
+      {/* Getting Started Checklist */}
+      <GettingStartedCard />
 
       {/* Quick Actions */}
       <div className="grid grid-cols-5 gap-2">

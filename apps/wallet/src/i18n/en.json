@@ -939,6 +939,29 @@
     "poweredBy": "Powered by Reloadly. Supports Movistar, Movilnet & Digitel.",
     "connectPrompt": "Connect your wallet to recharge phones"
   },
+  "tour": {
+    "skip": "Skip",
+    "next": "Next",
+    "getStarted": "Get Started",
+    "slide1Title": "Welcome to MVGA",
+    "slide1Desc": "Your digital dollar wallet on Solana",
+    "slide2Title": "Send & Receive",
+    "slide2Desc": "Instant transfers to anyone, anywhere",
+    "slide3Title": "Earn Rewards",
+    "slide3Desc": "Stake MVGA, earn cashback, save in DeFi",
+    "slide4Title": "You're in Control",
+    "slide4Desc": "Self-custody. Your keys, your money."
+  },
+  "checklist": {
+    "title": "Getting Started",
+    "progress": "{{completed}} of {{total}} completed",
+    "dismiss": "Dismiss",
+    "createWallet": "Create your wallet",
+    "secureBiometrics": "Secure with biometrics",
+    "firstDeposit": "Make your first deposit",
+    "firstSend": "Send your first payment",
+    "joinCard": "Join the card waitlist"
+  },
   "cashout": {
     "title": "Cash Out",
     "subtitle": "Send USD to any Airtm account. Recipient cashes out to their local bank.",

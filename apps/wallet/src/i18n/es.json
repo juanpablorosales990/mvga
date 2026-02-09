@@ -939,6 +939,29 @@
     "poweredBy": "Impulsado por Reloadly. Compatible con Movistar, Movilnet y Digitel.",
     "connectPrompt": "Conecta tu billetera para recargar teléfonos"
   },
+  "tour": {
+    "skip": "Saltar",
+    "next": "Siguiente",
+    "getStarted": "Comenzar",
+    "slide1Title": "Bienvenido a MVGA",
+    "slide1Desc": "Tu billetera de dólares digitales en Solana",
+    "slide2Title": "Envía y Recibe",
+    "slide2Desc": "Transferencias instantáneas a cualquier persona",
+    "slide3Title": "Gana Recompensas",
+    "slide3Desc": "Haz staking de MVGA, gana cashback, ahorra en DeFi",
+    "slide4Title": "Tú Tienes el Control",
+    "slide4Desc": "Auto-custodia. Tus llaves, tu dinero."
+  },
+  "checklist": {
+    "title": "Primeros Pasos",
+    "progress": "{{completed}} de {{total}} completados",
+    "dismiss": "Cerrar",
+    "createWallet": "Crear tu billetera",
+    "secureBiometrics": "Activar biométricos",
+    "firstDeposit": "Hacer tu primer depósito",
+    "firstSend": "Enviar tu primer pago",
+    "joinCard": "Unirse a la lista de tarjeta"
+  },
   "cashout": {
     "title": "Retiro",
     "subtitle": "Envía USD a cualquier cuenta Airtm. El destinatario retira a su banco local.",

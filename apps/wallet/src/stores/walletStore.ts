@@ -72,6 +72,11 @@ interface WalletState {
   // Balance refresh trigger
   balanceVersion: number;
 
+  // Onboarding
+  tourCompleted: boolean;
+  checklistDismissed: boolean;
+  firstSendCompleted: boolean;
+
   // Actions
   setPublicKey: (key: string | null) => void;
   setConnected: (connected: boolean) => void;
@@ -93,6 +98,9 @@ interface WalletState {
   addPriceAlert: (alert: Omit<PriceAlert, 'id' | 'triggered' | 'createdAt'>) => void;
   removePriceAlert: (id: string) => void;
   triggerPriceAlert: (id: string) => void;
+  completeTour: () => void;
+  dismissChecklist: () => void;
+  markFirstSend: () => void;
   disconnect: () => void;
 }
 
@@ -116,6 +124,9 @@ export const useWalletStore = create<WalletState>()(
       savingsGoal: null,
       cardStatus: 'none' as CardStatus,
       balanceVersion: 0,
+      tourCompleted: false,
+      checklistDismissed: false,
+      firstSendCompleted: false,
 
       // Actions
       setPublicKey: (key) => set({ publicKey: key, isConnected: !!key }),
@@ -177,6 +188,9 @@ export const useWalletStore = create<WalletState>()(
         set((state) => ({
           priceAlerts: state.priceAlerts.map((a) => (a.id === id ? { ...a, triggered: true } : a)),
         })),
+      completeTour: () => set({ tourCompleted: true }),
+      dismissChecklist: () => set({ checklistDismissed: true }),
+      markFirstSend: () => set({ firstSendCompleted: true }),
       disconnect: () =>
         set({
           publicKey: null,
@@ -197,6 +211,9 @@ export const useWalletStore = create<WalletState>()(
         readNotifications: state.readNotifications,
         savingsGoal: state.savingsGoal,
         cardStatus: state.cardStatus,
+        tourCompleted: state.tourCompleted,
+        checklistDismissed: state.checklistDismissed,
+        firstSendCompleted: state.firstSendCompleted,
       }),
     }
   )

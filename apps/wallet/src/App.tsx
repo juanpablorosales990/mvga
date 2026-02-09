@@ -44,6 +44,7 @@ const DCAPage = lazy(() => import('./pages/DCAPage'));
 const PendingScheduledPage = lazy(() => import('./pages/PendingScheduledPage'));
 const CashOutPage = lazy(() => import('./pages/CashOutPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
+const WelcomeTour = lazy(() => import('./components/WelcomeTour'));
 
 // Components
 import BottomNav from './components/BottomNav';
@@ -55,6 +56,7 @@ import ToastContainer from './components/ToastContainer';
 import { useAuth } from './hooks/useAuth';
 import { useReferral } from './hooks/useReferral';
 import { usePriceAlerts } from './hooks/usePriceAlerts';
+import { useWalletStore } from './stores/walletStore';
 
 function AuthProvider({ children }: { children: React.ReactNode }) {
   useAuth(); // auto-authenticates on wallet unlock
@@ -65,9 +67,17 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
 
 function AppShell() {
   const { walletState } = useSelfCustodyWallet();
+  const tourCompleted = useWalletStore((s) => s.tourCompleted);
 
   if (walletState === 'NO_WALLET') return <OnboardingScreen />;
   if (walletState === 'LOCKED') return <LockScreen />;
+  if (!tourCompleted) {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-black" />}>
+        <WelcomeTour />
+      </Suspense>
+    );
+  }
 
   return (
     <AuthProvider>

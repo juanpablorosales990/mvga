@@ -30,6 +30,7 @@ export default function SendPage() {
   const invalidateBalances = useWalletStore((s) => s.invalidateBalances);
   const recentRecipients = useWalletStore((s) => s.recentRecipients);
   const addRecentRecipient = useWalletStore((s) => s.addRecentRecipient);
+  const markFirstSend = useWalletStore((s) => s.markFirstSend);
   const addressBook = useWalletStore((s) => s.addressBook);
 
   const [searchParams] = useSearchParams();
@@ -258,8 +259,9 @@ export default function SendPage() {
         setTxSignature(signature);
       }
 
-      // Track recent recipient
+      // Track recent recipient + onboarding
       addRecentRecipient(recipient, contactMatch?.label);
+      markFirstSend();
 
       setRecipient('');
       setAmount('');
