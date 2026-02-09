@@ -313,6 +313,18 @@ export default function DepositPage() {
         </>
       )}
 
+      {/* MoneyGram link */}
+      <Link
+        to="/moneygram?tab=onramp"
+        className="card flex items-center justify-between hover:bg-white/5 transition"
+      >
+        <div>
+          <p className="text-sm font-medium">{t('moneygram.linkTitle')}</p>
+          <p className="text-xs text-white/30">{t('moneygram.linkDesc')}</p>
+        </div>
+        <span className="text-gold-500 text-sm font-mono">&rarr;</span>
+      </Link>
+
       {/* Top-up link */}
       <Link
         to="/topup"

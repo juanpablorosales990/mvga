@@ -2,6 +2,12 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { PrismaService } from '../../common/prisma.service';
 import { Connection } from '@solana/web3.js';
 
+interface TokenBalance {
+  mint?: string;
+  owner?: string;
+  uiTokenAmount?: { amount?: string; decimals?: number };
+}
+
 const TOKEN_DECIMALS: Record<string, number> = {
   USDC: 6,
   USDT: 6,
@@ -107,9 +113,9 @@ export class PaymentsService {
         where: { id, status: { in: ['PENDING', 'EXPIRED'] } },
         data: { status: 'PAID', paymentTx: signature },
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       // Prisma unique constraint (e.g., signature already used on another request)
-      if (err?.code === 'P2002') {
+      if ((err as { code?: string })?.code === 'P2002') {
         throw new BadRequestException('Transaction signature already used');
       }
       throw err;
@@ -122,12 +128,18 @@ export class PaymentsService {
     return { status: 'PAID', signature };
   }
 
-  private getNetTokenDelta(tx: any, ownerAddress: string, mintAddress: string): bigint {
-    const meta = tx?.meta;
-    const pre: any[] = meta?.preTokenBalances ?? [];
-    const post: any[] = meta?.postTokenBalances ?? [];
+  private getNetTokenDelta(
+    tx: Record<string, unknown>,
+    ownerAddress: string,
+    mintAddress: string
+  ): bigint {
+    const meta = (
+      tx as { meta?: { preTokenBalances?: TokenBalance[]; postTokenBalances?: TokenBalance[] } }
+    )?.meta;
+    const pre: TokenBalance[] = meta?.preTokenBalances ?? [];
+    const post: TokenBalance[] = meta?.postTokenBalances ?? [];
 
-    const sumForOwner = (balances: any[]): bigint => {
+    const sumForOwner = (balances: TokenBalance[]): bigint => {
       let sum = 0n;
       for (const b of balances) {
         if (!b) continue;

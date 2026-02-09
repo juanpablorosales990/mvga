@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import { useSelfCustodyWallet } from '../contexts/WalletContext';
 import { apiFetch } from '../lib/apiClient';
 import { showToast } from '../hooks/useToast';
@@ -241,6 +242,18 @@ export default function CashOutPage() {
           )}
         </div>
       )}
+
+      {/* MoneyGram link */}
+      <Link
+        to="/moneygram?tab=offramp"
+        className="card flex items-center justify-between hover:bg-white/5 transition"
+      >
+        <div>
+          <p className="text-sm font-medium">{t('moneygram.linkTitle')}</p>
+          <p className="text-xs text-white/30">{t('moneygram.linkDesc')}</p>
+        </div>
+        <span className="text-gold-500 text-sm font-mono">&rarr;</span>
+      </Link>
 
       {/* Info */}
       <div className="bg-white/5 border border-white/10 px-4 py-3">

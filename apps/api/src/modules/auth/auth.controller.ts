@@ -47,7 +47,7 @@ export class AuthController {
   @UseGuards(AuthGuard)
   @ApiOperation({ summary: 'Check current auth status' })
   async me(@Req() req: Request) {
-    const user = (req as any).user;
+    const user = (req as Request & { user: { wallet: string } }).user;
     return { authenticated: true, wallet: user.wallet };
   }
 

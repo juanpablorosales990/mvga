@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { OfframpService } from './offramp.service';
 

@@ -281,7 +281,7 @@ export class OfframpService {
           await this.prisma.payout.update({
             where: { id: payoutId },
             data: {
-              status: newStatus as any,
+              status: newStatus as (typeof payout)['status'],
               completedAt: newStatus === 'COMPLETED' ? new Date() : undefined,
             },
           });

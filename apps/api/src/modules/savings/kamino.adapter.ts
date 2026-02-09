@@ -12,7 +12,7 @@ import {
 const KAMINO_MAIN_MARKET = new PublicKey('7u3HeHxYDLhnCoErrtycNokbQYbWGzLs6JSDqGAv5PfF');
 
 // DefiLlama pool IDs for Kamino Lending (used for APY fetch)
-const DEFILLAMA_POOL_IDS: Record<string, string> = {
+const _DEFILLAMA_POOL_IDS: Record<string, string> = {
   USDC: 'd2141a59-c199-4be7-8',
   USDT: '546b3c0c-138d-4190-b',
 };

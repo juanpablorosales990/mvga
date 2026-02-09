@@ -904,3 +904,72 @@ enum PayoutStatus {
   CANCELLED
   FAILED
 }
+
+// ============================================================================
+// MoneyGram Ramps (Stellar SEP-24 + Allbridge)
+// ============================================================================
+
+model MoneygramTransaction {
+  id                   String             @id @default(uuid())
+  walletAddress        String
+  direction            MoneygramDirection
+  amountUsd            Float
+  status               MoneygramStatus    @default(INITIATED)
+
+  // SEP-24 identifiers
+  stellarTransactionId String?            @unique
+  interactiveUrl       String?
+  stellarMemo          String?
+  stellarDestination   String?
+
+  // Bridge tracking
+  bridgeTxSolana       String?
+  bridgeTxStellar      String?
+  bridgeStatus         String?
+
+  // MoneyGram details
+  referenceNumber      String?
+  pickupLocation       String?
+
+  // Fees
+  bridgeFeeUsd         Float?
+  mgFeeUsd             Float?
+  netAmountUsd         Float?
+
+  // Error handling
+  errorMessage         String?
+  retryCount           Int                @default(0)
+  lastPolledAt         DateTime?
+
+  // Lifecycle
+  confirmedAt          DateTime?
+  completedAt          DateTime?
+  cancelledAt          DateTime?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  @@index([walletAddress])
+  @@index([status])
+  @@index([status, lastPolledAt])
+}
+
+enum MoneygramDirection {
+  ONRAMP
+  OFFRAMP
+}
+
+enum MoneygramStatus {
+  INITIATED
+  PENDING_KYC
+  CONFIRMED
+  BRIDGING
+  USDC_SENT
+  PENDING_PICKUP
+  PENDING_DEPOSIT
+  USDC_RECEIVED
+  BRIDGING_BACK
+  COMPLETED
+  FAILED
+  CANCELLED
+  EXPIRED
+}

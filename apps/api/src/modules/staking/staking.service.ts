@@ -805,7 +805,6 @@ export class StakingService {
       const info = await this.getStakingInfo();
       const dynamicBase = info.dynamicApy;
 
-      // eslint-disable-next-line no-constant-condition
       while (true) {
         const autoCompoundStakes = await this.prisma.stake.findMany({
           where: { status: 'ACTIVE', autoCompound: true },

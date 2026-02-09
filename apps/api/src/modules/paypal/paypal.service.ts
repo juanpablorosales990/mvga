@@ -82,8 +82,8 @@ export class PayPalService {
           paymentMethod: 'paypal',
         },
       });
-    } catch (err: any) {
-      if (err?.code === 'P2002') {
+    } catch (err: unknown) {
+      if ((err as { code?: string })?.code === 'P2002') {
         throw new BadRequestException('PayPal order already used');
       }
       throw err;
