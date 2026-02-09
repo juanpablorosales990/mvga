@@ -21,7 +21,10 @@ export class MoneygramService {
   ) {}
 
   get isEnabled(): boolean {
-    return this.stellar.isEnabled || !this.stellar.isEnabled; // Mock mode always works
+    // Enable in production only when the real adapters are configured.
+    // In non-production environments we allow mock flows for UI/dev testing.
+    if (this.stellar.isEnabled && this.allbridge.isEnabled) return true;
+    return process.env.NODE_ENV !== 'production';
   }
 
   /** Off-ramp: Initiate cash-out (USDC → cash at MoneyGram) */

@@ -1,4 +1,12 @@
-import { Controller, Post, Get, Req, UseGuards, RawBodyRequest } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Req,
+  UseGuards,
+  RawBodyRequest,
+  BadRequestException,
+} from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { AuthGuard } from '../auth/auth.guard';
 import { CurrentUser } from '../auth/auth.decorator';
@@ -27,7 +35,10 @@ export class KycController {
   async handleWebhook(@Req() req: RawBodyRequest<Request>) {
     // Use the raw body bytes for HMAC verification — JSON.stringify(req.body)
     // produces different bytes than what Sumsub signed (key ordering, whitespace).
-    const rawBody = req.rawBody ? req.rawBody.toString('utf-8') : '';
+    if (!req.rawBody) {
+      throw new BadRequestException('Missing request body');
+    }
+    const rawBody = req.rawBody.toString('utf-8');
     const signature = (req.headers['x-payload-digest'] as string) || '';
     return this.kycService.handleWebhook(rawBody, signature);
   }

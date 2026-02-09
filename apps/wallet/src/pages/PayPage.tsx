@@ -63,6 +63,8 @@ export default function PayPage() {
       .catch(() => {});
   }, []);
 
+  const paypalSupportedToken = request?.token === 'USDC' || request?.token === 'USDT';
+
   // Only poll when payment is still pending
   useEffect(() => {
     if (!request || request.status !== 'PENDING') return;
@@ -145,7 +147,7 @@ export default function PayPage() {
       {request.status === 'PENDING' && (
         <>
           {/* Tab selector — only show if PayPal is available */}
-          {paypalEnabled && paypalClientId && (
+          {paypalEnabled && paypalClientId && paypalSupportedToken && (
             <div className="flex gap-2">
               <button
                 onClick={() => setPayTab('solana')}

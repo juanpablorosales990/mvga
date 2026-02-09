@@ -106,10 +106,12 @@ export class KycService {
       }
     } else if (type === 'applicantOnHold') {
       this.logger.warn(`Applicant on hold: ${externalId}`);
-      await this.prisma.userKyc.update({
-        where: { id: kyc.id },
-        data: { status: 'PENDING' },
-      });
+      if (kyc.status !== 'APPROVED' && kyc.status !== 'REJECTED') {
+        await this.prisma.userKyc.update({
+          where: { id: kyc.id },
+          data: { status: 'PENDING' },
+        });
+      }
     } else {
       this.logger.log(`Unhandled KYC webhook type: ${type} for ${externalId}`);
     }

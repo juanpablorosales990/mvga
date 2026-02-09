@@ -94,7 +94,11 @@ export class PayPalAdapter {
     return res.json();
   }
 
-  async createOrder(amountUsd: string, description?: string): Promise<PayPalOrder> {
+  async createOrder(
+    amountUsd: string,
+    description?: string,
+    customId?: string
+  ): Promise<PayPalOrder> {
     if (!this.isEnabled) {
       return {
         id: `MOCK_${Date.now()}`,
@@ -114,6 +118,7 @@ export class PayPalAdapter {
           {
             amount: { currency_code: 'USD', value: amountUsd },
             description: description || 'MVGA Payment',
+            ...(customId ? { custom_id: customId } : {}),
           },
         ],
       }),

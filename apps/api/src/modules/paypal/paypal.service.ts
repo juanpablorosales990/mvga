@@ -2,6 +2,22 @@ import { Injectable, BadRequestException, NotFoundException, Logger } from '@nes
 import { PrismaService } from '../../common/prisma.service';
 import { PayPalAdapter } from './paypal.adapter';
 
+const STABLE_TOKENS = new Set(['USDC', 'USDT']);
+
+function parseUsdToCents(amount: string): bigint {
+  const m = amount.trim().match(/^(\d+)(?:\.(\d{1,2}))?$/);
+  if (!m) throw new BadRequestException('Invalid USD amount');
+  const dollars = BigInt(m[1]);
+  const centsPart = BigInt((m[2] || '').padEnd(2, '0'));
+  return dollars * 100n + centsPart;
+}
+
+function formatCentsToUsd(cents: bigint): string {
+  const dollars = cents / 100n;
+  const c = (cents % 100n).toString().padStart(2, '0');
+  return `${dollars.toString()}.${c}`;
+}
+
 @Injectable()
 export class PayPalService {
   private readonly logger = new Logger(PayPalService.name);
@@ -24,7 +40,20 @@ export class PayPalService {
       throw new BadRequestException(`Payment request is ${request.status}`);
     }
 
-    const order = await this.adapter.createOrder(amountUsd.toFixed(2), description);
+    if (!STABLE_TOKENS.has(request.token)) {
+      throw new BadRequestException('PayPal payments are only supported for USDC/USDT requests');
+    }
+
+    // PaymentRequest amount uses 6 decimals for stablecoins. Convert to cents (2 decimals).
+    const expectedCents = (request.amount + 5_000n) / 10_000n;
+    const expectedUsd = formatCentsToUsd(expectedCents);
+
+    // Ignore client-provided amount; only trust server-side PaymentRequest amount.
+    const order = await this.adapter.createOrder(
+      expectedUsd,
+      description || request.memo || `MVGA Payment: ${expectedUsd} USD`,
+      paymentRequestId
+    );
 
     await this.prisma.paymentRequest.update({
       where: { id: paymentRequestId },
@@ -65,12 +94,32 @@ export class PayPalService {
       throw new BadRequestException('Order ID mismatch');
     }
 
+    if (!STABLE_TOKENS.has(request.token)) {
+      throw new BadRequestException('PayPal payments are only supported for USDC/USDT requests');
+    }
+
     const capture = await this.adapter.captureOrder(orderId);
     if (capture.status !== 'COMPLETED') {
       throw new BadRequestException(`PayPal capture status: ${capture.status}`);
     }
 
-    const capturedAmount = capture.purchase_units?.[0]?.payments?.captures?.[0]?.amount?.value;
+    const captured = capture.purchase_units?.[0]?.payments?.captures?.[0]?.amount;
+    const capturedAmount = captured?.value;
+    const capturedCurrency = captured?.currency_code;
+
+    if (capturedCurrency && capturedCurrency !== 'USD') {
+      throw new BadRequestException(`Unexpected PayPal currency: ${capturedCurrency}`);
+    }
+    if (!capturedAmount) {
+      throw new BadRequestException('Missing captured amount');
+    }
+
+    // Prevent underpayment: require captured USD >= requested USD (stablecoin is 1:1).
+    const expectedCents = (request.amount + 5_000n) / 10_000n;
+    const capturedCents = parseUsdToCents(capturedAmount);
+    if (capturedCents < expectedCents) {
+      throw new BadRequestException('Captured PayPal amount is less than requested amount');
+    }
 
     let updated: { count: number };
     try {

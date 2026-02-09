@@ -997,10 +997,9 @@ export class StakingService {
       });
       await this.txLogger.confirm(sig);
 
-      this.eventEmitter.emit('staking.referral_bonus', {
-        referrerAddress: referral.referrerAddress,
-        refereeAddress: walletAddress,
-        bonusAmount,
+      this.eventEmitter.emit('referral.bonus.paid', {
+        walletAddress: referral.referrerAddress,
+        amount: bonusAmount,
       });
 
       this.logger.log(

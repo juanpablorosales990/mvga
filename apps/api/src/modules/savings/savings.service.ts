@@ -55,27 +55,38 @@ export class SavingsService {
       orderBy: { createdAt: 'desc' },
     });
 
-    // Refresh on-chain balance for ACTIVE positions (best-effort)
+    // Refresh on-chain balance for ACTIVE positions (best-effort, per token)
     const activePositions = positions.filter((p) => p.status === 'ACTIVE');
     if (activePositions.length > 0 && this.kamino.isEnabled) {
-      try {
-        const onChainPosition = await this.kamino.getUserPosition(
-          new PublicKey(walletAddress),
-          'USDC'
-        );
-        // Update the most recent active position with live on-chain data
-        if (onChainPosition.current > 0n) {
-          const primary = activePositions[0];
-          if (primary.currentAmount !== onChainPosition.current) {
-            await this.prisma.savingsPosition.update({
-              where: { id: primary.id },
-              data: { currentAmount: onChainPosition.current },
-            });
-            primary.currentAmount = onChainPosition.current;
+      // Group by token to refresh each separately
+      const byToken = new Map<string, typeof activePositions>();
+      for (const pos of activePositions) {
+        const group = byToken.get(pos.token) ?? [];
+        group.push(pos);
+        byToken.set(pos.token, group);
+      }
+
+      for (const [token, tokenPositions] of byToken) {
+        try {
+          const onChainPosition = await this.kamino.getUserPosition(
+            new PublicKey(walletAddress),
+            token
+          );
+          if (onChainPosition.current > 0n) {
+            const primary = tokenPositions[0];
+            if (primary.currentAmount !== onChainPosition.current) {
+              await this.prisma.savingsPosition.update({
+                where: { id: primary.id },
+                data: { currentAmount: onChainPosition.current },
+              });
+              primary.currentAmount = onChainPosition.current;
+            }
           }
+        } catch (err) {
+          this.logger.warn(
+            `Failed to refresh on-chain ${token} position for ${walletAddress}: ${err}`
+          );
         }
-      } catch (err) {
-        this.logger.warn(`Failed to refresh on-chain position for ${walletAddress}: ${err}`);
       }
     }
 

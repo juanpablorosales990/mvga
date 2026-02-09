@@ -206,6 +206,21 @@ describe('KycService', () => {
       );
     });
 
+    it('does not overwrite APPROVED on applicantOnHold', async () => {
+      mockSumsub.parseWebhookPayload.mockReturnValue({
+        type: 'applicantOnHold',
+        applicantId: 'ext-123',
+      });
+      mockPrisma.userKyc.findFirst.mockResolvedValue({
+        id: 'kyc-1',
+        externalId: 'ext-123',
+        status: 'APPROVED',
+      });
+
+      await service.handleWebhook('body', 'sig');
+      expect(mockPrisma.userKyc.update).not.toHaveBeenCalled();
+    });
+
     it('ignores webhook for unknown applicant', async () => {
       mockSumsub.parseWebhookPayload.mockReturnValue({
         type: 'applicantReviewed',

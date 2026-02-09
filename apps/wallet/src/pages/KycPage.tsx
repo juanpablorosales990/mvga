@@ -27,10 +27,12 @@ function loadSumsubScript(): Promise<void> {
  */
 function SumsubWebSdk({
   accessToken,
+  onRefreshToken,
   onComplete,
   onError,
 }: {
   accessToken: string;
+  onRefreshToken: () => Promise<string>;
   onComplete: () => void;
   onError: (msg: string) => void;
 }) {
@@ -53,7 +55,7 @@ function SumsubWebSdk({
         }
 
         const sdk = snsWebSdkBuilder
-          .init(accessToken, () => Promise.resolve(accessToken))
+          .init(accessToken, onRefreshToken)
           .withConf({ lang: document.documentElement.lang || 'en' })
           .withOptions({ addViewportTag: false, adaptIframeHeight: true })
           .on('idCheck.onStepCompleted', () => {
@@ -83,7 +85,7 @@ function SumsubWebSdk({
         (sdkRef.current as any).destroy();
       }
     };
-  }, [accessToken, onComplete, onError]);
+  }, [accessToken, onRefreshToken, onComplete, onError]);
 
   return (
     <div
@@ -117,6 +119,11 @@ export default function KycPage() {
     setSdkToken(null);
     refresh();
   }, [refresh]);
+
+  const handleRefreshToken = useCallback(async (): Promise<string> => {
+    const session = await createSession();
+    return session?.token ?? '';
+  }, [createSession]);
 
   const handleSdkError = useCallback((msg: string) => {
     setSdkError(msg);
@@ -154,6 +161,7 @@ export default function KycPage() {
       {sdkToken && (
         <SumsubWebSdk
           accessToken={sdkToken}
+          onRefreshToken={handleRefreshToken}
           onComplete={handleSdkComplete}
           onError={handleSdkError}
         />

@@ -54,10 +54,25 @@ describe('PayPalService', () => {
       await expect(service.createOrderForPayment('1', 10)).rejects.toThrow(BadRequestException);
     });
 
+    it('throws BadRequestException when token is not a stablecoin', async () => {
+      mockPrisma.paymentRequest.findUnique.mockResolvedValue({
+        id: '1',
+        status: 'PENDING',
+        token: 'MVGA',
+        amount: 1n,
+        memo: null,
+      });
+
+      await expect(service.createOrderForPayment('1', 10)).rejects.toThrow(BadRequestException);
+    });
+
     it('creates order and updates payment request', async () => {
       mockPrisma.paymentRequest.findUnique.mockResolvedValue({
         id: '1',
         status: 'PENDING',
+        token: 'USDC',
+        amount: 10_000_000n,
+        memo: null,
       });
       mockAdapter.createOrder.mockResolvedValue({
         id: 'PP-ORDER-123',
@@ -70,7 +85,7 @@ describe('PayPalService', () => {
 
       expect(result.orderId).toBe('PP-ORDER-123');
       expect(result.approveUrl).toBe('https://paypal.com/approve');
-      expect(mockAdapter.createOrder).toHaveBeenCalledWith('10.00', 'Test payment');
+      expect(mockAdapter.createOrder).toHaveBeenCalledWith('10.00', 'Test payment', '1');
       expect(mockPrisma.paymentRequest.update).toHaveBeenCalledWith({
         where: { id: '1' },
         data: { paypalOrderId: 'PP-ORDER-123', paymentMethod: 'paypal' },
@@ -81,6 +96,9 @@ describe('PayPalService', () => {
       mockPrisma.paymentRequest.findUnique.mockResolvedValue({
         id: '1',
         status: 'PENDING',
+        token: 'USDC',
+        amount: 25_000_000n,
+        memo: null,
       });
       mockAdapter.createOrder.mockResolvedValue({
         id: 'PP-ORDER-456',
@@ -123,11 +141,26 @@ describe('PayPalService', () => {
       );
     });
 
+    it('throws BadRequestException when token is not a stablecoin', async () => {
+      mockPrisma.paymentRequest.findUnique.mockResolvedValue({
+        id: '1',
+        status: 'PENDING',
+        paypalOrderId: 'ORDER-1',
+        token: 'MVGA',
+        amount: 1n,
+      });
+      await expect(service.captureOrderForPayment('1', 'ORDER-1')).rejects.toThrow(
+        BadRequestException
+      );
+    });
+
     it('throws BadRequestException when capture is not COMPLETED', async () => {
       mockPrisma.paymentRequest.findUnique.mockResolvedValue({
         id: '1',
         status: 'PENDING',
         paypalOrderId: null,
+        token: 'USDC',
+        amount: 10_000_000n,
       });
       mockAdapter.captureOrder.mockResolvedValue({
         id: 'ORDER-1',
@@ -139,11 +172,44 @@ describe('PayPalService', () => {
       );
     });
 
+    it('throws BadRequestException when captured amount is less than requested', async () => {
+      mockPrisma.paymentRequest.findUnique.mockResolvedValue({
+        id: '1',
+        status: 'PENDING',
+        paypalOrderId: 'ORDER-1',
+        token: 'USDC',
+        amount: 10_000_000n,
+      });
+      mockAdapter.captureOrder.mockResolvedValue({
+        id: 'ORDER-1',
+        status: 'COMPLETED',
+        purchase_units: [
+          {
+            payments: {
+              captures: [
+                {
+                  id: 'CAP-1',
+                  status: 'COMPLETED',
+                  amount: { currency_code: 'USD', value: '5.00' },
+                },
+              ],
+            },
+          },
+        ],
+      });
+
+      await expect(service.captureOrderForPayment('1', 'ORDER-1')).rejects.toThrow(
+        BadRequestException
+      );
+    });
+
     it('captures order and marks payment as PAID', async () => {
       mockPrisma.paymentRequest.findUnique.mockResolvedValue({
         id: '1',
         status: 'PENDING',
         paypalOrderId: 'ORDER-1',
+        token: 'USDC',
+        amount: 10_000_000n,
       });
       mockAdapter.captureOrder.mockResolvedValue({
         id: 'ORDER-1',
@@ -178,6 +244,8 @@ describe('PayPalService', () => {
         id: '1',
         status: 'PENDING',
         paypalOrderId: null,
+        token: 'USDC',
+        amount: 10_000_000n,
       });
       mockAdapter.captureOrder.mockResolvedValue({
         id: 'ORDER-1',
@@ -204,6 +272,8 @@ describe('PayPalService', () => {
         id: '1',
         status: 'PENDING',
         paypalOrderId: null,
+        token: 'USDC',
+        amount: 10_000_000n,
       });
       mockAdapter.captureOrder.mockResolvedValue({
         id: 'ORDER-1',
