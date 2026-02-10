@@ -788,6 +788,38 @@ enum TopUpStatus {
 }
 
 // ============================================================================
+// Gift Cards (Bitrefill)
+// ============================================================================
+
+model GiftCard {
+  id               String         @id @default(uuid())
+  walletAddress    String
+  productId        String         // Bitrefill product slug
+  productName      String         // e.g. "Amazon US $25"
+  category         String?        // e.g. "shopping", "gaming", "streaming"
+  amountUsd        Float
+  code             String?        // Delivered gift card code
+  pin              String?        // PIN if applicable
+  status           GiftCardStatus @default(PENDING)
+  bitrefillOrderId String?        @unique
+  customIdentifier String         @unique // Idempotency key
+  paymentSignature String?        // Solana tx signature
+  errorMessage     String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@index([walletAddress])
+  @@index([status])
+}
+
+enum GiftCardStatus {
+  PENDING
+  DELIVERED
+  FAILED
+  CANCELLED
+}
+
+// ============================================================================
 // Recurring Payments & DCA
 // ============================================================================
 

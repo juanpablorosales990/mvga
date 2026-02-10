@@ -19,6 +19,7 @@ export const AnalyticsEvents = {
   STAKE_COMPLETED: 'stake_completed',
   OFFRAMP_STARTED: 'offramp_started',
   TOPUP_COMPLETED: 'topup_completed',
+  GIFTCARD_PURCHASED: 'giftcard_purchased',
 } as const;
 
 export type AnalyticsEvent = (typeof AnalyticsEvents)[keyof typeof AnalyticsEvents];

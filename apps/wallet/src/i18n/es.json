@@ -328,6 +328,7 @@
     "pendingApprovals": "Aprobaciones Pendientes",
     "cashout": "Retiro",
     "moneygram": "MoneyGram",
+    "giftCards": "Tarjetas de Regalo",
     "scan": "Escanear y Pagar"
   },
   "grants": {
@@ -1138,5 +1139,32 @@
     "copied": "¡Copiado!",
     "showAmount": "Solicitar monto específico",
     "connectPrompt": "Conecta tu billetera para escanear y pagar"
+  },
+  "giftcard": {
+    "title": "Tarjetas de Regalo",
+    "subtitle": "Compra tarjetas de regalo con USDC. Amazon, Netflix, Steam y más.",
+    "browseTab": "Explorar",
+    "historyTab": "Historial",
+    "unavailable": "Las tarjetas de regalo no están disponibles en este momento",
+    "connectPrompt": "Conecta tu billetera para comprar tarjetas de regalo",
+    "selectAmount": "Seleccionar Monto",
+    "buy": "Comprar {{product}} ${{amount}}",
+    "success": "¡Tarjeta de regalo {{product}} entregada!",
+    "failed": "Error al comprar tarjeta de regalo",
+    "codeReady": "¡Tu código de tarjeta de regalo está listo!",
+    "copy": "Copiar",
+    "codeCopied": "Código copiado al portapapeles",
+    "done": "Listo",
+    "noHistory": "Aún no has comprado tarjetas de regalo",
+    "status_PENDING": "Pendiente",
+    "status_DELIVERED": "Entregada",
+    "status_FAILED": "Fallida",
+    "status_CANCELLED": "Cancelada",
+    "cat_all": "Todas",
+    "cat_shopping": "Compras",
+    "cat_entertainment": "Entretenimiento",
+    "cat_gaming": "Juegos",
+    "cat_food": "Comida",
+    "poweredBy": "Desarrollado por Bitrefill. Tarjetas de regalo para 170+ países."
   }
 }

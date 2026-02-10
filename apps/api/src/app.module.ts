@@ -27,6 +27,7 @@ import { KycModule } from './modules/kyc/kyc.module';
 import { PayPalModule } from './modules/paypal/paypal.module';
 import { MoneygramModule } from './modules/moneygram/moneygram.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { GiftCardModule } from './modules/giftcard/giftcard.module';
 import { HealthController } from './health.controller';
 
 @Module({
@@ -65,6 +66,7 @@ import { HealthController } from './health.controller';
     PayPalModule,
     MoneygramModule,
     AnalyticsModule,
+    GiftCardModule,
   ],
   controllers: [HealthController],
   providers: [

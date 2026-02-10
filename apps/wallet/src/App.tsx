@@ -46,6 +46,7 @@ const CashOutPage = lazy(() => import('./pages/CashOutPage'));
 const MoneygramPage = lazy(() => import('./pages/MoneygramPage'));
 const KycPage = lazy(() => import('./pages/KycPage'));
 const ScanPayPage = lazy(() => import('./pages/ScanPayPage'));
+const GiftCardsPage = lazy(() => import('./pages/GiftCardsPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 const WelcomeTour = lazy(() => import('./components/WelcomeTour'));
 
@@ -135,6 +136,7 @@ function AppShell() {
                 <Route path="/moneygram" element={<MoneygramPage />} />
                 <Route path="/kyc" element={<KycPage />} />
                 <Route path="/scan" element={<ScanPayPage />} />
+                <Route path="/giftcards" element={<GiftCardsPage />} />
                 <Route path="*" element={<NotFoundPage />} />
               </Routes>
             </Suspense>

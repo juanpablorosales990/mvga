@@ -14,6 +14,7 @@ export default function MorePage() {
     { labelKey: 'more.topup', path: '/topup', icon: '📱', color: 'bg-teal-500' },
     { labelKey: 'more.cashout', path: '/cashout', icon: '💸', color: 'bg-green-600' },
     { labelKey: 'more.moneygram', path: '/moneygram', icon: '💵', color: 'bg-orange-600' },
+    { labelKey: 'more.giftCards', path: '/giftcards', icon: '🛍', color: 'bg-pink-600' },
     { labelKey: 'more.history', path: '/history', icon: '↺', color: 'bg-indigo-500' },
     { labelKey: 'more.grants', path: '/grants', icon: '🏦', color: 'bg-amber-500' },
     { labelKey: 'more.referral', path: '/referral', icon: '🎁', color: 'bg-pink-500' },

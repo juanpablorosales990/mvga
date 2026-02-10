@@ -328,6 +328,7 @@
     "pendingApprovals": "Pending Approvals",
     "cashout": "Cash Out",
     "moneygram": "MoneyGram",
+    "giftCards": "Gift Cards",
     "scan": "Scan & Pay"
   },
   "grants": {
@@ -1138,5 +1139,32 @@
     "copied": "Copied!",
     "showAmount": "Request specific amount",
     "connectPrompt": "Connect your wallet to scan and pay"
+  },
+  "giftcard": {
+    "title": "Gift Cards",
+    "subtitle": "Buy gift cards with USDC. Amazon, Netflix, Steam & more.",
+    "browseTab": "Browse",
+    "historyTab": "History",
+    "unavailable": "Gift cards are not available right now",
+    "connectPrompt": "Connect your wallet to buy gift cards",
+    "selectAmount": "Select Amount",
+    "buy": "Buy {{product}} ${{amount}}",
+    "success": "{{product}} gift card delivered!",
+    "failed": "Gift card purchase failed",
+    "codeReady": "Your gift card code is ready!",
+    "copy": "Copy",
+    "codeCopied": "Code copied to clipboard",
+    "done": "Done",
+    "noHistory": "No gift card purchases yet",
+    "status_PENDING": "Pending",
+    "status_DELIVERED": "Delivered",
+    "status_FAILED": "Failed",
+    "status_CANCELLED": "Cancelled",
+    "cat_all": "All",
+    "cat_shopping": "Shopping",
+    "cat_entertainment": "Entertainment",
+    "cat_gaming": "Gaming",
+    "cat_food": "Food",
+    "poweredBy": "Powered by Bitrefill. Gift cards for 170+ countries."
   }
 }
