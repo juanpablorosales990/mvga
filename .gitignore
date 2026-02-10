@@ -41,6 +41,7 @@ coverage/
 # Playwright
 playwright-report/
 test-results/
+apps/wallet/screenshots/
 
 # PWA dev
 dev-dist/
