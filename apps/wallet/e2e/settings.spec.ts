@@ -81,4 +81,36 @@ test.describe('Settings Page', () => {
   test('shows app version', async ({ page }) => {
     await expect(page.getByText('MVGA Wallet v1.0.0')).toBeVisible();
   });
+
+  test('profile section is visible when connected', async ({ page }) => {
+    // Profile editing card should be visible
+    await expect(page.getByText(/edit profile|editar perfil/i)).toBeVisible({ timeout: 5000 });
+    // Should have display name, email, username inputs
+    await expect(page.getByPlaceholder(/your name|tu nombre/i)).toBeVisible();
+    await expect(page.getByPlaceholder(/you@example.com/i)).toBeVisible();
+    await expect(page.getByPlaceholder(/mvga_user/i)).toBeVisible();
+  });
+
+  test('profile save button is disabled when no changes', async ({ page }) => {
+    await expect(page.getByText(/edit profile|editar perfil/i)).toBeVisible({ timeout: 5000 });
+    const saveBtn = page.getByRole('button', { name: /^save$|^guardar$/i });
+    await expect(saveBtn).toBeDisabled();
+  });
+
+  test('profile save button enables after typing', async ({ page }) => {
+    await expect(page.getByText(/edit profile|editar perfil/i)).toBeVisible({ timeout: 5000 });
+    // Type a display name
+    await page.getByPlaceholder(/your name|tu nombre/i).fill('Test User');
+    const saveBtn = page.getByRole('button', { name: /^save$|^guardar$/i });
+    await expect(saveBtn).toBeEnabled();
+  });
+
+  test('username field only allows valid characters', async ({ page }) => {
+    await expect(page.getByText(/edit profile|editar perfil/i)).toBeVisible({ timeout: 5000 });
+    const usernameInput = page.getByPlaceholder(/mvga_user/i);
+    // Type invalid characters — should be stripped
+    await usernameInput.fill('test@user!#');
+    const value = await usernameInput.inputValue();
+    expect(value).toBe('testuser');
+  });
 });

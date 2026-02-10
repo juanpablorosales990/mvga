@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { UnauthorizedException } from '@nestjs/common';
+import { UnauthorizedException, ConflictException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { JwtService } from '@nestjs/jwt';
 import { AuthService } from './auth.service';
 
@@ -18,6 +19,8 @@ describe('AuthService', () => {
     prismaService = {
       user: {
         upsert: jest.fn().mockResolvedValue({ id: 'user-1', walletAddress: 'addr' }),
+        findUnique: jest.fn(),
+        update: jest.fn(),
       },
       authNonce: {
         upsert: jest.fn().mockResolvedValue({}),
@@ -139,6 +142,150 @@ describe('AuthService', () => {
       await service.cleanupExpiredNonces();
 
       expect(prismaService.authNonce.deleteMany).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('getProfile', () => {
+    it('returns profile data for a valid user', async () => {
+      prismaService.user.findUnique.mockResolvedValue({
+        walletAddress: 'addr',
+        email: 'test@mvga.io',
+        displayName: 'Juan',
+        username: 'juan',
+      });
+
+      const result = await service.getProfile('user-1');
+      expect(result).toEqual({
+        walletAddress: 'addr',
+        email: 'test@mvga.io',
+        displayName: 'Juan',
+        username: 'juan',
+      });
+      expect(prismaService.user.findUnique).toHaveBeenCalledWith({
+        where: { id: 'user-1' },
+        select: { walletAddress: true, email: true, displayName: true, username: true },
+      });
+    });
+
+    it('returns null for a non-existent user', async () => {
+      prismaService.user.findUnique.mockResolvedValue(null);
+      const result = await service.getProfile('unknown');
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('updateProfile', () => {
+    it('updates display name and email', async () => {
+      prismaService.user.update.mockResolvedValue({
+        walletAddress: 'addr',
+        email: 'new@mvga.io',
+        displayName: 'New Name',
+        username: null,
+      });
+
+      const result = await service.updateProfile('user-1', {
+        email: 'new@mvga.io',
+        displayName: 'New Name',
+      });
+
+      expect(prismaService.user.update).toHaveBeenCalledWith({
+        where: { id: 'user-1' },
+        data: { email: 'new@mvga.io', displayName: 'New Name' },
+        select: { walletAddress: true, email: true, displayName: true, username: true },
+      });
+      expect(result.email).toBe('new@mvga.io');
+      expect(result.displayName).toBe('New Name');
+    });
+
+    it('lowercases username before saving', async () => {
+      prismaService.user.update.mockResolvedValue({
+        walletAddress: 'addr',
+        email: null,
+        displayName: null,
+        username: 'juanr',
+      });
+
+      await service.updateProfile('user-1', { username: 'JuanR' });
+
+      expect(prismaService.user.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: { username: 'juanr' },
+        })
+      );
+    });
+
+    it('throws ConflictException on duplicate email', async () => {
+      const p2002 = new Prisma.PrismaClientKnownRequestError('Unique constraint', {
+        code: 'P2002',
+        clientVersion: '5.0.0',
+        meta: { target: ['email'] },
+      });
+      prismaService.user.update.mockRejectedValue(p2002);
+
+      await expect(service.updateProfile('user-1', { email: 'taken@mvga.io' })).rejects.toThrow(
+        ConflictException
+      );
+
+      await expect(service.updateProfile('user-1', { email: 'taken@mvga.io' })).rejects.toThrow(
+        'Email already in use'
+      );
+    });
+
+    it('throws ConflictException on duplicate username', async () => {
+      const p2002 = new Prisma.PrismaClientKnownRequestError('Unique constraint', {
+        code: 'P2002',
+        clientVersion: '5.0.0',
+        meta: { target: ['username'] },
+      });
+      prismaService.user.update.mockRejectedValue(p2002);
+
+      await expect(service.updateProfile('user-1', { username: 'taken' })).rejects.toThrow(
+        'Username already taken'
+      );
+    });
+
+    it('only includes provided fields in update data', async () => {
+      prismaService.user.update.mockResolvedValue({
+        walletAddress: 'addr',
+        email: null,
+        displayName: 'Only Name',
+        username: null,
+      });
+
+      await service.updateProfile('user-1', { displayName: 'Only Name' });
+
+      expect(prismaService.user.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: { displayName: 'Only Name' },
+        })
+      );
+    });
+  });
+
+  describe('checkUsername', () => {
+    it('returns available=true when username is free', async () => {
+      prismaService.user.findUnique.mockResolvedValue(null);
+      const result = await service.checkUsername('newuser');
+      expect(result).toEqual({ available: true });
+      expect(prismaService.user.findUnique).toHaveBeenCalledWith({
+        where: { username: 'newuser' },
+        select: { id: true },
+      });
+    });
+
+    it('returns available=false when username is taken', async () => {
+      prismaService.user.findUnique.mockResolvedValue({ id: 'user-2' });
+      const result = await service.checkUsername('taken');
+      expect(result).toEqual({ available: false });
+    });
+
+    it('lowercases the username before checking', async () => {
+      prismaService.user.findUnique.mockResolvedValue(null);
+      await service.checkUsername('JuanR');
+      expect(prismaService.user.findUnique).toHaveBeenCalledWith({
+        where: { username: 'juanr' },
+        select: { id: true },
+      });
     });
   });
 });
