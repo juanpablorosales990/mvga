@@ -15,6 +15,7 @@ export class GrantsController {
   constructor(private readonly grantsService: GrantsService) {}
 
   @Get('proposals')
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
   @ApiOperation({ summary: 'List grant proposals' })
   @ApiQuery({
     name: 'status',
@@ -26,6 +27,7 @@ export class GrantsController {
   }
 
   @Get('proposals/:id')
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
   @ApiOperation({ summary: 'Get proposal detail with votes and updates' })
   async getProposal(@Param('id') id: string) {
     return this.grantsService.getProposal(id);

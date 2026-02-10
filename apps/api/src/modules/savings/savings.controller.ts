@@ -34,6 +34,7 @@ export class SavingsController {
 
   /** Confirm a deposit after the user has signed the transaction. */
   @Post('confirm-deposit')
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
   @UseGuards(AuthGuard)
   async confirmDeposit(@CurrentUser('wallet') wallet: string, @Body() dto: ConfirmDepositDto) {
     return this.savingsService.confirmDeposit(wallet, dto.signature);
@@ -49,6 +50,7 @@ export class SavingsController {
 
   /** Confirm a withdrawal after the user has signed the transaction. */
   @Post('confirm-withdraw')
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
   @UseGuards(AuthGuard)
   async confirmWithdraw(@CurrentUser('wallet') wallet: string, @Body() dto: ConfirmWithdrawDto) {
     return this.savingsService.confirmWithdraw(wallet, dto.positionId, dto.signature);

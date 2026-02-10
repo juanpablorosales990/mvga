@@ -1,4 +1,5 @@
 import { Controller, Post, Get, Body, Param, UseGuards } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthGuard } from '../auth/auth.guard';
 import { CurrentUser } from '../auth/auth.decorator';
@@ -11,6 +12,7 @@ export class TopUpController {
   constructor(private readonly topUpService: TopUpService) {}
 
   @Get('status')
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
   getStatus() {
     return this.topUpService.getStatus();
   }
@@ -30,6 +32,7 @@ export class TopUpController {
   }
 
   @Post('topup')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
   async topUp(@CurrentUser('wallet') wallet: string, @Body() dto: CreateTopUpDto) {

@@ -56,6 +56,7 @@ export class AuthController {
   }
 
   @Put('profile')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @UseGuards(AuthGuard)
   @ApiOperation({ summary: 'Update user profile (email, display name, username)' })
   async updateProfile(@Req() req: Request, @Body() dto: UpdateProfileDto) {

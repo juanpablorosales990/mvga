@@ -28,6 +28,7 @@ export class PayPalController {
   ) {}
 
   @Get('status')
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
   getStatus() {
     return { enabled: this.paypalService.isEnabled };
   }

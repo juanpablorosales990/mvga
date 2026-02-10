@@ -34,6 +34,7 @@ export class P2PController {
   // ============ OFFERS ============
 
   @Get('offers')
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
   @ApiOperation({ summary: 'List active P2P offers' })
   @ApiQuery({ name: 'type', required: false, enum: ['BUY', 'SELL'] })
   @ApiQuery({ name: 'cryptoCurrency', required: false, enum: ['USDC', 'MVGA'] })
@@ -51,6 +52,7 @@ export class P2PController {
   }
 
   @Get('offers/:id')
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
   @ApiOperation({ summary: 'Get offer details' })
   async getOffer(@Param('id') id: string) {
     return this.p2pService.getOffer(id);
@@ -167,6 +169,7 @@ export class P2PController {
   // ============ REPUTATION ============
 
   @Get('users/:walletAddress/reputation')
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
   @ApiOperation({ summary: 'Get user reputation' })
   async getReputation(@Param('walletAddress') walletAddress: string) {
     return this.p2pService.getReputation(walletAddress);

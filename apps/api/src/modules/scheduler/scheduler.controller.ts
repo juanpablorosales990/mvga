@@ -44,16 +44,19 @@ export class SchedulerController {
   }
 
   @Patch('payments/:id/pause')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   async pausePayment(@CurrentUser('wallet') wallet: string, @Param('id') id: string) {
     return this.schedulerService.pauseRecurringPayment(wallet, id);
   }
 
   @Patch('payments/:id/resume')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   async resumePayment(@CurrentUser('wallet') wallet: string, @Param('id') id: string) {
     return this.schedulerService.resumeRecurringPayment(wallet, id);
   }
 
   @Delete('payments/:id')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   async cancelPayment(@CurrentUser('wallet') wallet: string, @Param('id') id: string) {
     return this.schedulerService.cancelRecurringPayment(wallet, id);
   }
@@ -72,16 +75,19 @@ export class SchedulerController {
   }
 
   @Patch('dca/:id/pause')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   async pauseDCA(@CurrentUser('wallet') wallet: string, @Param('id') id: string) {
     return this.schedulerService.pauseDCAOrder(wallet, id);
   }
 
   @Patch('dca/:id/resume')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   async resumeDCA(@CurrentUser('wallet') wallet: string, @Param('id') id: string) {
     return this.schedulerService.resumeDCAOrder(wallet, id);
   }
 
   @Delete('dca/:id')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   async cancelDCA(@CurrentUser('wallet') wallet: string, @Param('id') id: string) {
     return this.schedulerService.cancelDCAOrder(wallet, id);
   }

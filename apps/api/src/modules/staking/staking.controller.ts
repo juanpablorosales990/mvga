@@ -13,12 +13,14 @@ export class StakingController {
   constructor(private readonly stakingService: StakingService) {}
 
   @Get('info')
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
   @ApiOperation({ summary: 'Get staking pool information' })
   async getStakingInfo() {
     return this.stakingService.getStakingInfo();
   }
 
   @Get('tiers')
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
   @ApiOperation({ summary: 'Get staking tier information' })
   async getTiers() {
     return this.stakingService.getTiers();
@@ -71,6 +73,7 @@ export class StakingController {
   }
 
   @Post('auto-compound')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Toggle auto-compound for a stake' })

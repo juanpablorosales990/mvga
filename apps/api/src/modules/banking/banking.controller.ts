@@ -76,18 +76,21 @@ export class BankingController {
   }
 
   @Post('card/freeze')
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
   @UseGuards(AuthGuard)
   async freezeCard(@CurrentUser('wallet') wallet: string) {
     return this.bankingService.freezeCard(wallet);
   }
 
   @Post('card/unfreeze')
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
   @UseGuards(AuthGuard)
   async unfreezeCard(@CurrentUser('wallet') wallet: string) {
     return this.bankingService.unfreezeCard(wallet);
   }
 
   @Post('card/fund')
+  @Throttle({ default: { ttl: 60000, limit: 3 } })
   @UseGuards(AuthGuard)
   async fundCard(@CurrentUser('wallet') wallet: string) {
     return this.bankingService.fundCard(wallet);

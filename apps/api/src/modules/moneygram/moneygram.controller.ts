@@ -19,6 +19,7 @@ export class MoneygramController {
   constructor(private readonly moneygramService: MoneygramService) {}
 
   @Get('status')
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
   @ApiOperation({ summary: 'Check if MoneyGram is enabled and get limits' })
   status() {
     return {

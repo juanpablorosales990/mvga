@@ -1,4 +1,5 @@
 import { Controller, Post, Get, Body, Param, UseGuards } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthGuard } from '../auth/auth.guard';
 import { CurrentUser } from '../auth/auth.decorator';
@@ -11,6 +12,7 @@ export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}
 
   @Post('request')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
   async createRequest(@CurrentUser('wallet') wallet: string, @Body() dto: CreatePaymentRequestDto) {
@@ -23,6 +25,7 @@ export class PaymentsController {
   }
 
   @Post('request/:id/verify')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   async verifyPayment(@Param('id') id: string, @Body() dto: VerifyPaymentDto) {
     return this.paymentsService.verifyPayment(id, dto.signature);
   }
