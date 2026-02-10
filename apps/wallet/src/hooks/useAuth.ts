@@ -5,6 +5,15 @@ import { showToast } from './useToast';
 import bs58 from 'bs58';
 import { API_URL } from '../config';
 import { apiFetch } from '../lib/apiClient';
+import { useWalletStore } from '../stores/walletStore';
+
+interface MeResponse {
+  authenticated: boolean;
+  wallet: string;
+  email: string | null;
+  displayName: string | null;
+  username: string | null;
+}
 
 // Singleton promise so only one authenticate() runs at a time across all hook instances
 let authPromise: Promise<void> | null = null;
@@ -15,11 +24,18 @@ export function useAuth() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const hasAutoAuthed = useRef(false);
 
-  /** Check auth status via httpOnly cookie (server validates) */
+  /** Check auth status via httpOnly cookie (server validates) + sync profile */
   const checkAuth = useCallback(async (): Promise<boolean> => {
     try {
-      const res = await apiFetch<{ authenticated: boolean }>('/auth/me');
+      const res = await apiFetch<MeResponse>('/auth/me');
       setIsAuthenticated(res.authenticated);
+      if (res.authenticated) {
+        useWalletStore.getState().setProfile({
+          email: res.email,
+          displayName: res.displayName,
+          username: res.username,
+        });
+      }
       return res.authenticated;
     } catch {
       setIsAuthenticated(false);
@@ -80,8 +96,18 @@ export function useAuth() {
           return;
         }
 
-        // Cookie is set by server — verify we're authenticated
+        // Cookie is set by server — sync profile
         setIsAuthenticated(true);
+        try {
+          const me = await apiFetch<MeResponse>('/auth/me');
+          useWalletStore.getState().setProfile({
+            email: me.email,
+            displayName: me.displayName,
+            username: me.username,
+          });
+        } catch {
+          // Non-critical — profile sync can fail silently
+        }
       } catch {
         showToast('error', t('auth.networkError'));
       }

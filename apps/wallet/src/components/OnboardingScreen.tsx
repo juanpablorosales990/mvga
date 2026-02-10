@@ -1,7 +1,11 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSelfCustodyWallet } from '../contexts/WalletContext';
 import { useBiometric } from '../hooks/useBiometric';
+import { useWalletStore } from '../stores/walletStore';
+import { API_URL } from '../config';
+import { apiFetch } from '../lib/apiClient';
+import bs58 from 'bs58';
 
 type Step =
   | 'CHOICE'
@@ -10,6 +14,7 @@ type Step =
   | 'CONFIRM_MNEMONIC'
   | 'ENABLE_BIOMETRIC'
   | 'BIOMETRIC_SUCCESS'
+  | 'SETUP_PROFILE'
   | 'IMPORT_CHOICE'
   | 'IMPORT_MNEMONIC'
   | 'IMPORT_KEY';
@@ -37,8 +42,14 @@ function isStrongPassword(pw: string) {
 
 export default function OnboardingScreen() {
   const { t } = useTranslation();
-  const { createWallet, completeOnboarding, importFromMnemonic, importFromSecretKey } =
-    useSelfCustodyWallet();
+  const {
+    createWallet,
+    completeOnboarding,
+    importFromMnemonic,
+    importFromSecretKey,
+    keypair,
+    signMessage,
+  } = useSelfCustodyWallet();
   const { isAvailable: biometricAvailable, isEnabled: biometricEnabled, register } = useBiometric();
   const [step, setStep] = useState<Step>('CHOICE');
 
@@ -62,12 +73,20 @@ export default function OnboardingScreen() {
   const [biometricPassword, setBiometricPassword] = useState('');
   const [biometricError, setBiometricError] = useState('');
 
+  // Profile setup
+  const [profileName, setProfileName] = useState('');
+  const [profileEmail, setProfileEmail] = useState('');
+  const [profileUsername, setProfileUsername] = useState('');
+  const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>(
+    'idle'
+  );
+  const usernameTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const progressIndex = useMemo(() => {
-    // Keep the onboarding UI feeling linear even when there are multiple routes.
-    // 0 Start, 1 Password, 2 Backup, 3 Verify, 4 Secure
+    // 0 Start, 1 Password, 2 Backup, 3 Verify, 4 Secure, 5 Profile
     switch (step) {
       case 'CHOICE':
         return 0;
@@ -83,6 +102,8 @@ export default function OnboardingScreen() {
       case 'ENABLE_BIOMETRIC':
       case 'BIOMETRIC_SUCCESS':
         return 4;
+      case 'SETUP_PROFILE':
+        return 5;
       default:
         return 0;
     }
@@ -156,7 +177,6 @@ export default function OnboardingScreen() {
     setConfirmPassword('');
 
     // Offer biometric/passkey unlock right after backup confirmation (optional).
-    // This mirrors best-in-class onboarding (security setup before "home").
     if (biometricAvailable && !biometricEnabled) {
       setBiometricPassword('');
       setBiometricError('');
@@ -164,8 +184,8 @@ export default function OnboardingScreen() {
       return;
     }
 
-    // Transition wallet state from NO_WALLET → UNLOCKED
-    completeOnboarding();
+    // Go to profile setup instead of completing onboarding
+    setStep('SETUP_PROFILE');
   };
 
   const handleEnableBiometric = async () => {
@@ -199,7 +219,8 @@ export default function OnboardingScreen() {
     setImportPassword('');
     setBiometricPassword('');
     setBiometricError('');
-    completeOnboarding();
+    // Go to profile setup instead of completing onboarding
+    setStep('SETUP_PROFILE');
   };
 
   // ─── Import from mnemonic ──────────────────────────────────────
@@ -245,6 +266,104 @@ export default function OnboardingScreen() {
     }
   };
 
+  // Debounced username availability check
+  useEffect(() => {
+    if (usernameTimerRef.current) clearTimeout(usernameTimerRef.current);
+    const u = profileUsername.trim();
+    if (!u || u.length < 3 || !/^[a-zA-Z0-9_]+$/.test(u)) {
+      setUsernameStatus(u.length > 0 && u.length < 3 ? 'idle' : 'idle');
+      return;
+    }
+    setUsernameStatus('checking');
+    usernameTimerRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `${API_URL}/auth/check-username/${encodeURIComponent(u.toLowerCase())}`,
+          {
+            credentials: 'include',
+          }
+        );
+        if (res.ok) {
+          const { available } = await res.json();
+          setUsernameStatus(available ? 'available' : 'taken');
+        }
+      } catch {
+        setUsernameStatus('idle');
+      }
+    }, 300);
+    return () => {
+      if (usernameTimerRef.current) clearTimeout(usernameTimerRef.current);
+    };
+  }, [profileUsername]);
+
+  // Inline auth during onboarding + save profile
+  const handleSaveProfile = async () => {
+    if (!profileName.trim() && !profileEmail.trim() && !profileUsername.trim()) {
+      completeOnboarding();
+      return;
+    }
+    setError('');
+    setLoading(true);
+    try {
+      const walletAddress = keypair?.publicKey.toBase58();
+      if (!walletAddress || !signMessage) throw new Error('No keypair');
+
+      // 1. Get nonce
+      const nonceRes = await fetch(`${API_URL}/auth/nonce`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ walletAddress }),
+      });
+      if (!nonceRes.ok) throw new Error('Auth failed');
+      const { message } = await nonceRes.json();
+
+      // 2. Sign
+      const signatureBytes = await signMessage(new TextEncoder().encode(message));
+      const signature = bs58.encode(signatureBytes);
+
+      // 3. Verify (sets httpOnly cookie)
+      const verifyRes = await fetch(`${API_URL}/auth/verify`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ walletAddress, signature }),
+      });
+      if (!verifyRes.ok) throw new Error('Verify failed');
+
+      // 4. Save profile
+      const profileData: Record<string, string> = {};
+      if (profileName.trim()) profileData.displayName = profileName.trim();
+      if (profileEmail.trim()) profileData.email = profileEmail.trim();
+      if (profileUsername.trim()) profileData.username = profileUsername.trim();
+
+      const saved = await apiFetch<{
+        displayName: string | null;
+        email: string | null;
+        username: string | null;
+      }>('/auth/profile', { method: 'PUT', body: JSON.stringify(profileData) });
+
+      useWalletStore.getState().setProfile({
+        displayName: saved.displayName,
+        email: saved.email,
+        username: saved.username,
+      });
+
+      completeOnboarding();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : '';
+      if (msg.includes('Email already in use')) {
+        setError(t('profile.emailTaken'));
+      } else if (msg.includes('Username already taken')) {
+        setError(t('profile.usernameTakenError'));
+      } else {
+        setError(t('profile.saveFailed'));
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const copyMnemonic = () => {
     navigator.clipboard.writeText(mnemonicWords.join(' '));
     setCopied(true);
@@ -270,7 +389,7 @@ export default function OnboardingScreen() {
       <div className="w-full max-w-sm">
         {/* Progress indicator */}
         <div className="flex gap-1 mb-6">
-          {Array.from({ length: 5 }).map((_, i) => (
+          {Array.from({ length: 6 }).map((_, i) => (
             <div
               key={i}
               className={`h-1 flex-1 transition-colors ${
@@ -524,6 +643,91 @@ export default function OnboardingScreen() {
             </div>
             <button onClick={finishOnboarding} className="w-full btn-primary">
               {t('onboarding.goToHome')}
+            </button>
+          </div>
+        )}
+
+        {/* ── SETUP PROFILE (optional) ─────────── */}
+        {step === 'SETUP_PROFILE' && (
+          <div className="space-y-4">
+            <p className="text-xs tracking-[0.3em] text-gold-500 uppercase font-mono mb-2">
+              {t('profile.title')}
+            </p>
+            <p className="text-white/40 text-xs mb-4">{t('profile.subtitle')}</p>
+
+            <div>
+              <label className="text-white/30 text-xs font-mono mb-1 block">
+                {t('profile.displayName')}
+              </label>
+              <input
+                type="text"
+                placeholder={t('profile.displayNamePlaceholder')}
+                value={profileName}
+                onChange={(e) => setProfileName(e.target.value)}
+                className={INPUT_CLASS}
+              />
+            </div>
+
+            <div>
+              <label className="text-white/30 text-xs font-mono mb-1 block">
+                {t('profile.email')}
+              </label>
+              <input
+                type="email"
+                placeholder={t('profile.emailPlaceholder')}
+                value={profileEmail}
+                onChange={(e) => setProfileEmail(e.target.value)}
+                className={INPUT_CLASS}
+              />
+            </div>
+
+            <div>
+              <label className="text-white/30 text-xs font-mono mb-1 block">
+                {t('profile.username')}
+              </label>
+              <input
+                type="text"
+                placeholder={t('profile.usernamePlaceholder')}
+                value={profileUsername}
+                autoCapitalize="none"
+                autoComplete="off"
+                onChange={(e) => setProfileUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, ''))}
+                className={INPUT_CLASS}
+              />
+              {usernameStatus === 'checking' && (
+                <p className="text-white/30 text-xs font-mono mt-1">
+                  {t('profile.usernameChecking')}
+                </p>
+              )}
+              {usernameStatus === 'available' && (
+                <p className="text-emerald-400 text-xs font-mono mt-1">
+                  {t('profile.usernameAvailable')}
+                </p>
+              )}
+              {usernameStatus === 'taken' && (
+                <p className="text-red-400 text-xs font-mono mt-1">{t('profile.usernameTaken')}</p>
+              )}
+              {profileUsername.length > 0 && profileUsername.length < 3 && (
+                <p className="text-white/30 text-xs font-mono mt-1">
+                  {t('profile.usernameInvalid')}
+                </p>
+              )}
+            </div>
+
+            {error && <p className="text-red-400 text-xs font-mono">{error}</p>}
+
+            <button
+              onClick={handleSaveProfile}
+              disabled={loading || usernameStatus === 'taken' || usernameStatus === 'checking'}
+              className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? t('profile.saving') : t('profile.continue')}
+            </button>
+            <button
+              onClick={() => completeOnboarding()}
+              className="w-full text-white/30 text-xs font-mono hover:text-white/50 transition py-2"
+            >
+              {t('profile.skipForNow')}
             </button>
           </div>
         )}

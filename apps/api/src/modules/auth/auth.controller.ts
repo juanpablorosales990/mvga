@@ -1,10 +1,10 @@
-import { Controller, Post, Get, Body, Res, UseGuards, Req } from '@nestjs/common';
+import { Controller, Post, Get, Put, Body, Param, Res, UseGuards, Req } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { Response, Request } from 'express';
 import { AuthService } from './auth.service';
 import { AuthGuard } from './auth.guard';
-import { NonceDto, VerifyDto } from './auth.dto';
+import { NonceDto, VerifyDto, UpdateProfileDto } from './auth.dto';
 
 const COOKIE_NAME = 'mvga_auth';
 const IS_PROD = process.env.NODE_ENV === 'production';
@@ -13,11 +13,9 @@ function setAuthCookie(res: Response, token: string) {
   res.cookie(COOKIE_NAME, token, {
     httpOnly: true,
     secure: IS_PROD,
-    // All MVGA properties are under the same "site" (mvga.io), so we don't need SameSite=None.
-    // Using Lax reduces CSRF risk while still allowing normal same-site API calls from app.mvga.io -> api.mvga.io.
     sameSite: 'lax',
     path: '/api',
-    maxAge: 24 * 60 * 60 * 1000, // 24h — matches JWT expiry
+    maxAge: 24 * 60 * 60 * 1000,
   });
 }
 
@@ -39,16 +37,37 @@ export class AuthController {
   async verify(@Body() dto: VerifyDto, @Res({ passthrough: true }) res: Response) {
     const { accessToken } = await this.authService.verify(dto.walletAddress, dto.signature);
     setAuthCookie(res, accessToken);
-    // Return empty success — token is in httpOnly cookie, not exposed to JS
     return { authenticated: true };
   }
 
   @Get('me')
   @UseGuards(AuthGuard)
-  @ApiOperation({ summary: 'Check current auth status' })
+  @ApiOperation({ summary: 'Get current auth status and profile' })
   async me(@Req() req: Request) {
-    const user = (req as Request & { user: { wallet: string } }).user;
-    return { authenticated: true, wallet: user.wallet };
+    const user = (req as Request & { user: { id: string; wallet: string } }).user;
+    const profile = await this.authService.getProfile(user.id);
+    return {
+      authenticated: true,
+      wallet: user.wallet,
+      email: profile?.email ?? null,
+      displayName: profile?.displayName ?? null,
+      username: profile?.username ?? null,
+    };
+  }
+
+  @Put('profile')
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Update user profile (email, display name, username)' })
+  async updateProfile(@Req() req: Request, @Body() dto: UpdateProfileDto) {
+    const user = (req as Request & { user: { id: string } }).user;
+    return this.authService.updateProfile(user.id, dto);
+  }
+
+  @Get('check-username/:username')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @ApiOperation({ summary: 'Check if a username is available' })
+  async checkUsername(@Param('username') username: string) {
+    return this.authService.checkUsername(username);
   }
 
   @Post('logout')

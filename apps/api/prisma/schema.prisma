@@ -15,6 +15,9 @@ datasource db {
 model User {
   id            String   @id @default(uuid())
   walletAddress String   @unique
+  email         String?  @unique
+  displayName   String?
+  username      String?  @unique
   role          String   @default("USER") // USER | ADMIN
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt

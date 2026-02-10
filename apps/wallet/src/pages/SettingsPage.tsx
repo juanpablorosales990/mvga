@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useSelfCustodyWallet } from '../contexts/WalletContext';
 import { useWalletStore } from '../stores/walletStore';
 import { useBiometric } from '../hooks/useBiometric';
 import { showToast } from '../hooks/useToast';
+import { apiFetch } from '../lib/apiClient';
+import { API_URL } from '../config';
 
 export default function SettingsPage() {
   const { t, i18n } = useTranslation();
@@ -30,6 +32,91 @@ export default function SettingsPage() {
   const [showBiometricSetup, setShowBiometricSetup] = useState(false);
   const [biometricError, setBiometricError] = useState('');
 
+  // Profile editing
+  const storeEmail = useWalletStore((s) => s.email);
+  const storeDisplayName = useWalletStore((s) => s.displayName);
+  const storeUsername = useWalletStore((s) => s.username);
+  const [profileName, setProfileName] = useState(storeDisplayName ?? '');
+  const [profileEmail, setProfileEmail] = useState(storeEmail ?? '');
+  const [profileUsername, setProfileUsername] = useState(storeUsername ?? '');
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>(
+    'idle'
+  );
+  const usernameTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Debounced username availability check
+  useEffect(() => {
+    if (usernameTimerRef.current) clearTimeout(usernameTimerRef.current);
+    const u = profileUsername.trim().toLowerCase();
+    // Don't check if it matches current username
+    if (!u || u.length < 3 || !/^[a-zA-Z0-9_]+$/.test(u) || u === storeUsername?.toLowerCase()) {
+      setUsernameStatus('idle');
+      return;
+    }
+    setUsernameStatus('checking');
+    usernameTimerRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`${API_URL}/auth/check-username/${encodeURIComponent(u)}`, {
+          credentials: 'include',
+        });
+        if (res.ok) {
+          const { available } = await res.json();
+          setUsernameStatus(available ? 'available' : 'taken');
+        }
+      } catch {
+        setUsernameStatus('idle');
+      }
+    }, 300);
+    return () => {
+      if (usernameTimerRef.current) clearTimeout(usernameTimerRef.current);
+    };
+  }, [profileUsername, storeUsername]);
+
+  const handleSaveProfile = async () => {
+    setProfileSaving(true);
+    try {
+      const data: Record<string, string> = {};
+      if (profileName.trim() !== (storeDisplayName ?? '')) data.displayName = profileName.trim();
+      if (profileEmail.trim() !== (storeEmail ?? '')) data.email = profileEmail.trim();
+      if (profileUsername.trim() !== (storeUsername ?? '')) data.username = profileUsername.trim();
+
+      if (Object.keys(data).length === 0) {
+        showToast('info', t('profile.saved'));
+        setProfileSaving(false);
+        return;
+      }
+
+      const saved = await apiFetch<{
+        displayName: string | null;
+        email: string | null;
+        username: string | null;
+      }>('/auth/profile', { method: 'PUT', body: JSON.stringify(data) });
+      useWalletStore.getState().setProfile({
+        displayName: saved.displayName,
+        email: saved.email,
+        username: saved.username,
+      });
+      showToast('success', t('profile.saved'));
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : '';
+      if (msg.includes('Email already in use')) {
+        showToast('error', t('profile.emailTaken'));
+      } else if (msg.includes('Username already taken')) {
+        showToast('error', t('profile.usernameTakenError'));
+      } else {
+        showToast('error', t('profile.saveFailed'));
+      }
+    } finally {
+      setProfileSaving(false);
+    }
+  };
+
+  const profileDirty =
+    profileName.trim() !== (storeDisplayName ?? '') ||
+    profileEmail.trim() !== (storeEmail ?? '') ||
+    profileUsername.trim() !== (storeUsername ?? '');
+
   const copyAddress = () => {
     if (!publicKey) return;
     navigator.clipboard.writeText(publicKey.toBase58());
@@ -52,6 +139,72 @@ export default function SettingsPage() {
         </Link>
         <h1 className="text-2xl font-bold">{t('settings.title')}</h1>
       </div>
+
+      {/* Profile */}
+      {connected && (
+        <div className="card p-4 space-y-3">
+          <h2 className="font-semibold text-sm text-gray-400 uppercase tracking-wide">
+            {t('profile.editProfile')}
+          </h2>
+
+          <div>
+            <label className="text-xs text-gray-500 mb-1 block">{t('profile.displayName')}</label>
+            <input
+              type="text"
+              value={profileName}
+              onChange={(e) => setProfileName(e.target.value)}
+              placeholder={t('profile.displayNamePlaceholder')}
+              className="w-full bg-white/5 border border-white/10 px-3 py-2 text-sm focus:outline-none focus:border-gold-500"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs text-gray-500 mb-1 block">{t('profile.email')}</label>
+            <input
+              type="email"
+              value={profileEmail}
+              onChange={(e) => setProfileEmail(e.target.value)}
+              placeholder={t('profile.emailPlaceholder')}
+              className="w-full bg-white/5 border border-white/10 px-3 py-2 text-sm focus:outline-none focus:border-gold-500"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs text-gray-500 mb-1 block">{t('profile.username')}</label>
+            <input
+              type="text"
+              value={profileUsername}
+              autoCapitalize="none"
+              autoComplete="off"
+              onChange={(e) => setProfileUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, ''))}
+              placeholder={t('profile.usernamePlaceholder')}
+              className="w-full bg-white/5 border border-white/10 px-3 py-2 text-sm focus:outline-none focus:border-gold-500"
+            />
+            {usernameStatus === 'checking' && (
+              <p className="text-gray-400 text-xs mt-1">{t('profile.usernameChecking')}</p>
+            )}
+            {usernameStatus === 'available' && (
+              <p className="text-emerald-400 text-xs mt-1">{t('profile.usernameAvailable')}</p>
+            )}
+            {usernameStatus === 'taken' && (
+              <p className="text-red-400 text-xs mt-1">{t('profile.usernameTaken')}</p>
+            )}
+          </div>
+
+          <button
+            onClick={handleSaveProfile}
+            disabled={
+              profileSaving ||
+              !profileDirty ||
+              usernameStatus === 'taken' ||
+              usernameStatus === 'checking'
+            }
+            className="w-full py-2 text-sm font-medium bg-gold-500 text-black disabled:opacity-50 transition"
+          >
+            {profileSaving ? t('profile.saving') : t('profile.save')}
+          </button>
+        </div>
+      )}
 
       {/* Language */}
       <div className="card p-4 space-y-3">

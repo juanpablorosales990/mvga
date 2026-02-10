@@ -1,4 +1,5 @@
-import { Injectable, UnauthorizedException, Logger } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, Logger } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { JwtService } from '@nestjs/jwt';
 import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../../common/prisma.service';
@@ -124,5 +125,52 @@ export class AuthService {
     } catch {
       throw new UnauthorizedException('Invalid token');
     }
+  }
+
+  async getProfile(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { walletAddress: true, email: true, displayName: true, username: true },
+    });
+    return user;
+  }
+
+  async updateProfile(
+    userId: string,
+    dto: { email?: string; displayName?: string; username?: string }
+  ) {
+    try {
+      const data: Record<string, string> = {};
+      if (dto.email !== undefined) data.email = dto.email;
+      if (dto.displayName !== undefined) data.displayName = dto.displayName;
+      if (dto.username !== undefined) data.username = dto.username.toLowerCase();
+
+      const user = await this.prisma.user.update({
+        where: { id: userId },
+        data,
+        select: { walletAddress: true, email: true, displayName: true, username: true },
+      });
+      return user;
+    } catch (e) {
+      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
+        const target = (e.meta?.target as string[]) ?? [];
+        if (target.includes('email')) {
+          throw new ConflictException('Email already in use');
+        }
+        if (target.includes('username')) {
+          throw new ConflictException('Username already taken');
+        }
+        throw new ConflictException('Value already in use');
+      }
+      throw e;
+    }
+  }
+
+  async checkUsername(username: string): Promise<{ available: boolean }> {
+    const existing = await this.prisma.user.findUnique({
+      where: { username: username.toLowerCase() },
+      select: { id: true },
+    });
+    return { available: !existing };
   }
 }

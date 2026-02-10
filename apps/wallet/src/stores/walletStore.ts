@@ -78,6 +78,11 @@ interface WalletState {
   kycStatus: KycStatus;
   kycTier: number;
 
+  // Profile
+  email: string | null;
+  displayName: string | null;
+  username: string | null;
+
   // Onboarding
   tourCompleted: boolean;
   checklistDismissed: boolean;
@@ -106,6 +111,11 @@ interface WalletState {
   triggerPriceAlert: (id: string) => void;
   setKycStatus: (status: KycStatus) => void;
   setKycTier: (tier: number) => void;
+  setProfile: (profile: {
+    email?: string | null;
+    displayName?: string | null;
+    username?: string | null;
+  }) => void;
   completeTour: () => void;
   dismissChecklist: () => void;
   markFirstSend: () => void;
@@ -134,6 +144,9 @@ export const useWalletStore = create<WalletState>()(
       balanceVersion: 0,
       kycStatus: 'UNVERIFIED' as KycStatus,
       kycTier: 0,
+      email: null,
+      displayName: null,
+      username: null,
       tourCompleted: false,
       checklistDismissed: false,
       firstSendCompleted: false,
@@ -200,6 +213,12 @@ export const useWalletStore = create<WalletState>()(
         })),
       setKycStatus: (status) => set({ kycStatus: status }),
       setKycTier: (tier) => set({ kycTier: tier }),
+      setProfile: (profile) =>
+        set((state) => ({
+          email: profile.email !== undefined ? profile.email : state.email,
+          displayName: profile.displayName !== undefined ? profile.displayName : state.displayName,
+          username: profile.username !== undefined ? profile.username : state.username,
+        })),
       completeTour: () => set({ tourCompleted: true }),
       dismissChecklist: () => set({ checklistDismissed: true }),
       markFirstSend: () => set({ firstSendCompleted: true }),
@@ -225,6 +244,9 @@ export const useWalletStore = create<WalletState>()(
         cardStatus: state.cardStatus,
         kycStatus: state.kycStatus,
         kycTier: state.kycTier,
+        email: state.email,
+        displayName: state.displayName,
+        username: state.username,
         tourCompleted: state.tourCompleted,
         checklistDismissed: state.checklistDismissed,
         firstSendCompleted: state.firstSendCompleted,
