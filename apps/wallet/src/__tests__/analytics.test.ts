@@ -68,6 +68,6 @@ describe('analytics', () => {
     expect(AnalyticsEvents.WALLET_CREATED).toBe('wallet_created');
     expect(AnalyticsEvents.EXPORT_PDF).toBe('export_pdf');
     expect(AnalyticsEvents.TOPUP_COMPLETED).toBe('topup_completed');
-    expect(Object.keys(AnalyticsEvents).length).toBe(18);
+    expect(Object.keys(AnalyticsEvents).length).toBe(17);
   });
 });

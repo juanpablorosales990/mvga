@@ -30,7 +30,7 @@ interface EncryptedWalletV2 {
   mnemonic_iv: string;
   mnemonic_ct: string;
   derivationPath: string;
-  createdVia: 'mnemonic' | 'import_mnemonic' | 'import_key';
+  createdVia: 'mnemonic';
 }
 
 function isV2(data: unknown): data is EncryptedWalletV2 {
@@ -146,97 +146,7 @@ describe('WalletContext - unlock flow', () => {
   });
 });
 
-describe('WalletContext - importFromSecretKey flow', () => {
-  beforeEach(() => {
-    localStorage.clear();
-  });
-
-  it('imports from a base58 secret key', async () => {
-    const kp = Keypair.generate();
-    const secretKeyBase58 = bs58.encode(kp.secretKey);
-
-    const decoded = bs58.decode(secretKeyBase58);
-    expect(decoded.length).toBe(64);
-
-    const imported = Keypair.fromSecretKey(decoded);
-    expect(imported.publicKey.toBase58()).toBe(kp.publicKey.toBase58());
-
-    const {
-      salt,
-      iv: keypairIv,
-      ciphertext: keypairCt,
-    } = await encryptKeypair(imported.secretKey, PASSWORD);
-
-    const stored: EncryptedWalletV2 = {
-      version: 2,
-      salt,
-      keypair_iv: keypairIv,
-      keypair_ct: keypairCt,
-      mnemonic_iv: '',
-      mnemonic_ct: '',
-      derivationPath: '',
-      createdVia: 'import_key',
-    };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
-
-    // Verify we can decrypt it back
-    const decrypted = await decryptData(
-      stored.keypair_ct,
-      stored.keypair_iv,
-      stored.salt,
-      PASSWORD
-    );
-    const recovered = Keypair.fromSecretKey(decrypted);
-    expect(recovered.publicKey.toBase58()).toBe(kp.publicKey.toBase58());
-  });
-});
-
-describe('WalletContext - importFromMnemonic flow', () => {
-  beforeEach(() => {
-    localStorage.clear();
-  });
-
-  it('imports from mnemonic words', async () => {
-    const mnemonic = createMnemonic();
-    const words = mnemonic.split(' ');
-    expect(isValidMnemonic(words.join(' '))).toBe(true);
-
-    const kp = deriveKeypairFromMnemonic(words.join(' '), 0);
-
-    const {
-      salt,
-      iv: keypairIv,
-      ciphertext: keypairCt,
-    } = await encryptKeypair(kp.secretKey, PASSWORD);
-    const { iv: mnemonicIv, ciphertext: mnemonicCt } = await encryptData(
-      new TextEncoder().encode(words.join(' ')),
-      PASSWORD,
-      salt
-    );
-
-    const stored: EncryptedWalletV2 = {
-      version: 2,
-      salt,
-      keypair_iv: keypairIv,
-      keypair_ct: keypairCt,
-      mnemonic_iv: mnemonicIv,
-      mnemonic_ct: mnemonicCt,
-      derivationPath: getDerivationPath(0),
-      createdVia: 'import_mnemonic',
-    };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
-
-    // Verify mnemonic can be exported back
-    const mnemonicBytes = await decryptData(
-      stored.mnemonic_ct,
-      stored.mnemonic_iv,
-      stored.salt,
-      PASSWORD
-    );
-    const exported = new TextDecoder().decode(mnemonicBytes).split(' ');
-    expect(exported).toEqual(words);
-  });
-
+describe('WalletContext - mnemonic validation', () => {
   it('rejects invalid mnemonic', () => {
     expect(isValidMnemonic('invalid mnemonic phrase that is not bip39')).toBe(false);
   });
@@ -288,7 +198,7 @@ describe('WalletContext - exportMnemonic flow', () => {
     }
   });
 
-  it('returns null for import_key wallets (no mnemonic)', async () => {
+  it('returns null when mnemonic_ct is empty', async () => {
     localStorage.clear();
 
     const kp = Keypair.generate();
@@ -306,17 +216,15 @@ describe('WalletContext - exportMnemonic flow', () => {
       mnemonic_iv: '',
       mnemonic_ct: '',
       derivationPath: '',
-      createdVia: 'import_key',
+      createdVia: 'mnemonic',
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
 
     const data = JSON.parse(localStorage.getItem(STORAGE_KEY)!);
     if (isV2(data) && data.mnemonic_ct) {
-      // Should not enter here — mnemonic_ct is empty
       throw new Error('Should not have mnemonic');
     } else {
-      // This is correct — no mnemonic for import_key
-      expect(data.createdVia).toBe('import_key');
+      expect(data.mnemonic_ct).toBe('');
     }
   });
 });
@@ -340,7 +248,7 @@ describe('WalletContext - exportSecretKey flow', () => {
       mnemonic_iv: '',
       mnemonic_ct: '',
       derivationPath: '',
-      createdVia: 'import_key',
+      createdVia: 'mnemonic',
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
 

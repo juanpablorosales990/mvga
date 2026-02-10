@@ -523,7 +523,6 @@
   "onboarding": {
     "tagline": "Tus llaves, tus monedas. Sin extensiones. Sin intermediarios.",
     "createNew": "Crear Nueva Billetera",
-    "importExisting": "Importar Existente",
     "securityNote": "Tu frase de recuperación y llave privada están encriptadas y almacenadas solo en este dispositivo.",
     "setPassword": "Establecer Contraseña",
     "passwordPlaceholder": "Contraseña (mín 8 caracteres)",
@@ -561,24 +560,11 @@
     "goToHome": "Ir al inicio",
     "biometricsUnavailable": "Los biométricos no están disponibles en este dispositivo",
     "biometricsFailed": "No se pudo activar los biométricos. Intenta de nuevo.",
-    "importWallet": "Importar Billetera",
-    "recoveryPhrase12": "Frase de Recuperación (12 palabras)",
-    "secretKeyBase58": "Llave Secreta (base58)",
-    "enterRecoveryPhrase": "Ingresa Frase de Recuperación",
-    "setPasswordEncrypt": "Establece una contraseña para encriptar",
-    "importing": "Importando...",
-    "importViaSecretKey": "Importar con Llave Secreta",
-    "pasteSecretKeyPlaceholder": "Pega tu llave secreta base58",
-    "importEncrypt": "Importar y Encriptar",
     "passwordTooShort": "La contraseña debe tener al menos 8 caracteres",
     "passwordTooWeak": "La contraseña no cumple con los requisitos",
     "passwordsNoMatch": "Las contraseñas no coinciden",
     "createFailed": "Error al crear la billetera",
-    "wordsIncorrect": "Una o más palabras son incorrectas. Verifica tu respaldo.",
-    "fill12Words": "Por favor completa las 12 palabras",
-    "invalidPhrase": "Frase de recuperación inválida",
-    "pasteKey": "Pega tu llave secreta",
-    "invalidKey": "Llave secreta inválida"
+    "wordsIncorrect": "Una o más palabras son incorrectas. Verifica tu respaldo."
   },
   "lockScreen": {
     "walletLocked": "Billetera Bloqueada",

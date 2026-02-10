@@ -523,7 +523,6 @@
   "onboarding": {
     "tagline": "Your keys, your coins. No extensions. No middlemen.",
     "createNew": "Create New Wallet",
-    "importExisting": "Import Existing",
     "securityNote": "Your recovery phrase and private key are encrypted and stored only on this device.",
     "setPassword": "Set Password",
     "passwordPlaceholder": "Password (min 8 characters)",
@@ -561,24 +560,11 @@
     "goToHome": "Go to home",
     "biometricsUnavailable": "Biometrics are not available on this device",
     "biometricsFailed": "Failed to enable biometrics. Please try again.",
-    "importWallet": "Import Wallet",
-    "recoveryPhrase12": "Recovery Phrase (12 words)",
-    "secretKeyBase58": "Secret Key (base58)",
-    "enterRecoveryPhrase": "Enter Recovery Phrase",
-    "setPasswordEncrypt": "Set a password to encrypt it",
-    "importing": "Importing...",
-    "importViaSecretKey": "Import via Secret Key",
-    "pasteSecretKeyPlaceholder": "Paste your base58 secret key",
-    "importEncrypt": "Import & Encrypt",
     "passwordTooShort": "Password must be at least 8 characters",
     "passwordTooWeak": "Password requirements not met",
     "passwordsNoMatch": "Passwords do not match",
     "createFailed": "Failed to create wallet",
-    "wordsIncorrect": "One or more words are incorrect. Please check your backup.",
-    "fill12Words": "Please fill in all 12 words",
-    "invalidPhrase": "Invalid recovery phrase",
-    "pasteKey": "Paste your secret key",
-    "invalidKey": "Invalid secret key"
+    "wordsIncorrect": "One or more words are incorrect. Please check your backup."
   },
   "lockScreen": {
     "walletLocked": "Wallet Locked",

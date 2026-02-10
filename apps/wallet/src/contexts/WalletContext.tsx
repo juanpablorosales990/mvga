@@ -19,7 +19,6 @@ import {
 } from '../lib/keypairEncryption';
 import {
   createMnemonic,
-  isValidMnemonic,
   deriveKeypairFromMnemonic,
   getDerivationPath,
 } from '../lib/mnemonicDerivation';
@@ -37,9 +36,6 @@ interface WalletContextValue {
 
   createWallet: (password: string) => Promise<string[]>;
   completeOnboarding: () => void;
-  importWallet: (secretKeyBase58: string, password: string) => Promise<void>;
-  importFromMnemonic: (words: string[], password: string) => Promise<void>;
-  importFromSecretKey: (secretKeyBase58: string, password: string) => Promise<void>;
   unlock: (password: string) => Promise<void>;
   lock: () => void;
   deleteWallet: () => void;
@@ -68,7 +64,7 @@ interface EncryptedWalletV2 {
   mnemonic_iv: string;
   mnemonic_ct: string;
   derivationPath: string;
-  createdVia: 'mnemonic' | 'import_mnemonic' | 'import_key';
+  createdVia: 'mnemonic';
 }
 
 function isV2(data: unknown): data is EncryptedWalletV2 {
@@ -168,82 +164,6 @@ export function SelfCustodyWalletProvider({ children }: { children: ReactNode })
     }
   }, [keypair, storeSetPublicKey, storeSetConnected]);
 
-  const importFromMnemonic = useCallback(
-    async (words: string[], password: string): Promise<void> => {
-      const mnemonic = words.join(' ').trim().toLowerCase();
-      if (!isValidMnemonic(mnemonic)) {
-        throw new Error('Invalid recovery phrase');
-      }
-
-      const kp = deriveKeypairFromMnemonic(mnemonic, 0);
-
-      const {
-        salt,
-        iv: keypairIv,
-        ciphertext: keypairCt,
-      } = await encryptKeypair(kp.secretKey, password);
-      const { iv: mnemonicIv, ciphertext: mnemonicCt } = await encryptData(
-        new TextEncoder().encode(mnemonic),
-        password,
-        salt
-      );
-
-      const stored: EncryptedWalletV2 = {
-        version: 2,
-        salt,
-        keypair_iv: keypairIv,
-        keypair_ct: keypairCt,
-        mnemonic_iv: mnemonicIv,
-        mnemonic_ct: mnemonicCt,
-        derivationPath: getDerivationPath(0),
-        createdVia: 'import_mnemonic',
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
-
-      setKeypair(kp);
-      setHasMnemonic(true);
-      setWalletState('UNLOCKED');
-      storeSetPublicKey(kp.publicKey.toBase58());
-      storeSetConnected(true);
-    },
-    [storeSetPublicKey, storeSetConnected]
-  );
-
-  const importFromSecretKey = useCallback(
-    async (secretKeyBase58: string, password: string): Promise<void> => {
-      const secretKey = bs58.decode(secretKeyBase58);
-      if (secretKey.length !== 64) throw new Error('Invalid secret key length');
-
-      const kp = Keypair.fromSecretKey(secretKey);
-      const {
-        salt,
-        iv: keypairIv,
-        ciphertext: keypairCt,
-      } = await encryptKeypair(kp.secretKey, password);
-
-      const stored: EncryptedWalletV2 = {
-        version: 2,
-        salt,
-        keypair_iv: keypairIv,
-        keypair_ct: keypairCt,
-        mnemonic_iv: '',
-        mnemonic_ct: '',
-        derivationPath: '',
-        createdVia: 'import_key',
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
-
-      setKeypair(kp);
-      setHasMnemonic(false);
-      setWalletState('UNLOCKED');
-      storeSetPublicKey(kp.publicKey.toBase58());
-      storeSetConnected(true);
-    },
-    [storeSetPublicKey, storeSetConnected]
-  );
-
-  const importWallet = importFromSecretKey;
-
   const unlock = useCallback(
     async (password: string): Promise<void> => {
       const stored = localStorage.getItem(STORAGE_KEY);
@@ -256,7 +176,7 @@ export function SelfCustodyWalletProvider({ children }: { children: ReactNode })
       if (isV2(data)) {
         const secretKey = await decryptData(data.keypair_ct, data.keypair_iv, data.salt, password);
         kp = Keypair.fromSecretKey(secretKey);
-        mnemonicFlag = data.createdVia !== 'import_key' && !!data.mnemonic_ct;
+        mnemonicFlag = !!data.mnemonic_ct;
       } else {
         const encrypted: EncryptedKeypair = data;
         const secretKey = await decryptKeypair(encrypted, password);
@@ -377,9 +297,6 @@ export function SelfCustodyWalletProvider({ children }: { children: ReactNode })
         pendingOnboarding,
         createWallet,
         completeOnboarding,
-        importWallet,
-        importFromMnemonic,
-        importFromSecretKey,
         unlock,
         lock,
         deleteWallet,

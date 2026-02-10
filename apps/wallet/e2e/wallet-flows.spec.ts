@@ -5,15 +5,12 @@ import { test, expect, Page } from '@playwright/test';
  *
  * Tests cover:
  * 1. Onboarding — create wallet with mnemonic
- * 2. Mnemonic backup verification
- * 3. Lock / unlock cycle
- * 4. Delete wallet (reset)
- * 5. Import from recovery phrase
- * 6. Import from secret key
- * 7. Deposit page
- * 8. Header wallet menu (export key, lock, disconnect)
- * 9. Auth flow (JWT acquisition after unlock)
- * 10. Navigation after wallet connected
+ * 2. Lock / unlock cycle
+ * 3. Header wallet menu (export key, lock, disconnect)
+ * 4. Deposit page
+ * 5. Navigation after wallet connected
+ * 6. Brutalist design verification
+ * 7. Local storage persistence
  */
 
 const TEST_PASSWORD = 'Str0ng!Pass99';
@@ -152,7 +149,6 @@ test.describe('Wallet Creation Flow', () => {
   test('shows onboarding screen when no wallet exists', async ({ page }) => {
     await expect(page.getByText('MVGA')).toBeVisible();
     await expect(page.getByText('Create New Wallet')).toBeVisible();
-    await expect(page.getByText('Import Existing')).toBeVisible();
     await expect(page.getByText(/your keys.*your coins/i)).toBeVisible();
   });
 
@@ -311,158 +307,7 @@ test.describe('Lock & Unlock Flow', () => {
 });
 
 // ---------------------------------------------------------------------------
-// 3. IMPORT WALLET — MNEMONIC
-// ---------------------------------------------------------------------------
-test.describe('Import Wallet via Mnemonic', () => {
-  test('import choice screen shows two options', async ({ page }) => {
-    await page.goto('/');
-    await clearWallet(page);
-
-    await page.getByText('Import Existing').click();
-    await expect(page.getByText(/recovery phrase/i)).toBeVisible();
-    await expect(page.getByText(/secret key/i)).toBeVisible();
-  });
-
-  test('import from mnemonic validates empty words', async ({ page }) => {
-    await page.goto('/');
-    await clearWallet(page);
-
-    await page.getByText('Import Existing').click();
-    await page.getByRole('button', { name: /recovery phrase/i }).click();
-
-    // Try to import without filling words
-    await page.locator('input[type="password"]').fill(TEST_PASSWORD);
-    await page.getByRole('button', { name: /import wallet/i }).click();
-    await expect(page.getByText(/fill in all 12/i)).toBeVisible();
-  });
-
-  test('import from mnemonic validates password length', async ({ page }) => {
-    await page.goto('/');
-    await clearWallet(page);
-
-    await page.getByText('Import Existing').click();
-    await page.getByRole('button', { name: /recovery phrase/i }).click();
-
-    // Fill all 12 words with dummy valid words
-    const dummyWords = [
-      'abandon',
-      'abandon',
-      'abandon',
-      'abandon',
-      'abandon',
-      'abandon',
-      'abandon',
-      'abandon',
-      'abandon',
-      'abandon',
-      'abandon',
-      'about',
-    ];
-    for (let i = 0; i < 12; i++) {
-      await page.locator(`input[placeholder="${i + 1}"]`).fill(dummyWords[i]);
-    }
-
-    // Short password
-    await page.locator('input[type="password"]').fill('12345');
-    await page.getByRole('button', { name: /import wallet/i }).click();
-    await expect(page.getByText(/password requirements not met/i)).toBeVisible();
-  });
-
-  test('full mnemonic import: create → lock → reset → import same phrase → same address', async ({
-    page,
-  }) => {
-    await page.goto('/');
-    await clearWallet(page);
-
-    // 1. Create wallet and capture address
-    const words = await createWalletAndGetMnemonic(page);
-    await confirmMnemonic(page, words);
-    await expect(page.locator('header').getByText(/\w{4}\.\.\.\w{4}/)).toBeVisible({
-      timeout: 10000,
-    });
-
-    const addressText = await page
-      .locator('header')
-      .getByText(/\w{4}\.\.\.\w{4}/)
-      .textContent();
-    const originalAddress = addressText?.trim();
-    expect(originalAddress).toBeTruthy();
-
-    // 2. Delete wallet
-    await clearWallet(page);
-    await expect(page.getByText('Create New Wallet')).toBeVisible({ timeout: 5000 });
-
-    // 3. Import with same mnemonic
-    await page.getByText('Import Existing').click();
-    await page.getByRole('button', { name: /recovery phrase/i }).click();
-
-    for (let i = 0; i < 12; i++) {
-      await page.locator(`input[placeholder="${i + 1}"]`).fill(words[i]);
-    }
-    await page.locator('input[type="password"]').fill(TEST_PASSWORD);
-    await page.getByRole('button', { name: /import wallet/i }).click();
-
-    // Fresh storage reset clears `tourCompleted`, so the WelcomeTour may show again after import.
-    await skipWelcomeTourIfPresent(page);
-
-    // Should land on dashboard with same address
-    await expect(page.locator('header').getByText(/\w{4}\.\.\.\w{4}/)).toBeVisible({
-      timeout: 10000,
-    });
-
-    const restoredAddress = await page
-      .locator('header')
-      .getByText(/\w{4}\.\.\.\w{4}/)
-      .textContent();
-    expect(restoredAddress?.trim()).toBe(originalAddress);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// 4. IMPORT WALLET — SECRET KEY
-// ---------------------------------------------------------------------------
-test.describe('Import Wallet via Secret Key', () => {
-  test('import secret key validates empty key', async ({ page }) => {
-    await page.goto('/');
-    await clearWallet(page);
-
-    await page.getByText('Import Existing').click();
-    await page.getByRole('button', { name: /secret key/i }).click();
-
-    await page.locator('input[type="password"]').fill(TEST_PASSWORD);
-    await page.getByRole('button', { name: /import.*encrypt/i }).click();
-    await expect(page.getByText(/paste.*secret key/i)).toBeVisible();
-  });
-
-  test('import secret key validates password length', async ({ page }) => {
-    await page.goto('/');
-    await clearWallet(page);
-
-    await page.getByText('Import Existing').click();
-    await page.getByRole('button', { name: /secret key/i }).click();
-
-    await page.locator('textarea').fill('SomeBase58Key');
-    await page.locator('input[type="password"]').fill('12345');
-    await page.getByRole('button', { name: /import.*encrypt/i }).click();
-    await expect(page.getByText(/password requirements not met/i)).toBeVisible();
-  });
-
-  test('import secret key shows error for invalid key', async ({ page }) => {
-    await page.goto('/');
-    await clearWallet(page);
-
-    await page.getByText('Import Existing').click();
-    await page.getByRole('button', { name: /secret key/i }).click();
-
-    await page.locator('textarea').fill('not-a-valid-base58-key');
-    await page.locator('input[type="password"]').fill(TEST_PASSWORD);
-    await page.getByRole('button', { name: /import.*encrypt/i }).click();
-    await expect(page.getByText(/invalid/i)).toBeVisible({ timeout: 5000 });
-  });
-});
-
-// ---------------------------------------------------------------------------
-// 5. HEADER MENU — EXPORT KEY, DISCONNECT
+// 3. HEADER MENU — EXPORT KEY, DISCONNECT
 // ---------------------------------------------------------------------------
 test.describe('Header Wallet Menu', () => {
   test.beforeEach(async ({ page }) => {
@@ -531,7 +376,7 @@ test.describe('Header Wallet Menu', () => {
 });
 
 // ---------------------------------------------------------------------------
-// 6. DEPOSIT PAGE
+// 4. DEPOSIT PAGE
 // ---------------------------------------------------------------------------
 test.describe('Deposit Page', () => {
   test.beforeEach(async ({ page }) => {
@@ -577,7 +422,7 @@ test.describe('Deposit Page', () => {
 });
 
 // ---------------------------------------------------------------------------
-// 7. CONNECTED NAVIGATION
+// 5. CONNECTED NAVIGATION
 // ---------------------------------------------------------------------------
 test.describe('Navigation After Wallet Connected', () => {
   test.beforeEach(async ({ page }) => {
@@ -638,7 +483,7 @@ test.describe('Navigation After Wallet Connected', () => {
 });
 
 // ---------------------------------------------------------------------------
-// 8. DESIGN VERIFICATION (Brutalist)
+// 6. DESIGN VERIFICATION (Brutalist)
 // ---------------------------------------------------------------------------
 test.describe('Brutalist Design', () => {
   test('uses Archivo font family', async ({ page }) => {
@@ -670,7 +515,7 @@ test.describe('Brutalist Design', () => {
 });
 
 // ---------------------------------------------------------------------------
-// 9. LOCAL STORAGE PERSISTENCE
+// 7. LOCAL STORAGE PERSISTENCE
 // ---------------------------------------------------------------------------
 test.describe('Storage Persistence', () => {
   test('encrypted wallet is stored in localStorage as V2 format', async ({ page }) => {

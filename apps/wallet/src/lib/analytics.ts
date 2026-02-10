@@ -3,7 +3,6 @@ import { API_URL } from '../config';
 /** All tracked event names — add new events here */
 export const AnalyticsEvents = {
   WALLET_CREATED: 'wallet_created',
-  WALLET_IMPORTED: 'wallet_imported',
   BIOMETRIC_ENABLED: 'biometric_enabled',
   PROFILE_SETUP: 'profile_setup',
   SEND_COMPLETED: 'send_completed',

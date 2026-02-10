@@ -15,10 +15,7 @@ type Step =
   | 'CONFIRM_MNEMONIC'
   | 'ENABLE_BIOMETRIC'
   | 'BIOMETRIC_SUCCESS'
-  | 'SETUP_PROFILE'
-  | 'IMPORT_CHOICE'
-  | 'IMPORT_MNEMONIC'
-  | 'IMPORT_KEY';
+  | 'SETUP_PROFILE';
 
 const INPUT_CLASS =
   'w-full bg-white/5 border border-white/10 px-4 py-3 text-white placeholder:text-white/20 focus:border-gold-500 outline-none font-mono text-sm';
@@ -43,14 +40,7 @@ function isStrongPassword(pw: string) {
 
 export default function OnboardingScreen() {
   const { t } = useTranslation();
-  const {
-    createWallet,
-    completeOnboarding,
-    importFromMnemonic,
-    importFromSecretKey,
-    keypair,
-    signMessage,
-  } = useSelfCustodyWallet();
+  const { createWallet, completeOnboarding, keypair, signMessage } = useSelfCustodyWallet();
   const { isAvailable: biometricAvailable, isEnabled: biometricEnabled, register } = useBiometric();
   const [step, setStep] = useState<Step>('CHOICE');
 
@@ -64,11 +54,6 @@ export default function OnboardingScreen() {
   // Mnemonic confirmation
   const [confirmIndices, setConfirmIndices] = useState<number[]>([]);
   const [confirmAnswers, setConfirmAnswers] = useState<Record<number, string>>({});
-
-  // Import flow
-  const [importWords, setImportWords] = useState<string[]>(Array(12).fill(''));
-  const [importKey, setImportKey] = useState('');
-  const [importPassword, setImportPassword] = useState('');
 
   // Optional: bind password to biometric unlock (WebAuthn)
   const [biometricPassword, setBiometricPassword] = useState('');
@@ -92,11 +77,8 @@ export default function OnboardingScreen() {
       case 'CHOICE':
         return 0;
       case 'CREATE_PASSWORD':
-      case 'IMPORT_CHOICE':
         return 1;
       case 'SHOW_MNEMONIC':
-      case 'IMPORT_MNEMONIC':
-      case 'IMPORT_KEY':
         return 2;
       case 'CONFIRM_MNEMONIC':
         return 3;
@@ -219,56 +201,10 @@ export default function OnboardingScreen() {
     // Clear local password fields before leaving onboarding.
     setPassword('');
     setConfirmPassword('');
-    setImportPassword('');
     setBiometricPassword('');
     setBiometricError('');
     // Go to profile setup instead of completing onboarding
     setStep('SETUP_PROFILE');
-  };
-
-  // ─── Import from mnemonic ──────────────────────────────────────
-  const handleImportMnemonic = async () => {
-    const words = importWords.map((w) => w.trim().toLowerCase());
-    if (words.some((w) => !w)) {
-      setError(t('onboarding.fill12Words'));
-      return;
-    }
-    if (!isStrongPassword(importPassword)) {
-      setError(t('onboarding.passwordTooWeak'));
-      return;
-    }
-    setError('');
-    setLoading(true);
-    try {
-      await importFromMnemonic(words, importPassword);
-      track(AnalyticsEvents.WALLET_IMPORTED);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : t('onboarding.invalidPhrase'));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // ─── Import from secret key ────────────────────────────────────
-  const handleImportKey = async () => {
-    if (!importKey.trim()) {
-      setError(t('onboarding.pasteKey'));
-      return;
-    }
-    if (!isStrongPassword(importPassword)) {
-      setError(t('onboarding.passwordTooWeak'));
-      return;
-    }
-    setError('');
-    setLoading(true);
-    try {
-      await importFromSecretKey(importKey.trim(), importPassword);
-      track(AnalyticsEvents.WALLET_IMPORTED);
-    } catch {
-      setError(t('onboarding.invalidKey'));
-    } finally {
-      setLoading(false);
-    }
   };
 
   // Debounced username availability check
@@ -417,9 +353,6 @@ export default function OnboardingScreen() {
             <p className="text-white/40 text-sm text-center mb-8">{t('onboarding.tagline')}</p>
             <button onClick={() => setStep('CREATE_PASSWORD')} className="w-full btn-primary">
               {t('onboarding.createNew')}
-            </button>
-            <button onClick={() => setStep('IMPORT_CHOICE')} className="w-full btn-secondary">
-              {t('onboarding.importExisting')}
             </button>
             <p className="text-white/20 text-xs text-center font-mono mt-8">
               {t('onboarding.securityNote')}
@@ -734,143 +667,6 @@ export default function OnboardingScreen() {
               className="w-full text-white/30 text-xs font-mono hover:text-white/50 transition py-2"
             >
               {t('profile.skipForNow')}
-            </button>
-          </div>
-        )}
-
-        {/* ── IMPORT CHOICE ─────────────────────── */}
-        {step === 'IMPORT_CHOICE' && (
-          <div className="space-y-4">
-            <p className="text-xs tracking-[0.3em] text-white/30 uppercase font-mono mb-6">
-              {t('onboarding.importWallet')}
-            </p>
-            <button
-              onClick={() => {
-                setError('');
-                setStep('IMPORT_MNEMONIC');
-              }}
-              className="w-full btn-primary"
-            >
-              {t('onboarding.recoveryPhrase12')}
-            </button>
-            <button
-              onClick={() => {
-                setError('');
-                setStep('IMPORT_KEY');
-              }}
-              className="w-full btn-secondary"
-            >
-              {t('onboarding.secretKeyBase58')}
-            </button>
-            <button
-              onClick={() => goBack('CHOICE')}
-              className="w-full text-white/30 text-xs font-mono hover:text-white/50 transition py-2"
-            >
-              &larr; {t('common.back')}
-            </button>
-          </div>
-        )}
-
-        {/* ── IMPORT MNEMONIC ──────────────────── */}
-        {step === 'IMPORT_MNEMONIC' && (
-          <div className="space-y-4">
-            <p className="text-xs tracking-[0.3em] text-white/30 uppercase font-mono mb-4">
-              {t('onboarding.enterRecoveryPhrase')}
-            </p>
-
-            <div className="grid grid-cols-3 gap-2">
-              {importWords.map((word, i) => (
-                <div key={i} className="flex items-center gap-1">
-                  <span className="text-white/20 text-[10px] font-mono w-4 text-right">
-                    {i + 1}
-                  </span>
-                  <input
-                    type="text"
-                    autoCapitalize="none"
-                    autoComplete="off"
-                    value={word}
-                    onChange={(e) => {
-                      const updated = [...importWords];
-                      // Handle paste of full 12-word phrase into first field
-                      const val = e.target.value;
-                      if (i === 0 && val.includes(' ')) {
-                        const pasted = val.trim().split(/\s+/);
-                        if (pasted.length === 12) {
-                          setImportWords(pasted);
-                          return;
-                        }
-                      }
-                      updated[i] = val;
-                      setImportWords(updated);
-                    }}
-                    className="flex-1 bg-white/5 border border-white/10 px-2 py-2 text-white font-mono text-xs focus:border-gold-500 outline-none min-w-0"
-                    placeholder={`${i + 1}`}
-                  />
-                </div>
-              ))}
-            </div>
-
-            <input
-              type="password"
-              placeholder={t('onboarding.setPasswordEncrypt')}
-              value={importPassword}
-              onChange={(e) => setImportPassword(e.target.value)}
-              className={INPUT_CLASS}
-              onKeyDown={(e) => e.key === 'Enter' && handleImportMnemonic()}
-            />
-
-            {error && <p className="text-red-400 text-xs font-mono">{error}</p>}
-
-            <button
-              onClick={handleImportMnemonic}
-              disabled={loading}
-              className="w-full btn-primary disabled:opacity-50"
-            >
-              {loading ? t('onboarding.importing') : t('onboarding.importWallet')}
-            </button>
-            <button
-              onClick={() => goBack('IMPORT_CHOICE')}
-              className="w-full text-white/30 text-xs font-mono hover:text-white/50 transition py-2"
-            >
-              &larr; {t('common.back')}
-            </button>
-          </div>
-        )}
-
-        {/* ── IMPORT SECRET KEY ────────────────── */}
-        {step === 'IMPORT_KEY' && (
-          <div className="space-y-4">
-            <p className="text-xs tracking-[0.3em] text-white/30 uppercase font-mono mb-6">
-              {t('onboarding.importViaSecretKey')}
-            </p>
-            <textarea
-              placeholder={t('onboarding.pasteSecretKeyPlaceholder')}
-              value={importKey}
-              onChange={(e) => setImportKey(e.target.value)}
-              rows={3}
-              className="w-full bg-white/5 border border-white/10 px-4 py-3 text-white placeholder:text-white/20 focus:border-gold-500 outline-none font-mono text-xs resize-none"
-            />
-            <input
-              type="password"
-              placeholder={t('onboarding.setPasswordEncrypt')}
-              value={importPassword}
-              onChange={(e) => setImportPassword(e.target.value)}
-              className={INPUT_CLASS}
-              onKeyDown={(e) => e.key === 'Enter' && handleImportKey()}
-            />
-            {error && <p className="text-red-400 text-xs font-mono">{error}</p>}
-            <button
-              onClick={handleImportKey}
-              disabled={loading}
-              className="w-full btn-primary disabled:opacity-50"
-            >
-              {loading ? t('onboarding.importing') : t('onboarding.importEncrypt')}
-            </button>
-            <button
-              onClick={() => goBack('IMPORT_CHOICE')}
-              className="w-full text-white/30 text-xs font-mono hover:text-white/50 transition py-2"
-            >
-              &larr; {t('common.back')}
             </button>
           </div>
         )}
