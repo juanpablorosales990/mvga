@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import AppStoreBadges from './AppStoreBadges';
 
 export default function Footer() {
   return (
@@ -8,6 +9,7 @@ export default function Footer() {
           <div>
             <span className="text-xl font-black tracking-tighter uppercase">MVGA</span>
             <p className="text-white/30 text-sm mt-1 font-mono">Digital dollars for Venezuela</p>
+            <AppStoreBadges className="mt-4" />
           </div>
 
           <div className="flex flex-wrap items-center gap-6 text-sm text-white/30">

@@ -6,6 +6,7 @@ import Nav from '@/components/Nav';
 import Footer from '@/components/Footer';
 import GridBackground from '@/components/GridBackground';
 import Marquee from '@/components/Marquee';
+import AppStoreBadges from '@/components/AppStoreBadges';
 import { API_BASE, formatNumber } from '@/lib/utils';
 
 interface LiveMetrics {
@@ -110,6 +111,8 @@ export default function Home() {
                 See How It Works
               </Link>
             </div>
+
+            <AppStoreBadges className="mt-8 hero-cta" />
           </div>
         </section>
 
@@ -994,6 +997,8 @@ export default function Home() {
                 Join Community
               </Link>
             </div>
+
+            <AppStoreBadges className="mt-8 justify-center" />
           </div>
         </section>
 
