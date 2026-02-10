@@ -81,8 +81,15 @@ async function bootstrap() {
   app.use(
     helmet({
       contentSecurityPolicy: process.env.NODE_ENV === 'production' ? undefined : false,
+      frameguard: { action: 'deny' },
     })
   );
+
+  // Permissions-Policy header (not covered by helmet)
+  app.use((_req, res, next) => {
+    res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+    next();
+  });
 
   // Sentry is initialized at module level (above) and auto-instruments
 
