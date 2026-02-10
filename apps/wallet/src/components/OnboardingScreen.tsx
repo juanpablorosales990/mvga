@@ -11,6 +11,7 @@ import bs58 from 'bs58';
 type Step =
   | 'CHOICE'
   | 'CREATE_PASSWORD'
+  | 'ACCEPT_RISKS'
   | 'SHOW_MNEMONIC'
   | 'CONFIRM_MNEMONIC'
   | 'ENABLE_BIOMETRIC'
@@ -45,6 +46,9 @@ export default function OnboardingScreen() {
   const { isAvailable: biometricAvailable, isEnabled: biometricEnabled, register } = useBiometric();
   const [step, setStep] = useState<Step>('CHOICE');
 
+  // Risk consent
+  const [risksAccepted, setRisksAccepted] = useState(false);
+
   // Create flow
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -78,6 +82,7 @@ export default function OnboardingScreen() {
       case 'CHOICE':
         return 0;
       case 'CREATE_PASSWORD':
+      case 'ACCEPT_RISKS':
         return 1;
       case 'SHOW_MNEMONIC':
         return 2;
@@ -133,7 +138,7 @@ export default function OnboardingScreen() {
       const words = await createWallet(password);
       setRevealMnemonic(false);
       setMnemonicWords(words);
-      setStep('SHOW_MNEMONIC');
+      setStep('ACCEPT_RISKS');
       track(AnalyticsEvents.WALLET_CREATED);
     } catch {
       setError(t('onboarding.createFailed'));
@@ -486,6 +491,63 @@ export default function OnboardingScreen() {
               className="w-full text-white/30 text-xs font-mono hover:text-white/50 transition py-2"
             >
               &larr; {t('common.back')}
+            </button>
+          </div>
+        )}
+
+        {/* ── ACCEPT RISKS ───────────────────────── */}
+        {step === 'ACCEPT_RISKS' && (
+          <div className="space-y-4">
+            <div className="mx-auto w-14 h-14 border border-gold-500/30 bg-gold-500/10 flex items-center justify-center mb-2">
+              <svg
+                className="w-7 h-7 text-gold-500"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                />
+              </svg>
+            </div>
+            <h2 className="text-lg font-bold text-center">{t('disclaimer.title')}</h2>
+            <p className="text-white/40 text-xs text-center">{t('disclaimer.subtitle')}</p>
+
+            <div className="space-y-3 border border-white/10 bg-white/5 px-4 py-4">
+              {[
+                { icon: '🔑', text: t('disclaimer.point1') },
+                { icon: '⚠️', text: t('disclaimer.point2') },
+                { icon: '↩️', text: t('disclaimer.point3') },
+                { icon: '🛡️', text: t('disclaimer.point4') },
+              ].map((item) => (
+                <div key={item.text} className="flex items-start gap-3">
+                  <span className="text-sm mt-0.5 flex-shrink-0">{item.icon}</span>
+                  <p className="text-white/60 text-xs leading-relaxed">{item.text}</p>
+                </div>
+              ))}
+            </div>
+
+            <label className="flex items-start gap-3 cursor-pointer py-2">
+              <input
+                type="checkbox"
+                checked={risksAccepted}
+                onChange={(e) => setRisksAccepted(e.target.checked)}
+                className="mt-0.5 w-4 h-4 accent-gold-500 flex-shrink-0"
+              />
+              <span className="text-white/60 text-xs leading-relaxed">
+                {t('disclaimer.checkbox')}
+              </span>
+            </label>
+
+            <button
+              onClick={() => setStep('SHOW_MNEMONIC')}
+              disabled={!risksAccepted}
+              className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {t('disclaimer.continue')}
             </button>
           </div>
         )}

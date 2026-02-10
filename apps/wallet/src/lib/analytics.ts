@@ -21,6 +21,10 @@ export const AnalyticsEvents = {
   TOPUP_COMPLETED: 'topup_completed',
   GIFTCARD_PURCHASED: 'giftcard_purchased',
   CITIZEN_CARD_SHARED: 'citizen_card_shared',
+  VES_ONRAMP_STARTED: 'ves_onramp_started',
+  VES_ONRAMP_COMPLETED: 'ves_onramp_completed',
+  SUPPORT_CHAT_OPENED: 'support_chat_opened',
+  SUPPORT_ESCALATED: 'support_escalated',
 } as const;
 
 export type AnalyticsEvent = (typeof AnalyticsEvents)[keyof typeof AnalyticsEvents];

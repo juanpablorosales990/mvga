@@ -48,6 +48,7 @@ const KycPage = lazy(() => import('./pages/KycPage'));
 const ScanPayPage = lazy(() => import('./pages/ScanPayPage'));
 const GiftCardsPage = lazy(() => import('./pages/GiftCardsPage'));
 const CitizenCardPage = lazy(() => import('./pages/CitizenCardPage'));
+const VesOnrampPage = lazy(() => import('./pages/VesOnrampPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 const WelcomeTour = lazy(() => import('./components/WelcomeTour'));
 
@@ -56,6 +57,7 @@ import BottomNav from './components/BottomNav';
 import Header from './components/Header';
 import ErrorBoundary from './components/ErrorBoundary';
 import ToastContainer from './components/ToastContainer';
+import SupportChat from './components/SupportChat';
 
 // Auth & Referral
 import { useAuth } from './hooks/useAuth';
@@ -139,6 +141,7 @@ function AppShell() {
                 <Route path="/scan" element={<ScanPayPage />} />
                 <Route path="/giftcards" element={<GiftCardsPage />} />
                 <Route path="/citizen" element={<CitizenCardPage />} />
+                <Route path="/ves-onramp" element={<VesOnrampPage />} />
                 <Route path="*" element={<NotFoundPage />} />
               </Routes>
             </Suspense>
@@ -146,6 +149,7 @@ function AppShell() {
         </main>
 
         <BottomNav />
+        <SupportChat />
       </div>
     </AuthProvider>
   );

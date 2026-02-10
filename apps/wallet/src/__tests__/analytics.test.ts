@@ -70,6 +70,10 @@ describe('analytics', () => {
     expect(AnalyticsEvents.TOPUP_COMPLETED).toBe('topup_completed');
     expect(AnalyticsEvents.GIFTCARD_PURCHASED).toBe('giftcard_purchased');
     expect(AnalyticsEvents.CITIZEN_CARD_SHARED).toBe('citizen_card_shared');
-    expect(Object.keys(AnalyticsEvents).length).toBe(19);
+    expect(AnalyticsEvents.VES_ONRAMP_STARTED).toBe('ves_onramp_started');
+    expect(AnalyticsEvents.VES_ONRAMP_COMPLETED).toBe('ves_onramp_completed');
+    expect(AnalyticsEvents.SUPPORT_CHAT_OPENED).toBe('support_chat_opened');
+    expect(AnalyticsEvents.SUPPORT_ESCALATED).toBe('support_escalated');
+    expect(Object.keys(AnalyticsEvents).length).toBe(23);
   });
 });
