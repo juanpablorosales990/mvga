@@ -2,7 +2,7 @@ import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../common/prisma.service';
 import { SolanaService } from '../wallet/solana.service';
-import { randomUUID } from 'crypto';
+
 import { PublicKey } from '@solana/web3.js';
 import { getAssociatedTokenAddress } from '@solana/spl-token';
 
@@ -342,7 +342,7 @@ export class TopUpService {
         where: { id: topup.id },
         data: {
           status: 'FAILED',
-          errorMessage: error instanceof Error ? error.message : 'Unknown error',
+          errorMessage: 'Top-up processing failed',
         },
       });
 

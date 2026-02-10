@@ -122,7 +122,7 @@ export class OfframpService {
         where: { id: payout.id },
         data: {
           status: 'FAILED',
-          errorMessage: error instanceof Error ? error.message : 'Unknown error',
+          errorMessage: 'Payout processing failed',
         },
       });
 
@@ -162,7 +162,7 @@ export class OfframpService {
         where: { id: payoutId },
         data: {
           status: 'FAILED',
-          errorMessage: error instanceof Error ? error.message : 'Unknown error',
+          errorMessage: 'Payout processing failed',
         },
       });
 
@@ -216,7 +216,7 @@ export class OfframpService {
         where: { id: payout.id },
         data: {
           status: 'FAILED',
-          errorMessage: error instanceof Error ? error.message : 'Unknown error',
+          errorMessage: 'Payout processing failed',
         },
       });
 

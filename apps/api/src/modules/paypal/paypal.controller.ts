@@ -41,7 +41,7 @@ export class PayPalController {
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   async createOrderForPayment(@Body() dto: CreatePayPalOrderDto) {
     if (!dto.paymentRequestId) {
-      throw new Error('paymentRequestId is required');
+      throw new BadRequestException('paymentRequestId is required');
     }
     return this.paypalService.createOrderForPayment(
       dto.paymentRequestId,
@@ -56,7 +56,7 @@ export class PayPalController {
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   async captureOrderForPayment(@Body() dto: CapturePayPalOrderDto) {
     if (!dto.paymentRequestId) {
-      throw new Error('paymentRequestId is required');
+      throw new BadRequestException('paymentRequestId is required');
     }
     return this.paypalService.captureOrderForPayment(dto.paymentRequestId, dto.orderId);
   }

@@ -347,7 +347,7 @@ export class MoneygramService {
           where: { id: tx.id },
           data: {
             status: 'FAILED',
-            errorMessage: `Bridge/send error: ${error instanceof Error ? error.message : String(error)}`,
+            errorMessage: 'Payment processing error',
           },
         });
       }

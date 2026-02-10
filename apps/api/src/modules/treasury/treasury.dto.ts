@@ -1,4 +1,4 @@
-import { IsNumber, IsOptional, IsString, Min, MinLength, MaxLength } from 'class-validator';
+import { IsNumber, IsOptional, IsString, IsIn, Min, MinLength, MaxLength } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class ManualDistributionDto {
@@ -83,7 +83,7 @@ export class DistributionHistoryDto {
 
 export class RecordFeeDto {
   @ApiProperty({ enum: ['SWAP', 'MOBILE_TOPUP', 'GIFT_CARD', 'YIELD', 'P2P'] })
-  @IsString()
+  @IsIn(['SWAP', 'MOBILE_TOPUP', 'GIFT_CARD', 'YIELD', 'P2P'])
   source: 'SWAP' | 'MOBILE_TOPUP' | 'GIFT_CARD' | 'YIELD' | 'P2P';
 
   @ApiProperty({ description: 'Fee amount in smallest unit' })
@@ -92,7 +92,7 @@ export class RecordFeeDto {
   amount: number;
 
   @ApiProperty({ description: 'Token symbol' })
-  @IsString()
+  @IsIn(['SOL', 'USDC', 'USDT', 'MVGA'])
   token: string;
 
   @ApiPropertyOptional({ description: 'Transaction signature' })
