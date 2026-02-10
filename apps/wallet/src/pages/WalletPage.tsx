@@ -267,7 +267,7 @@ export default function WalletPage() {
           { label: t('wallet.receive'), icon: '↓', href: '/receive' },
           { label: t('wallet.swap'), icon: '⇄', href: '/swap' },
           { label: t('wallet.deposit'), icon: '$', href: '/deposit' },
-          { label: t('wallet.charge'), icon: '₿', href: '/charge' },
+          { label: t('scan.title'), icon: '⎘', href: '/scan' },
           { label: t('wallet.share'), icon: '★', href: '/referral' },
         ].map((action) => (
           <Link

@@ -77,7 +77,9 @@
     "batchSend": "Envio masivo",
     "solLabel": "SOL - Solana",
     "usdcLabel": "USDC - USD Coin",
-    "mvgaLabel": "MVGA - Make Venezuela Great Again"
+    "mvgaLabel": "MVGA - Make Venezuela Great Again",
+    "saveContact": "Guardar",
+    "contactSaved": "¡Contacto guardado!"
   },
   "receive": {
     "title": "Recibir",
@@ -285,7 +287,9 @@
     "burn": "Quema",
     "unknown": "Transaccion",
     "via": "por",
-    "connectPrompt": "Conecta tu billetera para ver el historial de transacciones"
+    "connectPrompt": "Conecta tu billetera para ver el historial de transacciones",
+    "export": "Exportar CSV",
+    "exported": "¡Transacciones exportadas!"
   },
   "more": {
     "title": "Más",
@@ -311,7 +315,8 @@
     "dcaAutoBuy": "Compra Automatica DCA",
     "pendingApprovals": "Aprobaciones Pendientes",
     "cashout": "Retiro",
-    "moneygram": "MoneyGram"
+    "moneygram": "MoneyGram",
+    "scan": "Escanear y Pagar"
   },
   "grants": {
     "title": "Subvenciones",
@@ -392,7 +397,10 @@
     "howItWorksDesc": "Comparte tu enlace. Cuando un amigo conecta su billetera usando tu enlace, ambos reciben 100 MVGA de la tesorería.",
     "history": "Historial de Referidos",
     "pending": "Pendiente",
-    "connectPrompt": "Conecta tu billetera para acceder al programa de referidos"
+    "connectPrompt": "Conecta tu billetera para acceder al programa de referidos",
+    "tierTitle": "Nivel de Referidos",
+    "tierNext": "{{count}} referidos más para alcanzar {{tier}} ({{reward}} MVGA por referido)",
+    "tierMax": "¡Has alcanzado el nivel más alto!"
   },
   "charts": {
     "title": "Gráficos de Precio",
@@ -1110,5 +1118,27 @@
     "poweredBy": "Impulsado por MoneyGram + Stellar. Efectivo disponible en más de 350K ubicaciones en 170+ países.",
     "linkTitle": "Efectivo en MoneyGram",
     "linkDesc": "Recoge o deposita efectivo en más de 350K ubicaciones"
+  },
+  "scan": {
+    "title": "Escanear",
+    "tabScan": "Escanear",
+    "tabMyQr": "Mi QR",
+    "scanning": "Apunta la cámara a un código QR",
+    "scanned": "¡Código QR escaneado!",
+    "invalidQr": "Código QR inválido — intenta de nuevo",
+    "confirmPay": "Confirmar y Pagar",
+    "paying": "Pagando...",
+    "paySuccess": "¡Pago enviado!",
+    "scanAnother": "Escanear Otro",
+    "enterAmount": "Ingresa monto",
+    "recipientDetected": "Destinatario detectado",
+    "cameraPermission": "Se requiere acceso a la cámara para escanear códigos QR",
+    "paymentLink": "Crear Enlace de Pago",
+    "paymentLinkCreated": "¡Enlace de pago copiado!",
+    "shareQr": "Compartir",
+    "copyAddress": "Copiar Dirección",
+    "copied": "¡Copiado!",
+    "showAmount": "Solicitar monto específico",
+    "connectPrompt": "Conecta tu billetera para escanear y pagar"
   }
 }

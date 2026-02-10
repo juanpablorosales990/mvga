@@ -5,6 +5,7 @@ export default function MorePage() {
   const { t } = useTranslation();
 
   const menuItems = [
+    { labelKey: 'more.scan', path: '/scan', icon: '⎘', color: 'bg-gold-500' },
     { labelKey: 'more.banking', path: '/banking', icon: '🏛', color: 'bg-violet-500' },
     { labelKey: 'more.stake', path: '/stake', icon: '💰', color: 'bg-yellow-500' },
     { labelKey: 'more.send', path: '/send', icon: '↑', color: 'bg-blue-500' },

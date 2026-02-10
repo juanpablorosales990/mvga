@@ -77,7 +77,9 @@
     "batchSend": "Batch Send",
     "solLabel": "SOL - Solana",
     "usdcLabel": "USDC - USD Coin",
-    "mvgaLabel": "MVGA - Make Venezuela Great Again"
+    "mvgaLabel": "MVGA - Make Venezuela Great Again",
+    "saveContact": "Save",
+    "contactSaved": "Contact saved!"
   },
   "receive": {
     "title": "Receive",
@@ -285,7 +287,9 @@
     "burn": "Burn",
     "unknown": "Transaction",
     "via": "via",
-    "connectPrompt": "Connect your wallet to view transaction history"
+    "connectPrompt": "Connect your wallet to view transaction history",
+    "export": "Export CSV",
+    "exported": "Transactions exported!"
   },
   "more": {
     "title": "More",
@@ -311,7 +315,8 @@
     "dcaAutoBuy": "DCA Auto-Buy",
     "pendingApprovals": "Pending Approvals",
     "cashout": "Cash Out",
-    "moneygram": "MoneyGram"
+    "moneygram": "MoneyGram",
+    "scan": "Scan & Pay"
   },
   "grants": {
     "title": "Grants",
@@ -392,7 +397,10 @@
     "howItWorksDesc": "Share your link. When a friend connects their wallet using your link, you both receive 100 MVGA from the treasury.",
     "history": "Referral History",
     "pending": "Pending",
-    "connectPrompt": "Connect your wallet to access the referral program"
+    "connectPrompt": "Connect your wallet to access the referral program",
+    "tierTitle": "Referral Tier",
+    "tierNext": "{{count}} more referrals to reach {{tier}} ({{reward}} MVGA per referral)",
+    "tierMax": "You've reached the highest tier!"
   },
   "charts": {
     "title": "Price Charts",
@@ -1110,5 +1118,27 @@
     "poweredBy": "Powered by MoneyGram + Stellar. Cash available at 350K+ locations in 170+ countries.",
     "linkTitle": "Cash at MoneyGram",
     "linkDesc": "Pick up or deposit cash at 350K+ locations"
+  },
+  "scan": {
+    "title": "Scan",
+    "tabScan": "Scan",
+    "tabMyQr": "My QR",
+    "scanning": "Point camera at a QR code",
+    "scanned": "QR code scanned!",
+    "invalidQr": "Invalid QR code — try again",
+    "confirmPay": "Confirm & Pay",
+    "paying": "Paying...",
+    "paySuccess": "Payment sent!",
+    "scanAnother": "Scan Another",
+    "enterAmount": "Enter amount",
+    "recipientDetected": "Recipient detected",
+    "cameraPermission": "Camera access is required to scan QR codes",
+    "paymentLink": "Create Payment Link",
+    "paymentLinkCreated": "Payment link copied!",
+    "shareQr": "Share",
+    "copyAddress": "Copy Address",
+    "copied": "Copied!",
+    "showAmount": "Request specific amount",
+    "connectPrompt": "Connect your wallet to scan and pay"
   }
 }

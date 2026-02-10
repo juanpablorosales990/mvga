@@ -32,6 +32,7 @@ export default function SendPage() {
   const addRecentRecipient = useWalletStore((s) => s.addRecentRecipient);
   const markFirstSend = useWalletStore((s) => s.markFirstSend);
   const addressBook = useWalletStore((s) => s.addressBook);
+  const addAddress = useWalletStore((s) => s.addAddress);
 
   const [searchParams] = useSearchParams();
   const [recipient, setRecipient] = useState('');
@@ -50,6 +51,8 @@ export default function SendPage() {
   const [showPreview, setShowPreview] = useState(false);
   const [showAddressBook, setShowAddressBook] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
+  const [saveContactName, setSaveContactName] = useState('');
+  const lastSentRecipient = useRef('');
 
   const [checkingBalance, setCheckingBalance] = useState(false);
 
@@ -262,6 +265,7 @@ export default function SendPage() {
       // Track recent recipient + onboarding
       addRecentRecipient(recipient, contactMatch?.label);
       markFirstSend();
+      lastSentRecipient.current = recipient;
 
       setRecipient('');
       setAmount('');
@@ -401,7 +405,7 @@ export default function SendPage() {
 
         {/* Success Message */}
         {txSignature && (
-          <div className="bg-green-500/10 border border-green-500/30 px-4 py-3 text-green-400 text-sm">
+          <div className="bg-green-500/10 border border-green-500/30 px-4 py-3 text-green-400 text-sm space-y-2">
             <p>{t('send.success')}</p>
             <a
               href={`https://solscan.io/tx/${txSignature}`}
@@ -411,6 +415,35 @@ export default function SendPage() {
             >
               {t('common.viewOnSolscan')}
             </a>
+            {/* Save to contacts prompt */}
+            {lastSentRecipient.current &&
+              !addressBook.find((c) => c.address === lastSentRecipient.current) && (
+                <div className="flex gap-2 items-center mt-2 pt-2 border-t border-green-500/20">
+                  <input
+                    type="text"
+                    value={saveContactName}
+                    onChange={(e) => setSaveContactName(e.target.value)}
+                    placeholder={t('contacts.namePlaceholder')}
+                    className="flex-1 bg-white/10 px-2 py-1.5 text-white text-xs"
+                  />
+                  <button
+                    onClick={() => {
+                      if (saveContactName.trim()) {
+                        addAddress({
+                          label: saveContactName.trim(),
+                          address: lastSentRecipient.current,
+                        });
+                        setSaveContactName('');
+                        showToast('success', t('send.contactSaved'));
+                      }
+                    }}
+                    disabled={!saveContactName.trim()}
+                    className="text-xs px-3 py-1.5 bg-green-500/20 text-green-400 hover:bg-green-500/30 transition disabled:opacity-40"
+                  >
+                    {t('send.saveContact')}
+                  </button>
+                </div>
+              )}
           </div>
         )}
 

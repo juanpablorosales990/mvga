@@ -220,9 +220,42 @@ export default function HistoryPage() {
 
   const grouped = groupByDate(items, i18n.language);
 
+  const exportCSV = () => {
+    if (items.length === 0) return;
+    const header = 'Date,Type,Direction,Amount,Token,Counterparty,Signature,Status';
+    const rows = items.map((tx) => {
+      const date = new Date(tx.timestamp * 1000).toISOString();
+      const direction = tx.isOutgoing === false ? 'IN' : tx.isOutgoing ? 'OUT' : '';
+      const amount = tx.amount != null ? tx.amount : '';
+      const token = tx.token || '';
+      const counterparty = tx.counterparty || '';
+      const status = tx.status || 'CONFIRMED';
+      return `${date},${tx.type},${direction},${amount},${token},${counterparty},${tx.signature},${status}`;
+    });
+    const csv = [header, ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `mvga-transactions-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('success', t('history.exported'));
+  };
+
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold">{t('history.title')}</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">{t('history.title')}</h1>
+        {items.length > 0 && (
+          <button
+            onClick={exportCSV}
+            className="text-xs text-gold-500 hover:text-gold-400 font-medium"
+          >
+            {t('history.export')}
+          </button>
+        )}
+      </div>
 
       {loading ? (
         <div className="space-y-3">

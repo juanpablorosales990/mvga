@@ -1,8 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useSelfCustodyWallet } from '../contexts/WalletContext';
+import { QRCodeSVG } from 'qrcode.react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
 import { API_URL } from '../config';
+
+const TIERS = [
+  { name: 'Bronze', min: 0, reward: '100', color: 'text-orange-400' },
+  { name: 'Silver', min: 5, reward: '150', color: 'text-gray-300' },
+  { name: 'Gold', min: 15, reward: '200', color: 'text-gold-500' },
+  { name: 'Diamond', min: 50, reward: '300', color: 'text-cyan-400' },
+];
 
 interface ReferralStats {
   code: string | null;
@@ -93,8 +101,15 @@ export default function ReferralPage() {
         </div>
       ) : (
         <>
-          {/* Referral Link */}
-          <div className="card space-y-3">
+          {/* Referral Link + QR */}
+          <div className="card space-y-4">
+            {referralLink && (
+              <div className="flex justify-center">
+                <div className="bg-white p-3">
+                  <QRCodeSVG value={referralLink} size={160} level="H" />
+                </div>
+              </div>
+            )}
             <p className="text-gray-400 text-sm">{t('referral.yourLink')}</p>
             <div className="bg-white/5 px-4 py-3 font-mono text-sm break-all">{referralLink}</div>
             <div className="flex gap-3">
@@ -123,6 +138,59 @@ export default function ReferralPage() {
               <p className="text-2xl font-bold text-green-400">{stats?.totalEarned || 0} MVGA</p>
             </div>
           </div>
+
+          {/* Tier Progress */}
+          {(() => {
+            const count = stats?.totalReferrals || 0;
+            const currentTier = [...TIERS].reverse().find((t) => count >= t.min) || TIERS[0];
+            const nextTier = TIERS.find((t) => t.min > count);
+            const progress = nextTier
+              ? ((count - currentTier.min) / (nextTier.min - currentTier.min)) * 100
+              : 100;
+
+            return (
+              <div className="card space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium">{t('referral.tierTitle')}</p>
+                  <span className={`text-sm font-bold ${currentTier.color}`}>
+                    {currentTier.name}
+                  </span>
+                </div>
+                <div className="h-2 bg-white/10 overflow-hidden">
+                  <div
+                    className="h-full bg-gold-500 transition-all"
+                    style={{ width: `${Math.min(progress, 100)}%` }}
+                  />
+                </div>
+                {nextTier ? (
+                  <p className="text-xs text-gray-500">
+                    {t('referral.tierNext', {
+                      count: nextTier.min - count,
+                      tier: nextTier.name,
+                      reward: nextTier.reward,
+                    })}
+                  </p>
+                ) : (
+                  <p className="text-xs text-cyan-400">{t('referral.tierMax')}</p>
+                )}
+                <div className="grid grid-cols-4 gap-1 mt-2">
+                  {TIERS.map((tier) => (
+                    <div
+                      key={tier.name}
+                      className={`text-center py-2 text-xs ${
+                        count >= tier.min
+                          ? `${tier.color} bg-white/5 border border-white/10`
+                          : 'text-gray-600 border border-white/5'
+                      }`}
+                    >
+                      <p className="font-bold">{tier.name}</p>
+                      <p>{tier.reward}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Reward Info */}
           <div className="card bg-gold-500/10 border border-gold-500/20">
