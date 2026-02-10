@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { lazy, Suspense, useMemo, useState, useEffect } from 'react';
 import { apiFetch } from '../lib/apiClient';
 import { showToast } from '../hooks/useToast';
+import { track, AnalyticsEvents } from '../lib/analytics';
 
 const PayPalButtons = lazy(() =>
   import('@paypal/react-paypal-js').then((m) => ({ default: m.PayPalButtons }))
@@ -222,6 +223,7 @@ export default function DepositPage() {
                           }),
                         });
                         setPaypalSuccess(true);
+                        track(AnalyticsEvents.DEPOSIT_STARTED, { method: 'paypal' });
                         showToast('success', t('deposit.paypalSuccess'));
                       } catch {
                         showToast('error', t('deposit.paypalFailed'));

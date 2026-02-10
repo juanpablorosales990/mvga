@@ -33,6 +33,17 @@ test.describe('More Page & Sub-pages', () => {
     await expect(page.getByText(/100 MVGA/i).first()).toBeVisible();
   });
 
+  test('scan & pay page loads from more menu', async ({ page }) => {
+    await page
+      .getByRole('link', { name: /scan|escanear/i })
+      .first()
+      .click();
+    await expect(page).toHaveURL('/scan');
+    // Tab buttons visible
+    await expect(page.getByRole('button', { name: /^scan$/i })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('button', { name: /my qr/i })).toBeVisible();
+  });
+
   test('history page loads from more menu', async ({ page }) => {
     await page
       .getByRole('link', { name: /history|historial/i })
@@ -42,6 +53,25 @@ test.describe('More Page & Sub-pages', () => {
     await expect(
       page.getByText(/transaction history|historial de transacciones/i).first()
     ).toBeVisible({ timeout: 10000 });
+  });
+
+  test('history page shows empty state when no transactions', async ({ page }) => {
+    await page
+      .getByRole('link', { name: /history|historial/i })
+      .first()
+      .click();
+    await expect(page).toHaveURL('/history');
+    await expect(
+      page.getByText(/transaction history|historial de transacciones/i).first()
+    ).toBeVisible({ timeout: 10000 });
+
+    // With a fresh wallet, there should be no transactions
+    await expect(page.getByText(/no transactions|sin transacciones/i).first()).toBeVisible({
+      timeout: 10000,
+    });
+
+    // Export button should NOT be visible when empty
+    await expect(page.getByRole('button', { name: /export csv|exportar csv/i })).not.toBeVisible();
   });
 
   test('portfolio page loads from more menu', async ({ page }) => {

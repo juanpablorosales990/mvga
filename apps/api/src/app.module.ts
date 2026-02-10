@@ -26,6 +26,7 @@ import { OfframpModule } from './modules/offramp/offramp.module';
 import { KycModule } from './modules/kyc/kyc.module';
 import { PayPalModule } from './modules/paypal/paypal.module';
 import { MoneygramModule } from './modules/moneygram/moneygram.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { HealthController } from './health.controller';
 
 @Module({
@@ -63,6 +64,7 @@ import { HealthController } from './health.controller';
     KycModule,
     PayPalModule,
     MoneygramModule,
+    AnalyticsModule,
   ],
   controllers: [HealthController],
   providers: [

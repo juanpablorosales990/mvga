@@ -16,6 +16,7 @@ import QRScannerModal from '../components/QRScannerModal';
 import { useWalletStore } from '../stores/walletStore';
 import { parseSolanaPayUrl } from '../utils/solana-pay';
 import { showToast } from '../hooks/useToast';
+import { track, AnalyticsEvents } from '../lib/analytics';
 
 const TOKEN_MINTS: Record<string, { mint: string; decimals: number }> = {
   USDC: { mint: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', decimals: 6 },
@@ -266,6 +267,7 @@ export default function SendPage() {
       addRecentRecipient(recipient, contactMatch?.label);
       markFirstSend();
       lastSentRecipient.current = recipient;
+      track(AnalyticsEvents.SEND_COMPLETED, { token, amount: amountNum });
 
       setRecipient('');
       setAmount('');

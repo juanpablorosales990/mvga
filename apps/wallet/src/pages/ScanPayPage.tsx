@@ -13,6 +13,7 @@ import { useTranslation } from 'react-i18next';
 import { buildSolanaPayUrl, parseSolanaPayUrl, SUPPORTED_TOKENS } from '../utils/solana-pay';
 import { startScanner } from '../utils/qr-scanner';
 import TransactionPreviewModal from '../components/TransactionPreviewModal';
+import { track, AnalyticsEvents } from '../lib/analytics';
 import FiatValue from '../components/FiatValue';
 import { useWalletStore } from '../stores/walletStore';
 import { showToast } from '../hooks/useToast';
@@ -130,6 +131,7 @@ export default function ScanPayPage() {
         });
         if (parsed.amount) setManualAmount(String(parsed.amount));
         if (parsed.token) setManualToken(parsed.token);
+        track(AnalyticsEvents.QR_SCANNED);
         showToast('success', t('scan.scanned'));
         return;
       }
@@ -138,6 +140,7 @@ export default function ScanPayPage() {
       try {
         new PublicKey(data);
         setScanned({ address: data });
+        track(AnalyticsEvents.QR_SCANNED);
         showToast('success', t('scan.scanned'));
       } catch {
         showToast('error', t('scan.invalidQr'));

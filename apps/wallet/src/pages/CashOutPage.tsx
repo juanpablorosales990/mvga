@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { useSelfCustodyWallet } from '../contexts/WalletContext';
 import { apiFetch } from '../lib/apiClient';
 import { showToast } from '../hooks/useToast';
+import { track, AnalyticsEvents } from '../lib/analytics';
 
 interface PayoutRecord {
   id: string;
@@ -43,6 +44,7 @@ export default function CashOutPage() {
           description: description || undefined,
         }),
       });
+      track(AnalyticsEvents.OFFRAMP_STARTED, { provider: 'airtm' });
       showToast('success', t('cashout.success', { amount: finalAmount, email }));
       setEmail('');
       setAmount(null);

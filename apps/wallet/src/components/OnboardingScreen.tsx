@@ -5,6 +5,7 @@ import { useBiometric } from '../hooks/useBiometric';
 import { useWalletStore } from '../stores/walletStore';
 import { API_URL } from '../config';
 import { apiFetch } from '../lib/apiClient';
+import { track, AnalyticsEvents } from '../lib/analytics';
 import bs58 from 'bs58';
 
 type Step =
@@ -146,6 +147,7 @@ export default function OnboardingScreen() {
       setRevealMnemonic(false);
       setMnemonicWords(words);
       setStep('SHOW_MNEMONIC');
+      track(AnalyticsEvents.WALLET_CREATED);
     } catch {
       setError(t('onboarding.createFailed'));
     } finally {
@@ -207,6 +209,7 @@ export default function OnboardingScreen() {
         return;
       }
       setStep('BIOMETRIC_SUCCESS');
+      track(AnalyticsEvents.BIOMETRIC_ENABLED);
     } finally {
       setLoading(false);
     }
@@ -238,6 +241,7 @@ export default function OnboardingScreen() {
     setLoading(true);
     try {
       await importFromMnemonic(words, importPassword);
+      track(AnalyticsEvents.WALLET_IMPORTED);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : t('onboarding.invalidPhrase'));
     } finally {
@@ -259,6 +263,7 @@ export default function OnboardingScreen() {
     setLoading(true);
     try {
       await importFromSecretKey(importKey.trim(), importPassword);
+      track(AnalyticsEvents.WALLET_IMPORTED);
     } catch {
       setError(t('onboarding.invalidKey'));
     } finally {
@@ -349,6 +354,7 @@ export default function OnboardingScreen() {
         username: saved.username,
       });
 
+      track(AnalyticsEvents.PROFILE_SETUP);
       completeOnboarding();
     } catch (e) {
       const msg = e instanceof Error ? e.message : '';

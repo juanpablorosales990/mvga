@@ -288,8 +288,20 @@
     "unknown": "Transaccion",
     "via": "por",
     "connectPrompt": "Conecta tu billetera para ver el historial de transacciones",
-    "export": "Exportar CSV",
-    "exported": "¡Transacciones exportadas!"
+    "exportCsv": "Exportar CSV",
+    "exportPdf": "Exportar PDF",
+    "exported": "¡Transacciones exportadas!",
+    "pdfTotal": "Total de transacciones",
+    "pdfIn": "Entradas",
+    "pdfOut": "Salidas",
+    "pdfDate": "Fecha",
+    "pdfType": "Tipo",
+    "pdfDirection": "Dirección",
+    "pdfAmount": "Monto",
+    "pdfToken": "Token",
+    "pdfCounterparty": "Contraparte",
+    "pdfStatus": "Estado",
+    "pdfPage": "Página"
   },
   "more": {
     "title": "Más",

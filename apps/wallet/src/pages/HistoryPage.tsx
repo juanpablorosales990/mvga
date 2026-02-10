@@ -3,6 +3,7 @@ import { useSelfCustodyWallet } from '../contexts/WalletContext';
 import { useTranslation } from 'react-i18next';
 import { showToast } from '../hooks/useToast';
 import { API_URL } from '../config';
+import { track, AnalyticsEvents } from '../lib/analytics';
 
 interface EnhancedTx {
   signature: string;
@@ -240,6 +241,15 @@ export default function HistoryPage() {
     a.download = `mvga-transactions-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
+    track(AnalyticsEvents.EXPORT_CSV, { count: items.length });
+    showToast('success', t('history.exported'));
+  };
+
+  const exportPDF = async () => {
+    if (items.length === 0 || !publicKey) return;
+    const { exportTransactionsPdf } = await import('../lib/exportPdf');
+    await exportTransactionsPdf(items, publicKey.toBase58(), t);
+    track(AnalyticsEvents.EXPORT_PDF, { count: items.length });
     showToast('success', t('history.exported'));
   };
 
@@ -248,12 +258,20 @@ export default function HistoryPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">{t('history.title')}</h1>
         {items.length > 0 && (
-          <button
-            onClick={exportCSV}
-            className="text-xs text-gold-500 hover:text-gold-400 font-medium"
-          >
-            {t('history.export')}
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={exportCSV}
+              className="text-xs text-gold-500 hover:text-gold-400 font-medium"
+            >
+              {t('history.exportCsv')}
+            </button>
+            <button
+              onClick={exportPDF}
+              className="text-xs text-gold-500 hover:text-gold-400 font-medium"
+            >
+              {t('history.exportPdf')}
+            </button>
+          </div>
         )}
       </div>
 

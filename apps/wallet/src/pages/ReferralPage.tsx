@@ -4,6 +4,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
 import { API_URL } from '../config';
+import { track, AnalyticsEvents } from '../lib/analytics';
 
 const TIERS = [
   { name: 'Bronze', min: 0, reward: '100', color: 'text-orange-400' },
@@ -63,6 +64,7 @@ export default function ReferralPage() {
 
   const handleCopy = () => {
     navigator.clipboard.writeText(referralLink);
+    track(AnalyticsEvents.REFERRAL_LINK_COPIED);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -75,6 +77,7 @@ export default function ReferralPage() {
           text: t('referral.shareText'),
           url: referralLink,
         });
+        track(AnalyticsEvents.REFERRAL_SHARED);
       } catch {
         // User cancelled share
       }

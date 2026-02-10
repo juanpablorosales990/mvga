@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { useKyc } from '../hooks/useKyc';
+import { track, AnalyticsEvents } from '../lib/analytics';
 
 // ─── Persona Embedded Flow (npm SDK loaded dynamically) ──────────────
 
@@ -123,11 +124,13 @@ export default function KycPage() {
         referenceId: result.referenceId,
         inquiryId: result.inquiryId,
       });
+      track(AnalyticsEvents.KYC_STARTED);
     }
   };
 
   const handleSdkComplete = useCallback(() => {
     setSession(null);
+    track(AnalyticsEvents.KYC_COMPLETED);
     refresh();
   }, [refresh]);
 

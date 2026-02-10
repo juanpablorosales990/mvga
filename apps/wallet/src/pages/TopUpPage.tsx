@@ -4,6 +4,7 @@ import { useConnection } from '@solana/wallet-adapter-react';
 import { useSelfCustodyWallet } from '../contexts/WalletContext';
 import { apiFetch } from '../lib/apiClient';
 import { showToast } from '../hooks/useToast';
+import { track, AnalyticsEvents } from '../lib/analytics';
 import { PublicKey, Transaction } from '@solana/web3.js';
 import { createTransferInstruction, getAssociatedTokenAddress } from '@solana/spl-token';
 
@@ -138,6 +139,7 @@ export default function TopUpPage() {
           currency: result.deliveredCurrency,
         })
       );
+      track(AnalyticsEvents.TOPUP_COMPLETED, { carrier: operator?.name, amount: finalAmount });
       setPhone('');
       setOperator(null);
       setAmount(null);

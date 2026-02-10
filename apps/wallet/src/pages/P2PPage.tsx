@@ -3,6 +3,7 @@ import { useSelfCustodyWallet } from '../contexts/WalletContext';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import FiatValue from '../components/FiatValue';
+import { track, AnalyticsEvents } from '../lib/analytics';
 
 interface P2POffer {
   id: string;
@@ -162,6 +163,7 @@ export default function P2PPage() {
       });
 
       if (response.ok) {
+        track(AnalyticsEvents.P2P_OFFER_CREATED, { paymentMethod: newOffer.paymentMethod });
         setShowCreateModal(false);
         fetchOffers();
         setNewOffer({

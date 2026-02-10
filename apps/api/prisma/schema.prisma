@@ -982,3 +982,20 @@ enum MoneygramStatus {
   CANCELLED
   EXPIRED
 }
+
+// ============================================================================
+// Analytics Events
+// ============================================================================
+
+model AnalyticsEvent {
+  id            String   @id @default(uuid())
+  walletAddress String?
+  event         String
+  properties    Json?
+  createdAt     DateTime @default(now())
+
+  @@index([walletAddress])
+  @@index([event])
+  @@index([createdAt])
+  @@index([event, createdAt])
+}

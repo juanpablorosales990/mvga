@@ -10,6 +10,7 @@ import { API_URL } from '../config';
 import { provisionCard } from '../services/cardService';
 import { isNative, isIOS } from '../utils/platform';
 import type { CardTransaction, KycSubmission } from '../services/cardService.types';
+import { track, AnalyticsEvents } from '../lib/analytics';
 
 // ---------------------------------------------------------------------------
 // Shared components
@@ -635,7 +636,10 @@ function CardIssuedView() {
   const setCardStatus = useWalletStore((s) => s.setCardStatus);
 
   useEffect(() => {
-    const timer = setTimeout(() => setCardStatus('active'), 2000);
+    const timer = setTimeout(() => {
+      setCardStatus('active');
+      track(AnalyticsEvents.CARD_ACTIVATED);
+    }, 2000);
     return () => clearTimeout(timer);
   }, [setCardStatus]);
 

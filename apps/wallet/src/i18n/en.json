@@ -288,8 +288,20 @@
     "unknown": "Transaction",
     "via": "via",
     "connectPrompt": "Connect your wallet to view transaction history",
-    "export": "Export CSV",
-    "exported": "Transactions exported!"
+    "exportCsv": "Export CSV",
+    "exportPdf": "Export PDF",
+    "exported": "Transactions exported!",
+    "pdfTotal": "Total transactions",
+    "pdfIn": "Inflows",
+    "pdfOut": "Outflows",
+    "pdfDate": "Date",
+    "pdfType": "Type",
+    "pdfDirection": "Direction",
+    "pdfAmount": "Amount",
+    "pdfToken": "Token",
+    "pdfCounterparty": "Counterparty",
+    "pdfStatus": "Status",
+    "pdfPage": "Page"
   },
   "more": {
     "title": "More",

@@ -14,6 +14,7 @@ import { useWalletStore } from '../stores/walletStore';
 import FiatValue from '../components/FiatValue';
 import TransactionPreviewModal from '../components/TransactionPreviewModal';
 import { showToast } from '../hooks/useToast';
+import { track, AnalyticsEvents } from '../lib/analytics';
 import { API_URL, KNOWN_STAKING_VAULT } from '../config';
 
 const MVGA_MINT = 'DRX65kM2n5CLTpdjJCemZvkUwE98ou4RpHrd8Z3GH5Qh';
@@ -254,6 +255,7 @@ export default function StakePage() {
       }
 
       setStatus(t('stake.stakedSuccess'));
+      track(AnalyticsEvents.STAKE_COMPLETED, { amount: parseFloat(amount) });
       setAmount('');
       fetchData();
       invalidateBalances();
