@@ -76,8 +76,8 @@
       },
       {
         "num": "04",
-        "title": "Works on Any Phone",
-        "desc": "Progressive Web App that installs like a native app from your browser. Works on Android, iPhone, or desktop. No app store needed. Works offline too."
+        "title": "Works on Any iPhone",
+        "desc": "Download from the App Store or visit app.mvga.io to install as a Progressive Web App. Works on iPhone and desktop browsers. Full offline support included."
       },
       {
         "num": "05",
@@ -361,7 +361,7 @@
       {
         "num": "01",
         "title": "Open the App",
-        "desc": "Visit app.mvga.io on any browser. Install it to your home screen like a native app. No downloads. No app store approval. Works immediately."
+        "desc": "Download MVGA from the App Store, or visit app.mvga.io in any browser. Create your wallet in seconds. Works immediately."
       },
       {
         "num": "02",
@@ -512,7 +512,7 @@
       },
       {
         "q": "Is there a mobile app?",
-        "a": "MVGA is a Progressive Web App (PWA) — visit app.mvga.io in your browser and install it to your home screen. It works exactly like a native app with push notifications, offline support, and biometric unlock. No app store needed."
+        "a": "Yes! MVGA is available on the App Store for iPhone. You can also visit app.mvga.io in your browser to use it as a Progressive Web App on any device. Both versions include push notifications, offline support, and biometric unlock."
       },
       {
         "q": "How does the rewards program work?",

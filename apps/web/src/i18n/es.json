@@ -76,8 +76,8 @@
       },
       {
         "num": "04",
-        "title": "Funciona en Cualquier Teléfono",
-        "desc": "Aplicación Web Progresiva que se instala como una app nativa desde tu navegador. Funciona en Android, iPhone o escritorio. No necesitas tienda de aplicaciones. También funciona sin conexión."
+        "title": "Funciona en Cualquier iPhone",
+        "desc": "Descárgala desde el App Store o visita app.mvga.io para instalarla como Aplicación Web Progresiva. Funciona en iPhone y navegadores de escritorio. Soporte sin conexión incluido."
       },
       {
         "num": "05",
@@ -361,7 +361,7 @@
       {
         "num": "01",
         "title": "Abre la App",
-        "desc": "Visita app.mvga.io en cualquier navegador. Instálala en tu pantalla de inicio como una app nativa. Sin descargas. Sin aprobación de tienda. Funciona de inmediato."
+        "desc": "Descarga MVGA desde el App Store, o visita app.mvga.io en cualquier navegador. Crea tu billetera en segundos. Funciona de inmediato."
       },
       {
         "num": "02",
@@ -516,7 +516,7 @@
       },
       {
         "q": "¿Hay una app móvil?",
-        "a": "MVGA es una Aplicación Web Progresiva (PWA) — visita app.mvga.io en tu navegador e instálala en tu pantalla de inicio. Funciona exactamente como una app nativa con notificaciones push, soporte sin conexión y desbloqueo biométrico. No necesitas tienda de aplicaciones."
+        "a": "¡Sí! MVGA está disponible en el App Store para iPhone. También puedes visitar app.mvga.io en tu navegador para usarla como Aplicación Web Progresiva en cualquier dispositivo. Ambas versiones incluyen notificaciones push, soporte sin conexión y desbloqueo biométrico."
       },
       {
         "q": "¿Cómo funciona el programa de recompensas?",
