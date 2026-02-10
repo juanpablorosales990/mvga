@@ -52,6 +52,25 @@ async function skipBiometricsSetupIfPresent(page: Page) {
   if (await skip.isVisible().catch(() => false)) await skip.click();
 }
 
+async function skipProfileOrCitizenIfPresent(page: Page) {
+  const header = page.locator('header');
+  // Profile step has a "Skip for now" button; citizen step has a CTA button.
+  const skip = page.getByRole('button', { name: /skip for now|omitir por ahora/i });
+  const cta = page.getByRole('button', { name: /see my card|ver mi carnet/i });
+
+  await Promise.race([
+    header.waitFor({ state: 'visible', timeout: 8000 }).catch(() => {}),
+    skip.waitFor({ state: 'visible', timeout: 8000 }).catch(() => {}),
+    cta.waitFor({ state: 'visible', timeout: 8000 }).catch(() => {}),
+  ]);
+
+  if (await skip.isVisible().catch(() => false)) await skip.click();
+  // After profile skip, citizen step may or may not appear (depends on API availability).
+  // Wait briefly for it, then click if visible.
+  await page.waitForTimeout(500);
+  if (await cta.isVisible().catch(() => false)) await cta.click();
+}
+
 async function unlockIfLocked(page: Page) {
   const passwordInput = page.getByPlaceholder(/enter password|ingresa tu contraseña/i);
   if (!(await passwordInput.isVisible().catch(() => false))) return;
@@ -75,6 +94,12 @@ async function createWalletAndGetMnemonic(page: Page): Promise<string[]> {
   await page.getByPlaceholder(/password.*min/i).fill(TEST_PASSWORD);
   await page.getByPlaceholder(/confirm/i).fill(TEST_PASSWORD);
   await page.getByRole('button', { name: /create wallet/i }).click();
+
+  // ACCEPT_RISKS step — check the consent checkbox and continue
+  const risksCheckbox = page.locator('input[type="checkbox"]');
+  await expect(risksCheckbox).toBeVisible({ timeout: 10000 });
+  await risksCheckbox.check();
+  await page.getByRole('button', { name: /continue|continuar/i }).click();
 
   // Should show mnemonic (12 words)
   await expect(page.getByText('Recovery Phrase')).toBeVisible({ timeout: 10000 });
@@ -125,14 +150,10 @@ async function confirmMnemonic(page: Page, words: string[]) {
   // Click confirm
   await page.getByRole('button', { name: /confirm/i }).click();
 
-  // New users may see an optional biometrics setup step. Skip it in tests.
+  // After mnemonic confirmation, skip through remaining onboarding steps to reach the app shell.
+  // Steps in order: biometrics → profile → citizen reveal → (possible lock screen) → welcome tour
   await skipBiometricsSetupIfPresent(page);
-
-  // First-time users see the WelcomeTour overlay; skip it to reach the app shell.
-  await skipWelcomeTourIfPresent(page);
-
-  // Some navigations can trigger a full reload which drops the in-memory keypair,
-  // leaving the app on the LockScreen. Normalize by unlocking with the test password.
+  await skipProfileOrCitizenIfPresent(page);
   await unlockIfLocked(page);
   await skipWelcomeTourIfPresent(page);
 }

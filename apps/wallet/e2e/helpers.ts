@@ -32,6 +32,27 @@ async function skipBiometricsSetupIfPresent(page: Page): Promise<boolean> {
   return true;
 }
 
+async function skipProfileSetupIfPresent(page: Page): Promise<boolean> {
+  // Onboarding "Setup Profile" step has a "Skip for now" button.
+  // Match specifically the profile skip button (not the biometrics one which uses different text).
+  const skip = page.getByRole('button', { name: /^skip for now$|^omitir por ahora$/i });
+
+  if (!(await skip.isVisible().catch(() => false))) return false;
+  await skip.scrollIntoViewIfNeeded().catch(() => {});
+  await skip.click({ timeout: 5000 });
+  return true;
+}
+
+async function completeCitizenRevealIfPresent(page: Page): Promise<boolean> {
+  // Onboarding "Citizen Reveal" step has a CTA button to enter the app.
+  const cta = page.getByRole('button', { name: /see my card|ver mi carnet/i });
+
+  if (!(await cta.isVisible().catch(() => false))) return false;
+  await cta.scrollIntoViewIfNeeded().catch(() => {});
+  await cta.click({ timeout: 5000 });
+  return true;
+}
+
 async function unlockIfLocked(page: Page): Promise<boolean> {
   const passwordInput = page.getByPlaceholder(/enter password|ingresa tu contraseña/i);
   if (!(await passwordInput.isVisible().catch(() => false))) return false;
@@ -51,6 +72,8 @@ async function waitForAppShell(page: Page) {
     // Handle whichever blocking screen is currently visible.
     const acted =
       (await skipBiometricsSetupIfPresent(page)) ||
+      (await skipProfileSetupIfPresent(page)) ||
+      (await completeCitizenRevealIfPresent(page)) ||
       (await unlockIfLocked(page)) ||
       (await skipWelcomeTourIfPresent(page));
 
@@ -85,6 +108,12 @@ export async function createWalletAndUnlock(page: Page) {
   await page.getByPlaceholder(/password.*min|contraseña.*mín/i).fill(TEST_PASSWORD);
   await page.getByPlaceholder(/confirm|confirmar/i).fill(TEST_PASSWORD);
   await page.getByRole('button', { name: /create wallet|crear billetera/i }).click();
+
+  // ACCEPT_RISKS step — check the consent checkbox and continue
+  const risksCheckbox = page.locator('input[type="checkbox"]');
+  await expect(risksCheckbox).toBeVisible({ timeout: 10000 });
+  await risksCheckbox.check();
+  await page.getByRole('button', { name: /continue|continuar/i }).click();
 
   // Mnemonic step — extract words
   await expect(page.locator('text=/recovery phrase|frase de recuperación/i').first()).toBeVisible({
