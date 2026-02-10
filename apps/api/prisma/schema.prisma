@@ -36,7 +36,7 @@ model User {
 }
 
 // ============================================================================
-// KYC Verification (Sumsub)
+// KYC Verification (Persona)
 // ============================================================================
 
 model UserKyc {
@@ -44,7 +44,7 @@ model UserKyc {
   userId          String    @unique
   user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   status          KycStatus @default(UNVERIFIED)
-  provider        String    @default("SUMSUB")
+  provider        String    @default("PERSONA")
   externalId      String?
   tier            Int       @default(0)
   rejectionReason String?

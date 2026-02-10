@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS "UserKyc" (
   "id" TEXT NOT NULL DEFAULT gen_random_uuid()::text,
   "userId" TEXT NOT NULL,
   "status" "KycStatus" NOT NULL DEFAULT 'UNVERIFIED',
-  "provider" TEXT NOT NULL DEFAULT 'SUMSUB',
+  "provider" TEXT NOT NULL DEFAULT 'PERSONA',
   "externalId" TEXT,
   "tier" INTEGER NOT NULL DEFAULT 0,
   "rejectionReason" TEXT,

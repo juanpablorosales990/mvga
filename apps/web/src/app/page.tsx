@@ -54,7 +54,7 @@ export default function Home() {
     { label: 'LANGUAGES', value: 'EN / ES' },
     { label: 'SELF-CUSTODY', value: 'YOUR KEYS' },
     { label: 'CARD', value: 'VISA DEBIT' },
-    { label: 'AUDIT ROUNDS', value: '14 COMPLETED' },
+    { label: 'AUDIT ROUNDS', value: '15 COMPLETED' },
   ];
 
   return (
@@ -497,7 +497,7 @@ export default function Home() {
                 {
                   icon: '\uD83D\uDCBB',
                   title: 'Fully Open Source',
-                  desc: 'Every line of code is public on GitHub. 14 security audit rounds. Zero competing dollar wallets are open source. Transparency is not a feature — it\u2019s a commitment.',
+                  desc: 'Every line of code is public on GitHub. 15 security audit rounds. Zero competing dollar wallets are open source. Transparency is not a feature — it\u2019s a commitment.',
                 },
                 {
                   icon: '\u267B\uFE0F',
@@ -880,7 +880,7 @@ export default function Home() {
                   initials: 'OS',
                   name: 'Open Source',
                   role: 'Contributors & Auditors',
-                  bio: "Every line of code is public. 14 security audit rounds. Recognized in Electric Capital's developer report.",
+                  bio: "Every line of code is public. 15 security audit rounds. Recognized in Electric Capital's developer report.",
                   stat: '0 known vulnerabilities',
                 },
                 {
@@ -922,7 +922,7 @@ export default function Home() {
               {[
                 {
                   q: 'Is MVGA safe?',
-                  a: 'Yes. Unlike custodial wallets where the company holds your money, MVGA is self-custody \u2014 your private keys stay on your device and MVGA never holds your funds. P2P exchanges use smart contract escrow that automatically releases funds when both parties confirm. The entire platform is open source and has been through 14 security audit rounds.',
+                  a: 'Yes. Unlike custodial wallets where the company holds your money, MVGA is self-custody \u2014 your private keys stay on your device and MVGA never holds your funds. P2P exchanges use smart contract escrow that automatically releases funds when both parties confirm. The entire platform is open source and has been through 15 security audit rounds.',
                 },
                 {
                   q: 'What does it cost?',
@@ -954,7 +954,19 @@ export default function Home() {
                 },
                 {
                   q: 'Is MVGA open source?',
-                  a: 'Yes. The entire platform \u2014 API, wallet app, and this website \u2014 is public on GitHub. Anyone can audit the code and verify exactly what the platform does. 14 security audits completed with zero known vulnerabilities. No other dollar wallet targeting Venezuela is open source.',
+                  a: 'Yes. The entire platform \u2014 API, wallet app, and this website \u2014 is public on GitHub. Anyone can audit the code and verify exactly what the platform does. 15 security audits completed with zero known vulnerabilities. No other dollar wallet targeting Venezuela is open source.',
+                },
+                {
+                  q: 'What is USDC?',
+                  a: 'USDC is a digital US dollar created by Circle and backed 1:1 by US dollar reserves held at regulated financial institutions. Every USDC is worth exactly $1. It runs on the Solana blockchain, which means transfers settle in under 1 second and cost less than $0.01. Unlike crypto that goes up and down, USDC is a stablecoin \u2014 your $100 stays $100.',
+                },
+                {
+                  q: 'What if I lose my phone?',
+                  a: 'When you create your wallet, you get a 12-word recovery phrase. Write it down and keep it safe. If you lose your phone, install the app on a new device and enter your recovery phrase to restore your wallet and all your funds. No one else can access your money without this phrase \u2014 not even MVGA.',
+                },
+                {
+                  q: 'How is MVGA funded?',
+                  a: 'MVGA earns revenue from small fees on currency swaps (0.1-0.3%) and partner commissions on services like phone top-ups and gift cards. Person-to-person transfers are always free. There are no hidden fees, no monthly charges, and no investor pressure to monetize users. Revenue is transparently distributed: 40% to liquidity, 40% to staking rewards, and 20% to community grants.',
                 },
               ].map((faq, i) => (
                 <details key={i} className="fade-up group border-b border-white/10">
