@@ -241,6 +241,7 @@ export class OfframpService {
         await this.airtmPost('/payouts/cancel', { payoutId: payout.airtmPayoutId });
       } catch (error) {
         this.logger.warn(`Airtm cancel failed for ${payoutId}: ${error}`);
+        throw new BadRequestException('Failed to cancel payout with provider');
       }
     }
 

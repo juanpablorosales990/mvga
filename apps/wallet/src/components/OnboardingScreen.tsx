@@ -105,8 +105,10 @@ export default function OnboardingScreen() {
   // Pick 3 random indices for mnemonic confirmation
   const generateConfirmIndices = (words: string[]) => {
     const indices: number[] = [];
+    const arr = new Uint32Array(1);
     while (indices.length < 3) {
-      const idx = Math.floor(Math.random() * words.length);
+      crypto.getRandomValues(arr);
+      const idx = arr[0] % words.length;
       if (!indices.includes(idx)) indices.push(idx);
     }
     return indices.sort((a, b) => a - b);

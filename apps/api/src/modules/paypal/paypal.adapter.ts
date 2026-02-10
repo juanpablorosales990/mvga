@@ -166,6 +166,14 @@ export class PayPalAdapter {
   ): Promise<boolean> {
     if (!this.isEnabled) return Promise.resolve(true);
 
+    let webhookEvent: unknown;
+    try {
+      webhookEvent = JSON.parse(body);
+    } catch {
+      this.logger.warn('PayPal webhook: malformed JSON body');
+      return false;
+    }
+
     return this.fetch<{ verification_status: string }>(
       '/v1/notifications/verify-webhook-signature',
       {
@@ -177,7 +185,7 @@ export class PayPalAdapter {
           transmission_sig: headers['paypal-transmission-sig'],
           transmission_time: headers['paypal-transmission-time'],
           webhook_id: webhookId,
-          webhook_event: JSON.parse(body),
+          webhook_event: webhookEvent,
         }),
       }
     ).then((r) => r.verification_status === 'SUCCESS');

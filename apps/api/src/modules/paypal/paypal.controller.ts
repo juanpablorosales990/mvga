@@ -7,6 +7,8 @@ import {
   Headers,
   RawBodyRequest,
   Req,
+  ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
@@ -90,10 +92,14 @@ export class PayPalController {
     const webhookId = this.config.get<string>('PAYPAL_WEBHOOK_ID');
     if (!webhookId) return { received: true };
 
-    const rawBody = req.rawBody?.toString() || JSON.stringify(req.body);
+    const rawBody = req.rawBody?.toString();
+    if (!rawBody) {
+      throw new BadRequestException('Missing raw body');
+    }
+
     const verified = await this.adapter.verifyWebhookSignature(headers, rawBody, webhookId);
     if (!verified) {
-      return { error: 'Invalid webhook signature' };
+      throw new ForbiddenException('Invalid webhook signature');
     }
 
     // Webhook events are a safety net — primary capture happens via client-driven flow

@@ -312,34 +312,45 @@ export class MoneygramService {
         data: { status: 'BRIDGING' },
       });
 
-      // Bridge Solana USDC → Stellar USDC
-      const bridge = await this.allbridge.bridgeSolanaToStellar(tx.amountUsd.toFixed(2));
+      try {
+        // Bridge Solana USDC → Stellar USDC
+        const bridge = await this.allbridge.bridgeSolanaToStellar(tx.amountUsd.toFixed(2));
 
-      await this.prisma.moneygramTransaction.update({
-        where: { id: tx.id },
-        data: {
-          bridgeTxSolana: bridge.sourceChainTx,
-          bridgeStatus: 'COMPLETED',
-        },
-      });
+        await this.prisma.moneygramTransaction.update({
+          where: { id: tx.id },
+          data: {
+            bridgeTxSolana: bridge.sourceChainTx,
+            bridgeStatus: 'COMPLETED',
+          },
+        });
 
-      // Send Stellar USDC to MoneyGram
-      const destination = stellarTx.withdraw_anchor_account || tx.stellarDestination || '';
-      const memo = stellarTx.withdraw_memo || tx.stellarMemo || '';
-      const amount = stellarTx.amount_in || tx.amountUsd.toFixed(2);
+        // Send Stellar USDC to MoneyGram
+        const destination = stellarTx.withdraw_anchor_account || tx.stellarDestination || '';
+        const memo = stellarTx.withdraw_memo || tx.stellarMemo || '';
+        const amount = stellarTx.amount_in || tx.amountUsd.toFixed(2);
 
-      const stellarPaymentTx = await this.stellar.sendPayment(destination, amount, memo);
+        const stellarPaymentTx = await this.stellar.sendPayment(destination, amount, memo);
 
-      await this.prisma.moneygramTransaction.update({
-        where: { id: tx.id },
-        data: {
-          bridgeTxStellar: stellarPaymentTx,
-          status: 'USDC_SENT',
-          mgFeeUsd: stellarTx.amount_fee ? parseFloat(stellarTx.amount_fee) : null,
-        },
-      });
+        await this.prisma.moneygramTransaction.update({
+          where: { id: tx.id },
+          data: {
+            bridgeTxStellar: stellarPaymentTx,
+            status: 'USDC_SENT',
+            mgFeeUsd: stellarTx.amount_fee ? parseFloat(stellarTx.amount_fee) : null,
+          },
+        });
 
-      this.logger.log(`MoneyGram offramp USDC sent: ${tx.id}`);
+        this.logger.log(`MoneyGram offramp USDC sent: ${tx.id}`);
+      } catch (error) {
+        this.logger.error(`MoneyGram offramp bridge/send failed for ${tx.id}: ${error}`);
+        await this.prisma.moneygramTransaction.update({
+          where: { id: tx.id },
+          data: {
+            status: 'FAILED',
+            errorMessage: `Bridge/send error: ${error instanceof Error ? error.message : String(error)}`,
+          },
+        });
+      }
     }
 
     if (tx.status === 'USDC_SENT' && stellarTx.status === 'pending_user_transfer_complete') {

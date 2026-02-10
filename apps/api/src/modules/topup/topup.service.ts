@@ -132,12 +132,28 @@ export class TopUpService {
     return { paidRaw };
   }
 
+  private tokenRefreshPromise: Promise<string> | null = null;
+
   private async getAccessToken(): Promise<string> {
     // Return cached token if still valid (with 5min buffer)
     if (this.token && this.token.expiresAt > Date.now() + 300_000) {
       return this.token.accessToken;
     }
 
+    // Deduplicate concurrent token refresh requests
+    if (this.tokenRefreshPromise) {
+      return this.tokenRefreshPromise;
+    }
+
+    this.tokenRefreshPromise = this.refreshToken();
+    try {
+      return await this.tokenRefreshPromise;
+    } finally {
+      this.tokenRefreshPromise = null;
+    }
+  }
+
+  private async refreshToken(): Promise<string> {
     const clientId = this.config.get('RELOADLY_CLIENT_ID');
     const clientSecret = this.config.get('RELOADLY_CLIENT_SECRET');
 

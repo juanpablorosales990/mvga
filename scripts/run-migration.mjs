@@ -4,16 +4,17 @@ import fs from 'fs';
 const { Client } = pg;
 
 const client = new Client({
-  host: 'aws-1-us-east-1.pooler.supabase.com',
-  port: 5432,
-  user: 'cli_login_postgres.shborjdsuszykdnnvugu',
-  password: 'xfqrQHxrSUfWeNbKdSPPfINERqCKoisf',
-  database: 'postgres',
+  connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false }
 });
 
+if (!process.env.DATABASE_URL) {
+  console.error('❌ DATABASE_URL environment variable is required');
+  process.exit(1);
+}
+
 async function main() {
-  console.log('Connecting to Supabase database...');
+  console.log('Connecting to database...');
   await client.connect();
   console.log('Connected!\n');
 

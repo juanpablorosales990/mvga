@@ -252,12 +252,10 @@ describe('OfframpService', () => {
       );
     });
 
-    it('still cancels locally if Airtm cancel fails', async () => {
+    it('throws if Airtm cancel fails', async () => {
       mockFetch.mockResolvedValue({ ok: false, text: () => Promise.resolve('Error') });
 
-      // Should not throw — cancel is best-effort on Airtm side
-      const result = await service.cancelPayout(WALLET, PAYOUT_ID);
-      expect(result.status).toBe('CANCELLED');
+      await expect(service.cancelPayout(WALLET, PAYOUT_ID)).rejects.toThrow(BadRequestException);
     });
 
     it('rejects if payout not found', async () => {

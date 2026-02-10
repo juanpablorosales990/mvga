@@ -59,6 +59,10 @@ export class GrantsService {
   }
 
   async getProposals(status?: string) {
+    const validStatuses = ['VOTING', 'APPROVED', 'REJECTED', 'FUNDED', 'COMPLETED'];
+    if (status && !validStatuses.includes(status)) {
+      throw new BadRequestException(`Invalid status. Must be one of: ${validStatuses.join(', ')}`);
+    }
     const where: Record<string, unknown> = status ? { status } : {};
     const proposals = await this.prisma.grantProposal.findMany({
       where,
