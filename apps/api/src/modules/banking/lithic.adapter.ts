@@ -81,12 +81,22 @@ export class LithicAdapter {
   }): Promise<LithicAccountHolder> {
     const client = this.getClient();
 
-    // Lithic requires US address for KYC_BYO in sandbox — map non-US addresses
     const isSandbox = this.environment === 'sandbox';
-    const remapToUS = data.address.countryCode !== 'USA' && isSandbox;
-    const country = remapToUS ? 'USA' : data.address.countryCode;
-    const state = data.address.region || (remapToUS ? 'NY' : '');
-    const postalCode = remapToUS ? '10001' : data.address.postalCode || '10001';
+
+    // Sandbox requires US address + dummy SSN; production uses real user data
+    const country =
+      isSandbox && data.address.countryCode !== 'USA' ? 'USA' : data.address.countryCode;
+    const state = isSandbox && !data.address.region ? 'NY' : data.address.region;
+    const postalCode = isSandbox ? '10001' : data.address.postalCode;
+    const governmentId = isSandbox ? '000-00-0000' : data.governmentId;
+    const phoneNumber = isSandbox ? '+10000000000' : data.phoneNumber;
+
+    if (!isSandbox && !governmentId) {
+      throw new ServiceUnavailableException('Government ID is required for card applications');
+    }
+    if (!isSandbox && !phoneNumber) {
+      throw new ServiceUnavailableException('Phone number is required for card applications');
+    }
 
     const result = await client.accountHolders.create({
       workflow: 'KYC_BYO',
@@ -95,15 +105,15 @@ export class LithicAdapter {
         last_name: data.lastName,
         email: data.email || `${data.walletAddress.slice(0, 8)}@mvga.io`,
         dob: data.birthDate,
-        government_id: isSandbox ? '000-00-0000' : data.governmentId || '000-00-0000',
+        government_id: governmentId!,
         address: {
           address1: data.address.line1,
-          city: data.address.city || 'New York',
+          city: data.address.city || (isSandbox ? 'New York' : data.address.city),
           state,
           postal_code: postalCode,
           country,
         },
-        phone_number: data.phoneNumber || '+10000000000',
+        phone_number: phoneNumber!,
       },
       tos_timestamp: new Date().toISOString(),
       kyc_passed_timestamp: new Date().toISOString(),
