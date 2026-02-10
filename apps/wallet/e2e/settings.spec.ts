@@ -88,7 +88,9 @@ test.describe('Settings Page', () => {
     // Should have display name, email, username inputs
     await expect(page.getByPlaceholder(/your name|tu nombre/i)).toBeVisible();
     await expect(page.getByPlaceholder(/you@example.com/i)).toBeVisible();
-    await expect(page.getByPlaceholder(/mvga_user/i)).toBeVisible();
+    await expect(
+      page.getByPlaceholder(/choose a username|elige un nombre de usuario/i)
+    ).toBeVisible();
   });
 
   test('profile save button is disabled when no changes', async ({ page }) => {
@@ -107,7 +109,7 @@ test.describe('Settings Page', () => {
 
   test('username field only allows valid characters', async ({ page }) => {
     await expect(page.getByText(/edit profile|editar perfil/i)).toBeVisible({ timeout: 5000 });
-    const usernameInput = page.getByPlaceholder(/mvga_user/i);
+    const usernameInput = page.getByPlaceholder(/choose a username|elige un nombre de usuario/i);
     // Type invalid characters — should be stripped
     await usernameInput.fill('test@user!#');
     const value = await usernameInput.inputValue();
