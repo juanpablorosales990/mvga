@@ -613,7 +613,7 @@ test.describe('Navigation After Wallet Connected', () => {
     await expect(quickActions.locator('a[href="/receive"]')).toBeVisible();
     await expect(quickActions.locator('a[href="/swap"]')).toBeVisible();
     await expect(quickActions.locator('a[href="/deposit"]')).toBeVisible();
-    await expect(quickActions.locator('a[href="/charge"]')).toBeVisible();
+    await expect(quickActions.locator('a[href="/scan"]')).toBeVisible();
     await expect(quickActions.locator('a[href="/referral"]')).toBeVisible();
   });
 
