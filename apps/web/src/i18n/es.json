@@ -1,0 +1,568 @@
+{
+  "nav": {
+    "whyMvga": "Por Qué MVGA",
+    "features": "Funciones",
+    "faq": "Preguntas",
+    "grants": "Becas",
+    "openAccount": "Abrir Cuenta"
+  },
+  "hero": {
+    "badge1": "Dólares Digitales para Venezuela",
+    "badge2": "Sin Banco Necesario",
+    "badge3": "Autocustodia",
+    "line1": "TU DINERO.",
+    "line2": "TUS REGLAS.",
+    "desc": "Una cuenta bancaria en tu bolsillo con dólares estadounidenses que puedes gastar en cualquier parte del mundo. Envía remesas gratis, paga facturas, recarga teléfonos y obtén una tarjeta de débito Visa — todo desde una app. Hecho por venezolanos, para venezolanos.",
+    "cta1": "Abre Tu Cuenta",
+    "cta2": "Cómo Funciona"
+  },
+  "marquee": {
+    "users": "USUARIOS",
+    "transfers": "TRANSFERENCIAS",
+    "transfersValue": "< 1 SEGUNDO",
+    "platformFees": "COMISIONES",
+    "platformFeesValue": "$0 EN P2P",
+    "currencies": "MONEDAS",
+    "currenciesValue": "USD Y VES",
+    "languages": "IDIOMAS",
+    "languagesValue": "EN / ES",
+    "selfCustody": "AUTOCUSTODIA",
+    "selfCustodyValue": "TUS LLAVES",
+    "card": "TARJETA",
+    "cardValue": "DÉBITO VISA",
+    "auditRounds": "AUDITORÍAS",
+    "auditRoundsValue": "15 COMPLETADAS"
+  },
+  "problem": {
+    "label": "El Problema",
+    "title": "7 millones de venezolanos en el exterior. Miles de millones enviados a casa cada año. Hasta 15% perdido en comisiones.",
+    "cards": [
+      {
+        "num": "01",
+        "title": "Comisiones por Remesas",
+        "desc": "Western Union cobra $5-15 por transferencia más 3-8% en márgenes ocultos de tipo de cambio. Una remesa de $200 puede costar $30+ en comisiones. Ese dinero debería ir a tu familia."
+      },
+      {
+        "num": "02",
+        "title": "Moneda Inestable",
+        "desc": "El bolívar venezolano ha perdido el 99.9% de su valor. Los ahorros se evaporan de la noche a la mañana. No hay forma segura para la mayoría de los venezolanos de tener dólares sin una cuenta bancaria en EE.UU."
+      },
+      {
+        "num": "03",
+        "title": "Opciones Limitadas",
+        "desc": "Millones de venezolanos no tienen acceso bancario. PayPal y Zelle no funcionan en Venezuela. Las pocas billeteras de dólares que existen son custodiales, cobran cuotas mensuales y limitan tu saldo a $1,500-$3,000/mes. Mereces algo mejor."
+      }
+    ]
+  },
+  "digitalDollar": {
+    "label": "Cuenta en Dólares Digitales",
+    "title": "Una cuenta bancaria en tu bolsillo.",
+    "subtitle": "Guarda dólares estadounidenses de forma segura en tu teléfono. Envía dinero al instante a cualquier persona. Recibe remesas sin perder un centavo. No necesitas cuenta bancaria. Sin mínimos. Comienza en 60 segundos.",
+    "cards": [
+      {
+        "num": "01",
+        "title": "Guarda Dólares Digitales",
+        "desc": "Tu saldo está en dólares estadounidenses (USDC), con paridad 1:1 al USD. Totalmente respaldado, totalmente estable. No más ver tus ahorros caer con el bolívar."
+      },
+      {
+        "num": "02",
+        "title": "Envía Dinero al Instante",
+        "desc": "Transfiere a cualquier usuario de MVGA en menos de 1 segundo. Envía a tu familia en Venezuela o paga a alguien en cualquier parte del mundo. Cero comisiones en transferencias P2P."
+      },
+      {
+        "num": "03",
+        "title": "Ve en USD o VES",
+        "desc": "Ve tu saldo en dólares estadounidenses o bolívares venezolanos. Tasa de cambio en tiempo real. Cambia cuando quieras en ajustes. Diseñado para la forma en que los venezolanos realmente piensan sobre el dinero."
+      },
+      {
+        "num": "04",
+        "title": "Funciona en Cualquier Teléfono",
+        "desc": "Aplicación Web Progresiva que se instala como una app nativa desde tu navegador. Funciona en Android, iPhone o escritorio. No necesitas tienda de aplicaciones. También funciona sin conexión."
+      },
+      {
+        "num": "05",
+        "title": "Tú Controlas Tu Dinero",
+        "desc": "Tus fondos están protegidos por tus propias claves privadas en tu dispositivo. MVGA nunca tiene tu dinero. Nadie puede congelar tu cuenta ni bloquear tus transferencias."
+      },
+      {
+        "num": "06",
+        "title": "Actualizaciones en Tiempo Real",
+        "desc": "El saldo se actualiza cada 30 segundos. Historial completo de transacciones con marcas de tiempo. Notificaciones push para transferencias, pagos y transacciones programadas."
+      }
+    ]
+  },
+  "visaCard": {
+    "label": "Tarjeta MVGA",
+    "title": "Gasta tus dólares en cualquier lugar.",
+    "desc": "La Tarjeta MVGA convierte tu saldo en dólares digitales en una tarjeta de débito Visa aceptada en 80 millones de comercios en todo el mundo. Paga en tiendas, restaurantes y cajeros automáticos. Paga con Apple Pay. Tus dólares se convierten automáticamente en el punto de venta.",
+    "features": [
+      "Tarjeta de débito Visa aceptada en 80M+ comercios en todo el mundo",
+      "Gasta directamente de tu saldo en dólares",
+      "Apple Pay y pagos sin contacto",
+      "Notificaciones de transacciones en tiempo real en la app",
+      "Congela y descongela al instante desde tu teléfono",
+      "Establece límites diarios de gasto y controla compras en línea",
+      "Sin cuotas mensuales. Sin comisiones de cambio.",
+      "Carga tu tarjeta al instante desde tu saldo",
+      "Verificación KYC integrada en la app"
+    ],
+    "cardType": "Tipo de Tarjeta",
+    "cardTypeValue": "Débito Visa",
+    "funding": "Financiamiento",
+    "fundingValue": "Tu Saldo en Dólares",
+    "monthlyFee": "Cuota Mensual",
+    "fxFees": "Comisiones FX",
+    "applePay": "Apple Pay",
+    "yes": "Sí",
+    "yourNameHere": "Tu Nombre Aquí"
+  },
+  "comparison": {
+    "label": "Por Qué MVGA",
+    "title": "Deja de perder dinero con intermediarios.",
+    "subtitle": "Los servicios de remesas cobran 5-15% en comisiones. Las billeteras de dólares cobran cuotas mensuales y limitan tus montos. MVGA cobra cero comisiones y sin límites. Mira cómo nos comparamos.",
+    "feature": "Característica",
+    "dollarWallets": "Billeteras de Dólares (Meru, Zinli, etc.)",
+    "rows": [
+      {
+        "feature": "Comisión de Transferencia",
+        "mvga": "$0",
+        "wu": "$5-15",
+        "zelle": "$0 (solo EE.UU.)",
+        "other": "$0-1%"
+      },
+      {
+        "feature": "Margen de Tipo de Cambio",
+        "mvga": "0%",
+        "wu": "3-8%",
+        "zelle": "N/A",
+        "other": "0.5-4%"
+      },
+      {
+        "feature": "Velocidad de Transferencia",
+        "mvga": "< 1 segundo",
+        "wu": "1-3 días",
+        "zelle": "Instantáneo (EE.UU.)",
+        "other": "~5 segundos"
+      },
+      {
+        "feature": "Enviar $200 a Venezuela",
+        "mvga": "$200 recibidos",
+        "wu": "~$170 recibidos",
+        "zelle": "No disponible",
+        "other": "$192-198 recibidos"
+      },
+      {
+        "feature": "Cuota Mensual",
+        "mvga": "$0",
+        "wu": "N/A",
+        "zelle": "N/A",
+        "other": "$0-0.99/mes"
+      },
+      {
+        "feature": "Comisión Retiro VES",
+        "mvga": "Vía Airtm",
+        "wu": "3-8% margen",
+        "zelle": "N/A",
+        "other": "Hasta 4%"
+      },
+      {
+        "feature": "Límites Mensuales",
+        "mvga": "Ilimitado",
+        "wu": "$5,000",
+        "zelle": "$2,000/sem",
+        "other": "$1,500-3,000"
+      },
+      {
+        "feature": "Funciona en Venezuela",
+        "mvga": "Sí",
+        "wu": "Limitado",
+        "zelle": "No",
+        "other": "Varía"
+      },
+      {
+        "feature": "Tarjeta de Débito",
+        "mvga": "Visa",
+        "wu": "No",
+        "zelle": "No",
+        "other": "Visa/MC (selecto)"
+      },
+      { "feature": "Recargas Telefónicas", "mvga": "Sí", "wu": "No", "zelle": "No", "other": "No" },
+      {
+        "feature": "Ahorro e Intereses",
+        "mvga": "Hasta 8% APY",
+        "wu": "No",
+        "zelle": "No",
+        "other": "No"
+      },
+      {
+        "feature": "Autocustodia",
+        "mvga": "Sí — tus llaves",
+        "wu": "N/A",
+        "zelle": "N/A",
+        "other": "No — custodial"
+      },
+      {
+        "feature": "Fideicomiso P2P",
+        "mvga": "En cadena",
+        "wu": "Ninguno",
+        "zelle": "Ninguno",
+        "other": "Ninguno"
+      },
+      { "feature": "Código Abierto", "mvga": "Sí", "wu": "No", "zelle": "No", "other": "No" }
+    ]
+  },
+  "advantages": {
+    "label": "Ventajas Estructurales",
+    "title": "Por qué elegir MVGA.",
+    "subtitle": "Otras billeteras de dólares en Venezuela usan arquitecturas custodiales donde ellos controlan tu dinero. MVGA está construido diferente desde cero.",
+    "cards": [
+      {
+        "icon": "🔐",
+        "title": "Autocustodia por Defecto",
+        "desc": "Tus claves privadas viven en tu dispositivo. Otras billeteras guardan tus fondos en sus cuentas — si dejan de funcionar, tu dinero también. Con MVGA, nadie puede congelar o embargar tu saldo."
+      },
+      {
+        "icon": "🔍",
+        "title": "Transparencia en Cadena",
+        "desc": "Cada transacción es verificable en Solana Explorer. Sin libros internos. Sin comisiones ocultas. A diferencia de las billeteras custodiales que mueven dinero fuera de cadena, MVGA mantiene todo en cadena y auditable."
+      },
+      {
+        "icon": "🛡️",
+        "title": "Protección de Fideicomiso P2P",
+        "desc": "Un contrato inteligente bloquea los fondos hasta que ambas partes confirmen. La mayoría de las billeteras de dólares en Venezuela no tienen P2P — y las que sí, usan sistemas basados en confianza sin protección."
+      },
+      {
+        "icon": "📈",
+        "title": "Rendimientos DeFi Reales",
+        "desc": "Gana hasta 8% APY a través de protocolos DeFi en Solana. Las billeteras competidoras ofrecen cero interés sobre tu saldo. Tu dinero debería trabajar para ti, no estar inactivo en la cuenta de otra persona."
+      },
+      {
+        "icon": "📱",
+        "title": "Recargas Telefónicas Integradas",
+        "desc": "Recarga Movistar, Digitel o Movilnet directamente desde tu billetera. Ninguna otra billetera de dólares en Venezuela ofrece esto. Envía saldo a tu familia desde cualquier parte del mundo."
+      },
+      {
+        "icon": "💻",
+        "title": "Totalmente Código Abierto",
+        "desc": "Cada línea de código es pública en GitHub. 15 rondas de auditoría de seguridad. Cero billeteras de dólares competidoras son de código abierto. La transparencia no es una función — es un compromiso."
+      },
+      {
+        "icon": "♻️",
+        "title": "Sin Cuotas Mensuales",
+        "desc": "Algunos competidores cobran $0.99/mes solo por guardar tu dinero, más hasta 4% en retiros VES. MVGA tiene cero comisiones en P2P y cero cargos mensuales."
+      },
+      {
+        "icon": "∞",
+        "title": "Sin Límites Arbitrarios",
+        "desc": "Las billeteras competidoras te limitan a $1,500-$3,000/mes. MVGA no tiene límites artificiales en cuánto puedes guardar, enviar o recibir. Tu dinero, tus reglas."
+      }
+    ]
+  },
+  "features": {
+    "label": "Una App. Todo lo que Necesitas.",
+    "title": "Más que una billetera. Una plataforma financiera completa.",
+    "subtitle": "Envía dinero, paga facturas, recarga teléfonos, gana intereses, obtén una tarjeta de débito y retira a tu banco local — todo desde una app en inglés o español.",
+    "items": [
+      {
+        "num": "01",
+        "title": "Remesas Gratis",
+        "desc": "Envía dólares a cualquier persona en Venezuela en menos de 1 segundo. Cero comisiones. Sin intermediarios. El destinatario recibe exactamente lo que envías. Paga o recibe por Zelle, PayPal, Venmo, Pago Móvil o transferencia bancaria a través del intercambio P2P integrado."
+      },
+      {
+        "num": "02",
+        "title": "Tarjeta de Débito Visa",
+        "desc": "Gasta tu saldo en dólares donde sea que acepten Visa. 80M+ comercios en todo el mundo. Compatible con Apple Pay. Congela, descongela y establece límites desde tu teléfono. Sin cuotas mensuales. Sin comisiones FX. Carga al instante desde tu saldo."
+      },
+      {
+        "num": "03",
+        "title": "Recargas Telefónicas",
+        "desc": "Recarga cualquier teléfono venezolano — Movistar, Digitel o Movilnet — directamente desde tu billetera. Paga desde tu saldo en dólares, tu familia recibe saldo al instante. Montos desde $0.28 hasta $2.10."
+      },
+      {
+        "num": "04",
+        "title": "Ahorro e Intereses",
+        "desc": "Gana intereses sobre tu saldo en dólares. Consulta proyecciones diarias, mensuales y anuales. Establece metas de ahorro con seguimiento de progreso. Tu dinero trabaja para ti mientras duermes."
+      },
+      {
+        "num": "05",
+        "title": "Retiro a Banco",
+        "desc": "Envía USD a cualquier cuenta bancaria en Venezuela y 100+ países. Pagos en un paso desde $1 hasta $1,800. Rastrea el estado de tu pago en tiempo real. El dinero llega a tu banco local."
+      },
+      {
+        "num": "06",
+        "title": "Depósitos",
+        "desc": "Agrega dinero con tu tarjeta de crédito, tarjeta de débito o transferencia bancaria. Compatible con 95+ monedas y múltiples métodos de pago. Los fondos llegan directamente a tu cuenta."
+      },
+      {
+        "num": "07",
+        "title": "Pagos Recurrentes",
+        "desc": "Programa transferencias automáticas en ciclos diarios, semanales o mensuales. Promedia el costo en dólares de tus inversiones. Configúralo y olvídate — apruebas cada transacción con un toque."
+      },
+      {
+        "num": "08",
+        "title": "Envío Masivo",
+        "desc": "Envía a hasta 15 personas en una sola transacción. Perfecto para negocios que pagan empleados o familias que dividen remesas. Ahorra tiempo, ahorra comisiones."
+      },
+      {
+        "num": "09",
+        "title": "Pagos QR",
+        "desc": "Escanea un código QR para pagar al instante. Genera tu propio código QR para recibir pagos. Perfecto para pequeños negocios y transacciones en persona."
+      },
+      {
+        "num": "10",
+        "title": "Programa de Recompensas",
+        "desc": "Gana recompensas por usar la plataforma. Refiere amigos y ambos reciben un bono. Los niveles más altos desbloquean descuentos en comisiones, cashback y soporte prioritario. Cuanto más uses MVGA, más ganas."
+      }
+    ]
+  },
+  "builtFor": {
+    "label": "Hecho para Venezolanos",
+    "title": "Cada detalle considerado.",
+    "subtitle": "Desde el soporte de idiomas hasta la visualización de moneda, cada función está diseñada para la comunidad venezolana y la diáspora.",
+    "cards": [
+      {
+        "title": "Inglés y Español",
+        "desc": "App completa en inglés y español. Más de 400 cadenas traducidas. Cambia de idioma cuando quieras en ajustes."
+      },
+      {
+        "title": "USD y Bolívares",
+        "desc": "Ve todos tus saldos en dólares o bolívares venezolanos. Tasa de cambio en vivo. Cambia cuando quieras."
+      },
+      {
+        "title": "Pago Móvil y Zelle",
+        "desc": "Soporte integrado para métodos de pago venezolanos. Intercambia entre dólares y bolívares de persona a persona."
+      },
+      {
+        "title": "Notificaciones Push",
+        "desc": "Alertas en tiempo real para transferencias, pagos, transacciones programadas y recompensas. Nunca pierdas un pago."
+      },
+      {
+        "title": "Seguridad Biométrica",
+        "desc": "Desbloquea con Face ID, Touch ID o huella dactilar. Tu cuenta está protegida con la misma seguridad que tu teléfono."
+      },
+      {
+        "title": "Historial de Transacciones",
+        "desc": "Ve todas tus transacciones en un solo lugar. Organizadas por fecha. Toca cualquier transacción para ver los detalles."
+      },
+      {
+        "title": "Libreta de Contactos",
+        "desc": "Guarda destinatarios frecuentes con etiquetas. Selección rápida al enviar dinero. Nunca ingreses direcciones dos veces."
+      },
+      {
+        "title": "Transparente y Auditable",
+        "desc": "Cada transacción es verificable independientemente. Toda la plataforma es de código abierto en GitHub. Confianza a través de la transparencia."
+      }
+    ]
+  },
+  "howItWorks": {
+    "label": "Comienza",
+    "title": "Tres pasos. Sesenta segundos.",
+    "steps": [
+      {
+        "num": "01",
+        "title": "Abre la App",
+        "desc": "Visita app.mvga.io en cualquier navegador. Instálala en tu pantalla de inicio como una app nativa. Sin descargas. Sin aprobación de tienda. Funciona de inmediato."
+      },
+      {
+        "num": "02",
+        "title": "Agrega Dinero",
+        "desc": "Deposita con tarjeta de crédito, tarjeta de débito o transferencia bancaria. O recibe dólares de alguien que ya usa MVGA. Tu saldo aparece en USD al instante."
+      },
+      {
+        "num": "03",
+        "title": "Envía, Gasta, Ahorra",
+        "desc": "Envía dinero a casa. Paga con tu tarjeta Visa. Recarga teléfonos. Gana intereses. Retira a un banco. Todo desde una sola cuenta."
+      }
+    ]
+  },
+  "partners": {
+    "label": "Respaldado Por",
+    "title": "Construido sobre infraestructura confiable.",
+    "items": [
+      {
+        "name": "Visa",
+        "role": "Tarjeta de Débito",
+        "desc": "Aceptada en 80M+ comercios en todo el mundo"
+      },
+      {
+        "name": "Reloadly",
+        "role": "Recargas Telefónicas",
+        "desc": "Recargas Movistar, Digitel, Movilnet"
+      },
+      {
+        "name": "Onramper",
+        "role": "Depósitos",
+        "desc": "Depósitos con tarjeta y transferencia en 95+ monedas"
+      },
+      { "name": "Airtm", "role": "Retiros", "desc": "Pagos bancarios en Venezuela y 100+ países" },
+      {
+        "name": "Solana",
+        "role": "Red",
+        "desc": "Transferencias en menos de un segundo, comisiones casi cero"
+      },
+      { "name": "Persona", "role": "Identidad", "desc": "Verificación KYC para 220+ países" },
+      {
+        "name": "Vercel",
+        "role": "Hosting",
+        "desc": "CDN global para acceso rápido en cualquier lugar"
+      },
+      {
+        "name": "Helius",
+        "role": "Infraestructura",
+        "desc": "Procesamiento de transacciones de nivel empresarial"
+      }
+    ]
+  },
+  "testimonials": {
+    "label": "Historias",
+    "title": "Personas reales. Impacto real.",
+    "subtitle": "Venezolanos usando MVGA para enviar dinero a casa, ahorrar en dólares y tomar control de sus finanzas.",
+    "items": [
+      {
+        "quote": "Envío $50 a mi mamá en Maracaibo todos los viernes. Western Union me cobraba $12 cada vez. Ahora no me cuesta nada. Son $600 al año de vuelta en mi bolsillo.",
+        "author": "Carlos M.",
+        "context": "Miami, FL",
+        "feature": "Remesas"
+      },
+      {
+        "quote": "Por fin una app que habla español y entiende Pago Móvil. Puedo comprar dólares sin grupos sospechosos de Telegram. El fideicomiso protege a ambas partes.",
+        "author": "María L.",
+        "context": "Caracas, Venezuela",
+        "feature": "Intercambio P2P"
+      },
+      {
+        "quote": "Recargo el Movistar de mi mamá desde Houston en 30 segundos. Ella ve el saldo al instante. No necesita saber cómo funciona. De eso se trata.",
+        "author": "Isabella G.",
+        "context": "Houston, TX",
+        "feature": "Recargas"
+      },
+      {
+        "quote": "Configuré transferencias automáticas cada lunes. Mi familia recibe $25 como reloj. Solo apruebo con un toque en mi teléfono. Cambió nuestras vidas.",
+        "author": "Diego R.",
+        "context": "Bogotá, Colombia",
+        "feature": "Transferencias Programadas"
+      },
+      {
+        "quote": "La función de ahorro me permite ganar intereses sobre mis dólares en vez de verlos ahí parados. Es como una cuenta de alto rendimiento pero sin necesitar un banco.",
+        "author": "Ana V.",
+        "context": "Madrid, España",
+        "feature": "Ahorros"
+      },
+      {
+        "quote": "Les pago a mis freelancers en Venezuela con envío masivo — 5 personas, una transacción, menos de un segundo. Ningún banco podría hacer eso.",
+        "author": "Andrés P.",
+        "context": "Valencia, Venezuela",
+        "feature": "Pagos Masivos"
+      }
+    ]
+  },
+  "team": {
+    "label": "Equipo",
+    "title": "Construido por venezolanos.",
+    "subtitle": "Vivimos la crisis. Construimos la solución. Cada función viene de la experiencia directa con la hiperinflación, los controles de capital y un sistema bancario roto.",
+    "members": [
+      {
+        "initials": "JR",
+        "name": "Juan Rosales",
+        "role": "Fundador e Ingeniero Principal",
+        "bio": "Ingeniero full-stack venezolano-americano. Construyó cada módulo solo. 20 servicios API, 36 páginas, 550+ tests.",
+        "stat": "25K+ líneas escritas"
+      },
+      {
+        "initials": "VZ",
+        "name": "Comunidad",
+        "role": "Diáspora Venezolana",
+        "bio": "Beta testers de Miami a Madrid. Reportes de errores en grupos de WhatsApp. Solicitudes de funciones en Telegram. Los verdaderos product managers.",
+        "stat": "7M+ venezolanos en el exterior"
+      },
+      {
+        "initials": "OS",
+        "name": "Código Abierto",
+        "role": "Contribuidores y Auditores",
+        "bio": "Cada línea de código es pública. 15 rondas de auditoría de seguridad. Reconocidos en el reporte de desarrolladores de Electric Capital.",
+        "stat": "0 vulnerabilidades conocidas"
+      },
+      {
+        "initials": "AI",
+        "name": "Claude & Happy",
+        "role": "Programadores IA",
+        "bio": "Arquitectura, revisión de código, auditorías de seguridad, generación de tests. Intención humana, velocidad de IA.",
+        "stat": "Envío 10x más rápido"
+      }
+    ]
+  },
+  "faq": {
+    "title": "Preguntas Frecuentes",
+    "items": [
+      {
+        "q": "¿MVGA es seguro?",
+        "a": "Sí. A diferencia de las billeteras custodiales donde la empresa tiene tu dinero, MVGA es autocustodia — tus claves privadas se quedan en tu dispositivo y MVGA nunca tiene tus fondos. Los intercambios P2P usan fideicomiso de contrato inteligente que libera fondos automáticamente cuando ambas partes confirman. Toda la plataforma es de código abierto y ha pasado por 15 rondas de auditoría de seguridad."
+      },
+      {
+        "q": "¿Cuánto cuesta?",
+        "a": "Cero comisiones en transferencias de persona a persona. Los intercambios de moneda tienen una comisión de 0.1%. La tarjeta de débito Visa no tiene cuota mensual ni comisiones de cambio. Las comisiones de red son casi cero (menos de $0.01)."
+      },
+      {
+        "q": "¿Necesito una cuenta bancaria?",
+        "a": "No. Puedes recibir dinero de otros usuarios de MVGA, depositar con tarjeta de crédito/débito, o intercambiar con personas usando Zelle, PayPal, Venmo o Pago Móvil. Solo necesitas una cuenta bancaria si quieres retirar a una."
+      },
+      {
+        "q": "¿Cómo agrego dinero?",
+        "a": "Tres formas: (1) Recibe una transferencia de otro usuario de MVGA gratis. (2) Deposita con tarjeta de crédito, tarjeta de débito o transferencia bancaria a través de nuestros socios de pago. (3) Intercambia bolívares por dólares de persona a persona a través del mercado P2P integrado."
+      },
+      {
+        "q": "¿Puedo usarlo fuera de Venezuela?",
+        "a": "Sí. La billetera funciona a nivel global. La tarjeta de débito Visa funciona en 80M+ comercios en todo el mundo. Las recargas telefónicas funcionan para operadoras venezolanas desde cualquier lugar. La app es utilizada por la diáspora venezolana en EE.UU., España, Colombia y más."
+      },
+      {
+        "q": "¿Hay una app móvil?",
+        "a": "MVGA es una Aplicación Web Progresiva (PWA) — visita app.mvga.io en tu navegador e instálala en tu pantalla de inicio. Funciona exactamente como una app nativa con notificaciones push, soporte sin conexión y desbloqueo biométrico. No necesitas tienda de aplicaciones."
+      },
+      {
+        "q": "¿Cómo funciona el programa de recompensas?",
+        "a": "Ganas recompensas por usar la plataforma y referir amigos. Los niveles más altos desbloquean descuentos en comisiones (hasta 100% de descuento), cashback y soporte prioritario. Las recompensas provienen de ingresos reales de la plataforma, no de inflación."
+      },
+      {
+        "q": "¿En qué se diferencia MVGA de Meru, Zinli o Wally?",
+        "a": "Esas billeteras son custodiales — guardan tu dinero en sus cuentas. Si cierran, tus fondos están en riesgo. También cobran cuotas mensuales (hasta $0.99/mes), comisiones por retiro VES (hasta 4%) e imponen límites mensuales bajos ($1,500-$3,000). MVGA es autocustodia (tú guardas tus propias llaves), tiene cero comisiones, sin cargos mensuales, sin límites arbitrarios, y ofrece rendimientos DeFi, recargas telefónicas y fideicomiso P2P en cadena — funciones que ninguna de ellas tiene."
+      },
+      {
+        "q": "¿MVGA es de código abierto?",
+        "a": "Sí. Toda la plataforma — API, app de billetera y este sitio web — es pública en GitHub. Cualquiera puede auditar el código y verificar exactamente lo que hace la plataforma. 15 auditorías de seguridad completadas con cero vulnerabilidades conocidas. Ninguna otra billetera de dólares dirigida a Venezuela es de código abierto."
+      },
+      {
+        "q": "¿Qué es USDC?",
+        "a": "USDC es un dólar digital estadounidense creado por Circle y respaldado 1:1 por reservas de dólares en instituciones financieras reguladas. Cada USDC vale exactamente $1. Funciona en la blockchain de Solana, lo que significa que las transferencias se liquidan en menos de 1 segundo y cuestan menos de $0.01. A diferencia de las criptomonedas que suben y bajan, USDC es una moneda estable — tus $100 se quedan en $100."
+      },
+      {
+        "q": "¿Qué pasa si pierdo mi teléfono?",
+        "a": "Cuando creas tu billetera, recibes una frase de recuperación de 12 palabras. Anótala y guárdala en un lugar seguro. Si pierdes tu teléfono, instala la app en un nuevo dispositivo e ingresa tu frase de recuperación para restaurar tu billetera y todos tus fondos. Nadie más puede acceder a tu dinero sin esta frase — ni siquiera MVGA."
+      },
+      {
+        "q": "¿Cómo se financia MVGA?",
+        "a": "MVGA obtiene ingresos de pequeñas comisiones en intercambios de moneda (0.1-0.3%) y comisiones de socios en servicios como recargas telefónicas y tarjetas de regalo. Las transferencias de persona a persona son siempre gratis. No hay comisiones ocultas, sin cargos mensuales ni presión de inversores para monetizar usuarios. Los ingresos se distribuyen de forma transparente: 40% a liquidez, 40% a recompensas de staking y 20% a becas comunitarias."
+      }
+    ]
+  },
+  "cta": {
+    "title": "Tu Dinero Merece Más",
+    "subtitle": "Dólares digitales para Venezuela. Envía, gasta, ahorra y gana — todo desde una app. Hecho por venezolanos, para venezolanos.",
+    "cta1": "Abre Tu Cuenta",
+    "cta2": "Únete a la Comunidad"
+  },
+  "stickyCta": "Abrir Cuenta",
+  "footer": {
+    "tagline": "Dólares digitales para Venezuela",
+    "privacy": "Privacidad",
+    "terms": "Términos",
+    "bottomLine": "Envía, gasta, ahorra y gana — todo desde una app. Hecho por venezolanos, para venezolanos. 100% código abierto."
+  },
+  "skipToContent": "Saltar al contenido principal",
+  "metadata": {
+    "title": "MVGA - Dólares Digitales para Venezuela",
+    "description": "Envía dinero a Venezuela gratis. Guarda dólares, obtén una tarjeta de débito Visa, recarga teléfonos, gana intereses y retira a bancos locales. Hecho por venezolanos, para venezolanos.",
+    "ogTitle": "MVGA - Dólares Digitales para Venezuela",
+    "ogDescription": "Envía dinero gratis, obtén una tarjeta Visa, recarga teléfonos y gana intereses. Una app para la diáspora venezolana.",
+    "schemaDescription": "Dólares digitales para Venezuela. Envía dinero gratis, obtén una tarjeta de débito Visa, recarga teléfonos, gana intereses y retira a bancos locales."
+  }
+}

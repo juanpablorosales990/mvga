@@ -104,12 +104,16 @@ export class AuthService {
       throw new UnauthorizedException('Invalid signature');
     }
 
-    // Upsert user in database
-    const user = await this.prisma.user.upsert({
-      where: { walletAddress },
-      update: {},
-      create: { walletAddress },
-    });
+    // Find or create user — assign sequential citizen number on first signup
+    let user = await this.prisma.user.findUnique({ where: { walletAddress } });
+    if (!user) {
+      const [{ nextval }] = await this.prisma.$queryRaw<[{ nextval: bigint }]>`
+        SELECT nextval('citizen_number_seq')
+      `;
+      user = await this.prisma.user.create({
+        data: { walletAddress, citizenNumber: Number(nextval) },
+      });
+    }
 
     const accessToken = this.jwt.sign({
       sub: user.id,
@@ -130,7 +134,13 @@ export class AuthService {
   async getProfile(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { walletAddress: true, email: true, displayName: true, username: true },
+      select: {
+        walletAddress: true,
+        email: true,
+        displayName: true,
+        username: true,
+        citizenNumber: true,
+      },
     });
     return user;
   }
@@ -148,7 +158,13 @@ export class AuthService {
       const user = await this.prisma.user.update({
         where: { id: userId },
         data,
-        select: { walletAddress: true, email: true, displayName: true, username: true },
+        select: {
+          walletAddress: true,
+          email: true,
+          displayName: true,
+          username: true,
+          citizenNumber: true,
+        },
       });
       return user;
     } catch (e) {

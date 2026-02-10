@@ -52,6 +52,7 @@ export class AuthController {
       email: profile?.email ?? null,
       displayName: profile?.displayName ?? null,
       username: profile?.username ?? null,
+      citizenNumber: profile?.citizenNumber ?? null,
     };
   }
 

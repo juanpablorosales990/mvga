@@ -1,15 +1,25 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useState } from 'react';
+import type { Dictionary, Locale } from '@/i18n';
 
-export default function Nav() {
+export default function Nav({ lang, dict }: { lang?: Locale; dict?: Dictionary }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const pathname = usePathname();
+  const currentLang = lang || 'en';
+  const otherLang = currentLang === 'en' ? 'es' : 'en';
+
+  // Build the language toggle path
+  const langTogglePath = pathname.replace(`/${currentLang}`, `/${otherLang}`) || `/${otherLang}`;
+
+  const nav = dict?.nav;
 
   return (
     <nav className="fixed top-0 w-full z-50 bg-black/80 backdrop-blur-sm border-b border-white/5">
       <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-        <Link href="/" className="text-2xl font-black tracking-tighter uppercase">
+        <Link href={`/${currentLang}`} className="text-2xl font-black tracking-tighter uppercase">
           MVGA
         </Link>
 
@@ -18,35 +28,44 @@ export default function Nav() {
             href="#mission"
             className="text-sm text-white/50 hover:text-white tracking-wide uppercase transition animated-underline"
           >
-            Why MVGA
+            {nav?.whyMvga ?? 'Why MVGA'}
           </Link>
           <Link
             href="#features"
             className="text-sm text-white/50 hover:text-white tracking-wide uppercase transition animated-underline"
           >
-            Features
+            {nav?.features ?? 'Features'}
           </Link>
           <Link
             href="#faq"
             className="text-sm text-white/50 hover:text-white tracking-wide uppercase transition animated-underline"
           >
-            FAQ
+            {nav?.faq ?? 'FAQ'}
           </Link>
           <Link
-            href="/grants"
+            href={`/${currentLang}/grants`}
             className="text-sm text-white/50 hover:text-white tracking-wide uppercase transition animated-underline"
           >
-            Grants
+            {nav?.grants ?? 'Grants'}
           </Link>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
+          <Link
+            href={langTogglePath}
+            className="text-xs font-mono text-white/40 hover:text-white border border-white/10 px-2.5 py-1.5 hover:border-white/30 transition uppercase tracking-wider"
+            onClick={() => {
+              document.cookie = `NEXT_LOCALE=${otherLang};path=/;max-age=31536000`;
+            }}
+          >
+            {otherLang === 'es' ? 'ES' : 'EN'}
+          </Link>
           <Link
             href="https://app.mvga.io"
             target="_blank"
             className="hidden md:inline-block bg-white text-black font-bold text-sm uppercase tracking-wider px-6 py-2.5 hover:bg-white/90 transition"
           >
-            Open Account
+            {nav?.openAccount ?? 'Open Account'}
           </Link>
           <button
             onClick={() => setMenuOpen(!menuOpen)}
@@ -74,35 +93,47 @@ export default function Nav() {
               onClick={() => setMenuOpen(false)}
               className="text-sm text-white/50 hover:text-white uppercase tracking-wider"
             >
-              Why MVGA
+              {nav?.whyMvga ?? 'Why MVGA'}
             </Link>
             <Link
               href="#features"
               onClick={() => setMenuOpen(false)}
               className="text-sm text-white/50 hover:text-white uppercase tracking-wider"
             >
-              Features
+              {nav?.features ?? 'Features'}
             </Link>
             <Link
               href="#faq"
               onClick={() => setMenuOpen(false)}
               className="text-sm text-white/50 hover:text-white uppercase tracking-wider"
             >
-              FAQ
+              {nav?.faq ?? 'FAQ'}
             </Link>
             <Link
-              href="/grants"
+              href={`/${currentLang}/grants`}
               onClick={() => setMenuOpen(false)}
               className="text-sm text-white/50 hover:text-white uppercase tracking-wider"
             >
-              Grants
+              {nav?.grants ?? 'Grants'}
             </Link>
+            <div className="flex items-center gap-3 mt-2">
+              <Link
+                href={langTogglePath}
+                onClick={() => {
+                  document.cookie = `NEXT_LOCALE=${otherLang};path=/;max-age=31536000`;
+                  setMenuOpen(false);
+                }}
+                className="text-xs font-mono text-white/40 hover:text-white border border-white/10 px-2.5 py-1.5 hover:border-white/30 transition uppercase tracking-wider"
+              >
+                {otherLang === 'es' ? 'Español' : 'English'}
+              </Link>
+            </div>
             <Link
               href="https://app.mvga.io"
               target="_blank"
               className="bg-white text-black font-bold text-sm uppercase tracking-wider px-6 py-3 text-center mt-2"
             >
-              Open Account
+              {nav?.openAccount ?? 'Open Account'}
             </Link>
           </div>
         </div>

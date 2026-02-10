@@ -20,6 +20,7 @@ export const AnalyticsEvents = {
   OFFRAMP_STARTED: 'offramp_started',
   TOPUP_COMPLETED: 'topup_completed',
   GIFTCARD_PURCHASED: 'giftcard_purchased',
+  CITIZEN_CARD_SHARED: 'citizen_card_shared',
 } as const;
 
 export type AnalyticsEvent = (typeof AnalyticsEvents)[keyof typeof AnalyticsEvents];

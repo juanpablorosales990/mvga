@@ -18,6 +18,7 @@ model User {
   email         String?  @unique
   displayName   String?
   username      String?  @unique
+  citizenNumber Int?     @unique // Sequential "Ciudadano Digital" number (auto-assigned at signup)
   role          String   @default("USER") // USER | ADMIN
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt

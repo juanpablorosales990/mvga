@@ -163,7 +163,13 @@ describe('AuthService', () => {
       });
       expect(prismaService.user.findUnique).toHaveBeenCalledWith({
         where: { id: 'user-1' },
-        select: { walletAddress: true, email: true, displayName: true, username: true },
+        select: {
+          walletAddress: true,
+          email: true,
+          displayName: true,
+          username: true,
+          citizenNumber: true,
+        },
       });
     });
 
@@ -191,7 +197,13 @@ describe('AuthService', () => {
       expect(prismaService.user.update).toHaveBeenCalledWith({
         where: { id: 'user-1' },
         data: { email: 'new@mvga.io', displayName: 'New Name' },
-        select: { walletAddress: true, email: true, displayName: true, username: true },
+        select: {
+          walletAddress: true,
+          email: true,
+          displayName: true,
+          username: true,
+          citizenNumber: true,
+        },
       });
       expect(result.email).toBe('new@mvga.io');
       expect(result.displayName).toBe('New Name');

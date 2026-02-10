@@ -329,6 +329,7 @@
     "cashout": "Retiro",
     "moneygram": "MoneyGram",
     "giftCards": "Tarjetas de Regalo",
+    "citizen": "Ciudadano Digital",
     "scan": "Escanear y Pagar"
   },
   "grants": {
@@ -1139,6 +1140,23 @@
     "copied": "¡Copiado!",
     "showAmount": "Solicitar monto específico",
     "connectPrompt": "Conecta tu billetera para escanear y pagar"
+  },
+  "citizen": {
+    "title": "Ciudadano Digital",
+    "subtitle": "Tu identidad digital en la nueva Venezuela",
+    "cardTitle": "CIUDADANO DIGITAL",
+    "number": "No.",
+    "memberSince": "Miembro desde",
+    "share": "Compartir Mi Carnet",
+    "shareText": "Soy el Ciudadano Digital #{{number}} de la nueva Venezuela. Únete al movimiento.",
+    "copied": "¡Imagen del carnet copiada!",
+    "download": "Guardar Imagen",
+    "downloaded": "¡Carnet guardado!",
+    "onboardingTitle": "Bienvenido, Ciudadano #{{number}}",
+    "onboardingSubtitle": "Eres parte de la nueva Venezuela. Comparte tu carnet digital con el mundo.",
+    "onboardingCta": "Ver Mi Carnet",
+    "menuLabel": "Ciudadano Digital",
+    "totalCitizens": "{{count}} ciudadanos y contando"
   },
   "giftcard": {
     "title": "Tarjetas de Regalo",

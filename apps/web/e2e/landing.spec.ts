@@ -33,7 +33,7 @@ test.describe('Landing Page — Navigation', () => {
   test('nav has Grants page link', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name === 'mobile', 'Nav links hidden on mobile');
     await page.goto('/');
-    await expect(page.locator('a[href="/grants"]')).toBeVisible();
+    await expect(page.locator('a[href="/en/grants"]')).toBeVisible();
   });
 });
 

@@ -9,7 +9,7 @@ i18n
   .use(initReactI18next)
   .init({
     resources: { en: { translation: en }, es: { translation: es } },
-    fallbackLng: 'en',
+    fallbackLng: 'es',
     interpolation: { escapeValue: false },
     detection: {
       order: ['localStorage', 'navigator'],

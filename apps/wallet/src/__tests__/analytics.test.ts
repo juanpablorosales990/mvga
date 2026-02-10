@@ -69,6 +69,7 @@ describe('analytics', () => {
     expect(AnalyticsEvents.EXPORT_PDF).toBe('export_pdf');
     expect(AnalyticsEvents.TOPUP_COMPLETED).toBe('topup_completed');
     expect(AnalyticsEvents.GIFTCARD_PURCHASED).toBe('giftcard_purchased');
-    expect(Object.keys(AnalyticsEvents).length).toBe(18);
+    expect(AnalyticsEvents.CITIZEN_CARD_SHARED).toBe('citizen_card_shared');
+    expect(Object.keys(AnalyticsEvents).length).toBe(19);
   });
 });

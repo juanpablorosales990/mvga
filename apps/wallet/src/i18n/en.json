@@ -329,6 +329,7 @@
     "cashout": "Cash Out",
     "moneygram": "MoneyGram",
     "giftCards": "Gift Cards",
+    "citizen": "Ciudadano Digital",
     "scan": "Scan & Pay"
   },
   "grants": {
@@ -1139,6 +1140,23 @@
     "copied": "Copied!",
     "showAmount": "Request specific amount",
     "connectPrompt": "Connect your wallet to scan and pay"
+  },
+  "citizen": {
+    "title": "Ciudadano Digital",
+    "subtitle": "Your digital identity in the new Venezuela",
+    "cardTitle": "CIUDADANO DIGITAL",
+    "number": "No.",
+    "memberSince": "Member since",
+    "share": "Share My Card",
+    "shareText": "I'm Ciudadano Digital #{{number}} in the new Venezuela. Join the movement.",
+    "copied": "Card image copied!",
+    "download": "Save Image",
+    "downloaded": "Card saved!",
+    "onboardingTitle": "Welcome, Ciudadano #{{number}}",
+    "onboardingSubtitle": "You are part of the new Venezuela. Share your digital citizen card with the world.",
+    "onboardingCta": "See My Card",
+    "menuLabel": "Ciudadano Digital",
+    "totalCitizens": "{{count}} citizens and counting"
   },
   "giftcard": {
     "title": "Gift Cards",

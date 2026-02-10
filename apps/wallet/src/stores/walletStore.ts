@@ -82,6 +82,7 @@ interface WalletState {
   email: string | null;
   displayName: string | null;
   username: string | null;
+  citizenNumber: number | null;
 
   // Onboarding
   tourCompleted: boolean;
@@ -115,6 +116,7 @@ interface WalletState {
     email?: string | null;
     displayName?: string | null;
     username?: string | null;
+    citizenNumber?: number | null;
   }) => void;
   completeTour: () => void;
   dismissChecklist: () => void;
@@ -147,6 +149,7 @@ export const useWalletStore = create<WalletState>()(
       email: null,
       displayName: null,
       username: null,
+      citizenNumber: null,
       tourCompleted: false,
       checklistDismissed: false,
       firstSendCompleted: false,
@@ -218,6 +221,8 @@ export const useWalletStore = create<WalletState>()(
           email: profile.email !== undefined ? profile.email : state.email,
           displayName: profile.displayName !== undefined ? profile.displayName : state.displayName,
           username: profile.username !== undefined ? profile.username : state.username,
+          citizenNumber:
+            profile.citizenNumber !== undefined ? profile.citizenNumber : state.citizenNumber,
         })),
       completeTour: () => set({ tourCompleted: true }),
       dismissChecklist: () => set({ checklistDismissed: true }),
@@ -247,6 +252,7 @@ export const useWalletStore = create<WalletState>()(
         email: state.email,
         displayName: state.displayName,
         username: state.username,
+        citizenNumber: state.citizenNumber,
         tourCompleted: state.tourCompleted,
         checklistDismissed: state.checklistDismissed,
         firstSendCompleted: state.firstSendCompleted,

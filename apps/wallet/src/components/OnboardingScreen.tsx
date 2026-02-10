@@ -15,7 +15,8 @@ type Step =
   | 'CONFIRM_MNEMONIC'
   | 'ENABLE_BIOMETRIC'
   | 'BIOMETRIC_SUCCESS'
-  | 'SETUP_PROFILE';
+  | 'SETUP_PROFILE'
+  | 'CITIZEN_REVEAL';
 
 const INPUT_CLASS =
   'w-full bg-white/5 border border-white/10 px-4 py-3 text-white placeholder:text-white/20 focus:border-gold-500 outline-none font-mono text-sm';
@@ -72,7 +73,7 @@ export default function OnboardingScreen() {
   const [loading, setLoading] = useState(false);
 
   const progressIndex = useMemo(() => {
-    // 0 Start, 1 Password, 2 Backup, 3 Verify, 4 Secure, 5 Profile
+    // 0 Start, 1 Password, 2 Backup, 3 Verify, 4 Secure, 5 Profile, 6 Citizen
     switch (step) {
       case 'CHOICE':
         return 0;
@@ -87,6 +88,8 @@ export default function OnboardingScreen() {
         return 4;
       case 'SETUP_PROFILE':
         return 5;
+      case 'CITIZEN_REVEAL':
+        return 6;
       default:
         return 0;
     }
@@ -242,7 +245,8 @@ export default function OnboardingScreen() {
   // Inline auth during onboarding + save profile
   const handleSaveProfile = async () => {
     if (!profileName.trim() && !profileEmail.trim() && !profileUsername.trim()) {
-      completeOnboarding();
+      // Still need to authenticate to get citizenNumber even when skipping profile
+      await authenticateAndRevealCitizen();
       return;
     }
     setError('');
@@ -292,8 +296,18 @@ export default function OnboardingScreen() {
         username: saved.username,
       });
 
+      // 5. Fetch citizenNumber from /me
+      try {
+        const me = await apiFetch<{ citizenNumber: number | null }>('/auth/me');
+        if (me.citizenNumber) {
+          useWalletStore.getState().setProfile({ citizenNumber: me.citizenNumber });
+        }
+      } catch {
+        // Non-critical
+      }
+
       track(AnalyticsEvents.PROFILE_SETUP);
-      completeOnboarding();
+      setStep('CITIZEN_REVEAL');
     } catch (e) {
       const msg = e instanceof Error ? e.message : '';
       if (msg.includes('Email already in use')) {
@@ -303,6 +317,56 @@ export default function OnboardingScreen() {
       } else {
         setError(t('profile.saveFailed'));
       }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Auth + get citizen number when skipping profile
+  const authenticateAndRevealCitizen = async () => {
+    setLoading(true);
+    try {
+      const walletAddress = keypair?.publicKey.toBase58();
+      if (!walletAddress || !signMessage) {
+        completeOnboarding();
+        return;
+      }
+
+      const nonceRes = await fetch(`${API_URL}/auth/nonce`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ walletAddress }),
+      });
+      if (!nonceRes.ok) {
+        completeOnboarding();
+        return;
+      }
+      const { message } = await nonceRes.json();
+
+      const signatureBytes = await signMessage(new TextEncoder().encode(message));
+      const signature = bs58.encode(signatureBytes);
+
+      const verifyRes = await fetch(`${API_URL}/auth/verify`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ walletAddress, signature }),
+      });
+      if (!verifyRes.ok) {
+        completeOnboarding();
+        return;
+      }
+
+      const me = await apiFetch<{ citizenNumber: number | null }>('/auth/me');
+      if (me.citizenNumber) {
+        useWalletStore.getState().setProfile({ citizenNumber: me.citizenNumber });
+      }
+
+      setStep('CITIZEN_REVEAL');
+    } catch {
+      // If auth fails, just go to home
+      completeOnboarding();
     } finally {
       setLoading(false);
     }
@@ -333,7 +397,7 @@ export default function OnboardingScreen() {
       <div className="w-full max-w-sm">
         {/* Progress indicator */}
         <div className="flex gap-1 mb-6">
-          {Array.from({ length: 6 }).map((_, i) => (
+          {Array.from({ length: 7 }).map((_, i) => (
             <div
               key={i}
               className={`h-1 flex-1 transition-colors ${
@@ -665,10 +729,44 @@ export default function OnboardingScreen() {
               {loading ? t('profile.saving') : t('profile.continue')}
             </button>
             <button
-              onClick={() => completeOnboarding()}
-              className="w-full text-white/30 text-xs font-mono hover:text-white/50 transition py-2"
+              onClick={() => authenticateAndRevealCitizen()}
+              disabled={loading}
+              className="w-full text-white/30 text-xs font-mono hover:text-white/50 transition py-2 disabled:opacity-50"
             >
-              {t('profile.skipForNow')}
+              {loading ? t('common.loading') : t('profile.skipForNow')}
+            </button>
+          </div>
+        )}
+
+        {/* ── CITIZEN REVEAL ──────────────────────── */}
+        {step === 'CITIZEN_REVEAL' && (
+          <div className="space-y-6 text-center">
+            {/* Animated reveal */}
+            <div className="animate-[fadeIn_0.6s_ease-out]">
+              <div className="mx-auto w-20 h-20 border-2 border-gold-500/30 bg-gold-500/10 flex items-center justify-center mb-4">
+                <span className="text-4xl">🪪</span>
+              </div>
+              <h2 className="text-2xl font-black text-gold-500">
+                {t('citizen.onboardingTitle', {
+                  number: useWalletStore.getState().citizenNumber || '?',
+                })}
+              </h2>
+              <p className="text-white/40 text-sm mt-2">{t('citizen.onboardingSubtitle')}</p>
+            </div>
+
+            {/* Mini card preview */}
+            <div className="bg-gradient-to-br from-[#1a1a2e] via-[#16213e] to-[#0f3460] border border-gold-500/30 p-5">
+              <p className="text-[10px] tracking-[0.4em] text-gold-500/60 uppercase font-mono">
+                {t('citizen.cardTitle')}
+              </p>
+              <p className="text-3xl font-black tracking-wider text-gold-500 font-mono mt-2 tabular-nums">
+                {String(useWalletStore.getState().citizenNumber || 0).padStart(6, '0')}
+              </p>
+              <p className="text-white/30 text-xs font-mono mt-2 uppercase">MVGA</p>
+            </div>
+
+            <button onClick={() => completeOnboarding()} className="w-full btn-primary">
+              {t('citizen.onboardingCta')}
             </button>
           </div>
         )}

@@ -13,6 +13,7 @@ interface MeResponse {
   email: string | null;
   displayName: string | null;
   username: string | null;
+  citizenNumber: number | null;
 }
 
 // Singleton promise so only one authenticate() runs at a time across all hook instances
@@ -34,6 +35,7 @@ export function useAuth() {
           email: res.email,
           displayName: res.displayName,
           username: res.username,
+          citizenNumber: res.citizenNumber,
         });
       }
       return res.authenticated;
@@ -104,6 +106,7 @@ export function useAuth() {
             email: me.email,
             displayName: me.displayName,
             username: me.username,
+            citizenNumber: me.citizenNumber,
           });
         } catch {
           // Non-critical — profile sync can fail silently
