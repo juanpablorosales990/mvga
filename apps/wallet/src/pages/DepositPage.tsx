@@ -251,6 +251,18 @@ export default function DepositPage() {
         </>
       ) : null}
 
+      {/* VES On-Ramp link */}
+      <Link
+        to="/ves-onramp"
+        className="card flex items-center justify-between hover:bg-white/5 transition"
+      >
+        <div>
+          <p className="text-sm font-medium">{t('vesOnramp.depositLink')}</p>
+          <p className="text-xs text-white/30">{t('vesOnramp.depositLinkDesc')}</p>
+        </div>
+        <span className="text-gold-500 text-sm font-mono">&rarr;</span>
+      </Link>
+
       {/* MoneyGram link */}
       <Link
         to="/moneygram?tab=onramp"

@@ -33,6 +33,10 @@ model User {
   votes         Vote[]
   kyc           UserKyc?
 
+  // VES On-Ramp
+  lpVesOffers    VesOffer[]   @relation("LpVesOffers")
+  buyerVesOrders VesOrder[]   @relation("BuyerVesOrders")
+
   @@index([walletAddress])
 }
 
@@ -1013,6 +1017,93 @@ enum MoneygramStatus {
   COMPLETED
   FAILED
   CANCELLED
+  EXPIRED
+}
+
+// ============================================================================
+// VES On-Ramp (Pago Móvil → USDC P2P Marketplace)
+// ============================================================================
+
+model VesOffer {
+  id                  String         @id @default(uuid())
+  lpWalletAddress     String
+  lpUserId            String
+  lpUser              User           @relation("LpVesOffers", fields: [lpUserId], references: [id], onDelete: Cascade)
+
+  availableUsdc       BigInt         // USDC available (smallest units, 6 decimals)
+  vesRate             Float          // VES per 1 USDC (e.g., 42.5)
+  feePercent          Float          // LP fee (e.g., 1.5 = 1.5%)
+  minOrderUsdc        BigInt         // Min order in USDC smallest units
+  maxOrderUsdc        BigInt         // Max order in USDC smallest units
+
+  // Pago Móvil details (shown to buyers)
+  bankCode            String         // e.g., "0105" (Mercantil)
+  bankName            String         // e.g., "Banco Mercantil"
+  phoneNumber         String         // e.g., "04163334455"
+  ciNumber            String         // Cédula de identidad
+
+  status              VesOfferStatus @default(ACTIVE)
+  totalOrders         Int            @default(0)
+  completedOrders     Int            @default(0)
+
+  orders              VesOrder[]
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+
+  @@index([status])
+  @@index([lpWalletAddress])
+  @@index([vesRate])
+}
+
+enum VesOfferStatus {
+  ACTIVE
+  PAUSED
+  DEPLETED
+}
+
+model VesOrder {
+  id                  String         @id @default(uuid())
+  offerId             String
+  offer               VesOffer       @relation(fields: [offerId], references: [id])
+
+  buyerWalletAddress  String
+  buyerUserId         String
+  buyer               User           @relation("BuyerVesOrders", fields: [buyerUserId], references: [id])
+  lpWalletAddress     String
+
+  amountUsdc          BigInt         // USDC amount (smallest units)
+  amountVes           Float          // VES amount buyer sends
+  vesRate             Float          // Locked rate at order time
+  feePercent          Float          // Locked fee at order time
+
+  status              VesOrderStatus @default(PENDING)
+  escrowTx            String?        @unique
+  releaseTx           String?        @unique
+
+  disputeReason       String?
+  disputeResolution   String?
+
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  paidAt              DateTime?
+  confirmedAt         DateTime?
+  completedAt         DateTime?
+  expiresAt           DateTime
+
+  @@index([buyerWalletAddress])
+  @@index([lpWalletAddress])
+  @@index([status])
+  @@index([expiresAt])
+}
+
+enum VesOrderStatus {
+  PENDING
+  ESCROW_LOCKED
+  PAYMENT_SENT
+  COMPLETED
+  DISPUTED
+  CANCELLED
+  REFUNDED
   EXPIRED
 }
 

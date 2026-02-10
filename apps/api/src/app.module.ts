@@ -28,6 +28,7 @@ import { PayPalModule } from './modules/paypal/paypal.module';
 import { MoneygramModule } from './modules/moneygram/moneygram.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { GiftCardModule } from './modules/giftcard/giftcard.module';
+import { VesOnrampModule } from './modules/ves-onramp/ves-onramp.module';
 import { HealthController } from './health.controller';
 
 @Module({
@@ -67,6 +68,7 @@ import { HealthController } from './health.controller';
     MoneygramModule,
     AnalyticsModule,
     GiftCardModule,
+    VesOnrampModule,
   ],
   controllers: [HealthController],
   providers: [
