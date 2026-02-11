@@ -49,6 +49,8 @@ export const AnalyticsEvents = {
   // Onboarding wizard
   WIZARD_COMPLETED: 'wizard_completed',
   WIZARD_SKIPPED: 'wizard_skipped',
+  // Cross-chain bridge
+  BRIDGE_TRON_OPENED: 'bridge_tron_opened',
 } as const;
 
 export type AnalyticsEvent = (typeof AnalyticsEvents)[keyof typeof AnalyticsEvents];

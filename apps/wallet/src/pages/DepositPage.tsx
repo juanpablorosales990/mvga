@@ -15,7 +15,7 @@ const PayPalScriptProvider = lazy(() =>
 
 const PRESET_AMOUNTS = [5, 10, 25, 50];
 
-type Tab = 'onramper' | 'paypal';
+type Tab = 'onramper' | 'paypal' | 'bridge';
 
 export default function DepositPage() {
   const { t } = useTranslation();
@@ -35,6 +35,19 @@ export default function DepositPage() {
       .then((d) => setPaypalEnabled(d.enabled))
       .catch((err) => console.warn('PayPal status check failed:', err));
   }, []);
+
+  const debridgeSrc = useMemo(() => {
+    if (!walletAddress) return '';
+    const url = new URL('https://app.debridge.com/deswap');
+    url.searchParams.set('inputChain', '728126428');
+    url.searchParams.set('outputChain', '7565164');
+    url.searchParams.set('inputCurrency', 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t');
+    url.searchParams.set('outputCurrency', 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v');
+    url.searchParams.set('address', walletAddress);
+    url.searchParams.set('dlnMode', 'simple');
+    url.searchParams.set('theme', 'dark');
+    return url.toString();
+  }, [walletAddress]);
 
   const onramperSrc = useMemo(() => {
     if (!walletAddress) return '';
@@ -103,6 +116,19 @@ export default function DepositPage() {
             {t('deposit.paypalTab')}
           </button>
         )}
+        <button
+          onClick={() => {
+            setTab('bridge');
+            track(AnalyticsEvents.BRIDGE_TRON_OPENED);
+          }}
+          className={`flex-1 py-2 text-sm font-medium border transition ${
+            tab === 'bridge'
+              ? 'border-gold-500 bg-gold-500/10 text-gold-500'
+              : 'border-white/10 text-white/50'
+          }`}
+        >
+          {t('deposit.bridgeTab')}
+        </button>
       </div>
 
       {tab === 'onramper' ? (
@@ -247,6 +273,31 @@ export default function DepositPage() {
 
           <div className="bg-white/5 border border-white/10 px-4 py-3">
             <p className="text-white/30 text-xs font-mono">{t('deposit.paypalPoweredBy')}</p>
+          </div>
+        </>
+      ) : tab === 'bridge' ? (
+        <>
+          {/* Bridge info */}
+          <div className="card space-y-2">
+            <h2 className="text-sm font-bold">{t('deposit.bridgeTitle')}</h2>
+            <p className="text-white/40 text-xs">{t('deposit.bridgeDesc')}</p>
+            <p className="text-white/30 text-xs font-mono">{t('deposit.bridgeInfo')}</p>
+          </div>
+
+          {/* deBridge iframe */}
+          <div className="border border-white/10 overflow-hidden" style={{ height: '630px' }}>
+            <iframe
+              src={debridgeSrc}
+              title={t('deposit.bridgeTitle')}
+              height="630"
+              width="100%"
+              allow="accelerometer; autoplay; camera; gyroscope; payment; clipboard-write"
+              style={{ border: 'none' }}
+            />
+          </div>
+
+          <div className="bg-white/5 border border-white/10 px-4 py-3">
+            <p className="text-white/30 text-xs font-mono">{t('deposit.bridgePoweredBy')}</p>
           </div>
         </>
       ) : null}

@@ -912,7 +912,15 @@
     "paypalSuccess": "Payment received! USDC will be credited shortly.",
     "paypalCreditNote": "USDC is typically credited within a few minutes.",
     "paypalFailed": "PayPal payment failed. Please try again.",
-    "paypalPoweredBy": "Powered by PayPal. Fees: 2.99% + $0.49. MVGA does not hold fiat currency."
+    "paypalPoweredBy": "Powered by PayPal. Fees: 2.99% + $0.49. MVGA does not hold fiat currency.",
+    "bridgeTab": "Bridge from Tron",
+    "bridgeDesc": "Bridge USDT from Tron network to USDC on Solana. Connect your Tron wallet (TronLink) or send from any exchange.",
+    "bridgePoweredBy": "Powered by deBridge. Cross-chain transfers are processed peer-to-peer with MEV protection. MVGA does not custody bridged funds.",
+    "bridgeTitle": "Bridge USDT \u2192 USDC",
+    "bridgeInfo": "Send Tron USDT and receive Solana USDC directly in your wallet. Typical time: under 1 minute. Fee: ~0.3%.",
+    "bridgeConnectPrompt": "Connect your wallet to bridge funds.",
+    "bridgeNoWallet": "Create a wallet first to receive bridged USDC.",
+    "bridgeOpenFull": "Open in full screen"
   },
   "charge": {
     "title": "Get Paid",
@@ -1409,7 +1417,17 @@
     "direction_ON_RAMP": "Buy USDC",
     "direction_OFF_RAMP": "Sell USDC",
     "seller": "Seller",
-    "sellOrderInProgress": "Sell Order in Progress"
+    "sellOrderInProgress": "Sell Order in Progress",
+    "uploadProof": "Upload Payment Proof",
+    "uploadReceipt": "Upload Screenshot",
+    "receiptUploaded": "Receipt uploaded",
+    "uploadFailed": "Failed to upload receipt",
+    "invalidImage": "Invalid image file",
+    "referenceNumber": "Reference Number",
+    "referencePlaceholder": "e.g. 123456789",
+    "receiptHelp": "Upload a screenshot of your Pago Móvil confirmation. Optional but helps resolve disputes.",
+    "paymentProof": "Payment Proof",
+    "receiptTooLarge": "Could not compress image to target size"
   },
   "request": {
     "title": "Request Money",

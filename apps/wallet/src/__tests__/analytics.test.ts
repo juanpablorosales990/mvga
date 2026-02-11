@@ -92,6 +92,7 @@ describe('analytics', () => {
     expect(AnalyticsEvents.VES_OFFRAMP_COMPLETED).toBe('ves_offramp_completed');
     expect(AnalyticsEvents.WIZARD_COMPLETED).toBe('wizard_completed');
     expect(AnalyticsEvents.WIZARD_SKIPPED).toBe('wizard_skipped');
-    expect(Object.keys(AnalyticsEvents).length).toBe(41);
+    expect(AnalyticsEvents.BRIDGE_TRON_OPENED).toBe('bridge_tron_opened');
+    expect(Object.keys(AnalyticsEvents).length).toBe(42);
   });
 });

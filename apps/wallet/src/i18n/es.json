@@ -912,7 +912,15 @@
     "paypalSuccess": "¡Pago recibido! USDC será acreditado en breve.",
     "paypalCreditNote": "USDC se acredita típicamente en pocos minutos.",
     "paypalFailed": "Pago de PayPal fallido. Intenta de nuevo.",
-    "paypalPoweredBy": "Impulsado por PayPal. Comisiones: 2.99% + $0.49. MVGA no retiene moneda fiat."
+    "paypalPoweredBy": "Impulsado por PayPal. Comisiones: 2.99% + $0.49. MVGA no retiene moneda fiat.",
+    "bridgeTab": "Puente desde Tron",
+    "bridgeDesc": "Transfiere USDT de la red Tron a USDC en Solana. Conecta tu wallet Tron (TronLink) o env\u00eda desde cualquier exchange.",
+    "bridgePoweredBy": "Impulsado por deBridge. Las transferencias son procesadas peer-to-peer con protecci\u00f3n MEV. MVGA no custodia fondos transferidos.",
+    "bridgeTitle": "Puente USDT \u2192 USDC",
+    "bridgeInfo": "Env\u00eda USDT de Tron y recibe USDC de Solana directo en tu wallet. Tiempo t\u00edpico: menos de 1 minuto. Comisi\u00f3n: ~0.3%.",
+    "bridgeConnectPrompt": "Conecta tu wallet para hacer puente de fondos.",
+    "bridgeNoWallet": "Crea un wallet primero para recibir USDC.",
+    "bridgeOpenFull": "Abrir en pantalla completa"
   },
   "charge": {
     "title": "Cobrar",
@@ -1409,7 +1417,17 @@
     "direction_ON_RAMP": "Comprar USDC",
     "direction_OFF_RAMP": "Vender USDC",
     "seller": "Vendedor",
-    "sellOrderInProgress": "Orden de Venta en Progreso"
+    "sellOrderInProgress": "Orden de Venta en Progreso",
+    "uploadProof": "Subir Comprobante de Pago",
+    "uploadReceipt": "Subir Captura",
+    "receiptUploaded": "Comprobante subido",
+    "uploadFailed": "Error al subir comprobante",
+    "invalidImage": "Archivo de imagen inválido",
+    "referenceNumber": "Número de Referencia",
+    "referencePlaceholder": "ej. 123456789",
+    "receiptHelp": "Sube una captura de tu confirmación de Pago Móvil. Opcional pero ayuda a resolver disputas.",
+    "paymentProof": "Comprobante de Pago",
+    "receiptTooLarge": "No se pudo comprimir la imagen al tamaño requerido"
   },
   "request": {
     "title": "Solicitar Dinero",
