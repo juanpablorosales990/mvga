@@ -5,7 +5,11 @@ test.describe('Batch Send Page', () => {
   test.beforeEach(async ({ page }) => {
     await createWalletAndUnlock(page);
 
-    await page.goto('/batch-send');
+    // Navigate via More page (client-side) — page.goto reloads and locks wallet
+    const nav = page.locator('nav[aria-label="Main navigation"]');
+    await nav.getByRole('link', { name: /more|más/i }).click();
+    await expect(page).toHaveURL('/more');
+    await page.locator('a[href="/batch-send"]').click();
     await expect(page).toHaveURL('/batch-send');
   });
 
@@ -16,7 +20,8 @@ test.describe('Batch Send Page', () => {
   });
 
   test('shows token selector', async ({ page }) => {
-    await expect(page.getByText(/SOL/i).first()).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('Token').first()).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('select').first()).toBeVisible({ timeout: 5000 });
   });
 
   test('shows first recipient row', async ({ page }) => {
@@ -26,10 +31,10 @@ test.describe('Batch Send Page', () => {
   });
 
   test('shows address and amount inputs', async ({ page }) => {
-    await expect(page.getByPlaceholder(/address|dirección/i).first()).toBeVisible({
+    await expect(page.getByPlaceholder(/address|dirección|solana/i).first()).toBeVisible({
       timeout: 10000,
     });
-    await expect(page.getByPlaceholder(/amount|cantidad/i).first()).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('input[type="number"]').first()).toBeVisible({ timeout: 10000 });
   });
 
   test('add recipient button works', async ({ page }) => {

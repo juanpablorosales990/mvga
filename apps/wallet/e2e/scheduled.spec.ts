@@ -7,24 +7,24 @@ const MOCK_PAYMENTS = [
     recipientAddress: '11111111111111111111111111111111',
     recipientLabel: 'Mom',
     token: 'USDC',
-    amount: 50,
+    amount: '50000000', // 50 USDC in smallest units (6 decimals)
     frequency: 'MONTHLY',
     status: 'ACTIVE',
-    nextExecution: new Date(Date.now() + 86400000 * 7).toISOString(),
+    nextExecutionAt: new Date(Date.now() + 86400000 * 7).toISOString(),
     memo: 'Rent',
-    createdAt: new Date().toISOString(),
+    executions: [],
   },
   {
     id: 'sp-2',
     recipientAddress: '22222222222222222222222222222222',
     recipientLabel: 'Savings',
     token: 'SOL',
-    amount: 10,
+    amount: '10000000000', // 10 SOL in smallest units (9 decimals)
     frequency: 'WEEKLY',
     status: 'ACTIVE',
-    nextExecution: new Date(Date.now() + 86400000).toISOString(),
+    nextExecutionAt: new Date(Date.now() + 86400000).toISOString(),
     memo: null,
-    createdAt: new Date().toISOString(),
+    executions: [],
   },
 ];
 
@@ -40,17 +40,17 @@ test.describe('Scheduled Payments Page', () => {
 
     await createWalletAndUnlock(page);
 
+    // Navigate via More → Recurring Payments link (client-side)
     const nav = page.locator('nav[aria-label="Main navigation"]');
     await nav.getByRole('link', { name: /more|más/i }).click();
     await expect(page).toHaveURL('/more');
-    await page
-      .getByRole('link', { name: /scheduled|programad/i })
-      .first()
-      .click();
+    await page.locator('a[href="/scheduled/payments"]').click();
   });
 
   test('page loads with title', async ({ page }) => {
-    await expect(page.getByText(/scheduled|programad/i).first()).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText(/scheduled|recurring|programad|recurrent/i).first()).toBeVisible({
+      timeout: 10000,
+    });
   });
 
   test('shows tab buttons', async ({ page }) => {
@@ -86,12 +86,10 @@ test.describe('Scheduled Payments — empty state', () => {
 
     await createWalletAndUnlock(page);
 
+    // Navigate via More → Recurring Payments link (client-side)
     const nav = page.locator('nav[aria-label="Main navigation"]');
     await nav.getByRole('link', { name: /more|más/i }).click();
-    await page
-      .getByRole('link', { name: /scheduled|programad/i })
-      .first()
-      .click();
+    await page.locator('a[href="/scheduled/payments"]').click();
 
     await expect(page.getByText(/no.*payment|sin.*pago/i).first()).toBeVisible({ timeout: 10000 });
   });

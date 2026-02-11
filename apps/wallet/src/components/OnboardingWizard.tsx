@@ -112,9 +112,12 @@ export default function OnboardingWizard() {
       : { bottom: window.innerHeight - rect.top + 16, left: 16, right: 16 };
 
   return (
-    <div className="fixed inset-0 z-[60]">
-      {/* SVG overlay with cutout */}
-      <svg className="absolute inset-0 w-full h-full">
+    <div
+      className="fixed inset-0 z-[60] pointer-events-none"
+      data-testid="onboarding-wizard-overlay"
+    >
+      {/* SVG overlay with cutout — pointer-events-none so it never blocks nav clicks */}
+      <svg className="absolute inset-0 w-full h-full pointer-events-none">
         <defs>
           <mask id="wizard-mask">
             <rect width="100%" height="100%" fill="white" />
@@ -142,8 +145,8 @@ export default function OnboardingWizard() {
         />
       </svg>
 
-      {/* Tooltip card */}
-      <div className="absolute" style={tooltipStyle}>
+      {/* Tooltip card — re-enable pointer events for interactive elements */}
+      <div className="absolute pointer-events-auto" style={tooltipStyle}>
         <div className="bg-[#1a1a1a] border border-gold-500/30 p-5">
           {/* Step counter */}
           <div className="flex items-center justify-between mb-3">

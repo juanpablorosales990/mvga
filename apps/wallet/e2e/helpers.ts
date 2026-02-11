@@ -69,6 +69,11 @@ async function skipOnboardingWizardIfPresent(page: Page): Promise<boolean> {
   if (!(await skip.isVisible().catch(() => false))) return false;
   await skip.scrollIntoViewIfNeeded().catch(() => {});
   await skip.click({ timeout: 5000 });
+  // Wait for the overlay to be fully removed from the DOM
+  await page
+    .locator('[data-testid="onboarding-wizard-overlay"]')
+    .waitFor({ state: 'detached', timeout: 5000 })
+    .catch(() => {});
   return true;
 }
 

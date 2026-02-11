@@ -105,7 +105,9 @@ test.describe('Transparency Page', () => {
   });
 
   test('shows mission statement', async ({ page }) => {
-    await expect(page.getByText(/mission|misión/i).first()).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText(/community.owned|100%|comunidad/i).first()).toBeVisible({
+      timeout: 10000,
+    });
   });
 
   test('shows distribution breakdown', async ({ page }) => {

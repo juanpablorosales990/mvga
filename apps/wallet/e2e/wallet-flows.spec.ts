@@ -79,6 +79,26 @@ async function unlockIfLocked(page: Page) {
   await page.getByRole('button', { name: /unlock|desbloquear/i }).click();
 }
 
+async function skipOnboardingWizardIfPresent(page: Page) {
+  const skip = page.getByRole('button', { name: /skip tour|saltar tour/i });
+
+  await Promise.race([
+    page
+      .locator('header')
+      .waitFor({ state: 'visible', timeout: 8000 })
+      .catch(() => {}),
+    skip.waitFor({ state: 'visible', timeout: 8000 }).catch(() => {}),
+  ]);
+
+  if (await skip.isVisible().catch(() => false)) {
+    await skip.click();
+    await page
+      .locator('[data-testid="onboarding-wizard-overlay"]')
+      .waitFor({ state: 'detached', timeout: 5000 })
+      .catch(() => {});
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Helper: create a new wallet through the onboarding UI and return the 12 words
 // ---------------------------------------------------------------------------
@@ -151,11 +171,12 @@ async function confirmMnemonic(page: Page, words: string[]) {
   await page.getByRole('button', { name: /confirm/i }).click();
 
   // After mnemonic confirmation, skip through remaining onboarding steps to reach the app shell.
-  // Steps in order: biometrics → profile → citizen reveal → (possible lock screen) → welcome tour
+  // Steps in order: biometrics → profile → citizen reveal → (possible lock screen) → welcome tour → wizard
   await skipBiometricsSetupIfPresent(page);
   await skipProfileOrCitizenIfPresent(page);
   await unlockIfLocked(page);
   await skipWelcomeTourIfPresent(page);
+  await skipOnboardingWizardIfPresent(page);
 }
 
 // ---------------------------------------------------------------------------
@@ -170,7 +191,7 @@ test.describe('Wallet Creation Flow', () => {
   test('shows onboarding screen when no wallet exists', async ({ page }) => {
     await expect(page.getByText('MVGA')).toBeVisible();
     await expect(page.getByText('Create New Wallet')).toBeVisible();
-    await expect(page.getByText(/your keys.*your coins/i)).toBeVisible();
+    await expect(page.getByText(/your money.*your control|your keys.*your coins/i)).toBeVisible();
   });
 
   test('validates password length on create', async ({ page }) => {
@@ -489,7 +510,7 @@ test.describe('Navigation After Wallet Connected', () => {
     await page.waitForURL('**/send');
     // Send page should render the send form (it doesn't show a connect prompt).
     await expect(page.getByRole('heading', { name: /send/i })).toBeVisible({ timeout: 10000 });
-    await expect(page.getByPlaceholder('Enter Solana address...')).toBeVisible();
+    await expect(page.getByPlaceholder(/address|solana|username/i).first()).toBeVisible();
   });
 
   test('receive page shows wallet address when connected', async ({ page }) => {

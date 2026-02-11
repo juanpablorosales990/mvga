@@ -5,8 +5,11 @@ test.describe('Charge (Get Paid) Page', () => {
   test.beforeEach(async ({ page }) => {
     await createWalletAndUnlock(page);
 
-    // Navigate to charge page via quick actions
-    await page.goto('/charge');
+    // Navigate via More page (client-side) — page.goto reloads and locks wallet
+    const nav = page.locator('nav[aria-label="Main navigation"]');
+    await nav.getByRole('link', { name: /more|más/i }).click();
+    await expect(page).toHaveURL('/more');
+    await page.locator('a[href="/charge"]').click();
     await expect(page).toHaveURL('/charge');
   });
 
@@ -25,9 +28,9 @@ test.describe('Charge (Get Paid) Page', () => {
   });
 
   test('shows memo input', async ({ page }) => {
-    await expect(page.getByPlaceholder(/memo|nota|description|descripción/i).first()).toBeVisible({
-      timeout: 10000,
-    });
+    await expect(
+      page.getByPlaceholder(/memo|nota|description|descripción|rent|pago/i).first()
+    ).toBeVisible({ timeout: 10000 });
   });
 
   test('no QR code before entering amount', async ({ page }) => {

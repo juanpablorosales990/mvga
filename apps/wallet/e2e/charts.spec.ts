@@ -5,13 +5,8 @@ test.describe('Charts Page', () => {
   test.beforeEach(async ({ page }) => {
     await createWalletAndUnlock(page);
 
-    const nav = page.locator('nav[aria-label="Main navigation"]');
-    await nav.getByRole('link', { name: /more|más/i }).click();
-    await expect(page).toHaveURL('/more');
-    await page
-      .getByRole('link', { name: /chart|gráfic/i })
-      .first()
-      .click();
+    // Charts is linked from the dashboard (WalletPage), not from More page
+    await page.locator('a[href="/charts"]').first().click();
     await expect(page).toHaveURL('/charts');
   });
 
@@ -29,9 +24,11 @@ test.describe('Charts Page', () => {
   });
 
   test('shows timeframe buttons', async ({ page }) => {
-    await expect(page.getByRole('button', { name: /24h/i })).toBeVisible({ timeout: 10000 });
-    await expect(page.getByRole('button', { name: /7d/i })).toBeVisible({ timeout: 10000 });
-    await expect(page.getByRole('button', { name: /30d/i })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('button', { name: '24h' })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('button', { name: '7d', exact: true })).toBeVisible({
+      timeout: 10000,
+    });
+    await expect(page.getByRole('button', { name: '30d' })).toBeVisible({ timeout: 10000 });
   });
 
   test('switching token updates chart', async ({ page }) => {
@@ -42,7 +39,7 @@ test.describe('Charts Page', () => {
   });
 
   test('switching timeframe updates chart', async ({ page }) => {
-    const btn7d = page.getByRole('button', { name: /7d/i });
+    const btn7d = page.getByRole('button', { name: '7d', exact: true });
     await btn7d.click();
     await expect(btn7d).toBeVisible();
   });

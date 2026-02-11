@@ -5,8 +5,8 @@ test.describe('Send Page', () => {
   test.beforeEach(async ({ page }) => {
     await createWalletAndUnlock(page);
 
-    const nav = page.locator('nav[aria-label="Main navigation"]');
-    await nav.getByRole('link', { name: /send|enviar/i }).click();
+    // Navigate via quick actions grid on dashboard (Send is not in bottom nav)
+    await page.locator('a[href="/send"]').first().click();
     await expect(page).toHaveURL('/send');
   });
 
@@ -15,7 +15,8 @@ test.describe('Send Page', () => {
   });
 
   test('shows token selector', async ({ page }) => {
-    await expect(page.getByText(/SOL/i).first()).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('Token').first()).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('select').first()).toBeVisible({ timeout: 5000 });
   });
 
   test('shows recipient address input', async ({ page }) => {
