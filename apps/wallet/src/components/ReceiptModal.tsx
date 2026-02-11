@@ -72,6 +72,7 @@ export default function ReceiptModal({ open, onClose, data, walletAddress }: Pro
           <h3 className="text-lg font-bold">{t('receipt.title')}</h3>
           <button
             onClick={onClose}
+            aria-label={t('common.close')}
             className="text-white/40 hover:text-white/60 transition text-xl leading-none"
           >
             &times;

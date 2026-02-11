@@ -104,7 +104,7 @@ export default function RequestsInboxPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <Link to="/more" className="text-gray-400 hover:text-white">
+        <Link to="/more" className="text-gray-400 hover:text-white" aria-label={t('common.back')}>
           <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path
               strokeLinecap="round"
@@ -146,9 +146,14 @@ export default function RequestsInboxPage() {
 
       {/* Empty state */}
       {!loading && items.length === 0 && (
-        <p className="text-center text-gray-500 text-sm py-8">
-          {tab === 'incoming' ? t('request.emptyIncoming') : t('request.emptyOutgoing')}
-        </p>
+        <div className="text-center py-12 text-gray-400">
+          <div className="text-4xl mb-3 opacity-30">
+            {tab === 'incoming' ? '&#x1F4E5;' : '&#x1F4E4;'}
+          </div>
+          <p className="text-sm">
+            {tab === 'incoming' ? t('request.emptyIncoming') : t('request.emptyOutgoing')}
+          </p>
+        </div>
       )}
 
       {/* Request list */}

@@ -309,7 +309,8 @@ export default function P2PPage() {
           ))}
         </div>
       ) : offers.length === 0 ? (
-        <div className="card text-center py-8 text-gray-400">
+        <div className="card text-center py-12 text-gray-400">
+          <div className="text-4xl mb-3 opacity-30">&#x1F91D;</div>
           <p>{t('p2p.noOffers')}</p>
           <p className="text-sm mt-1">{t('p2p.beFirst')}</p>
         </div>

@@ -132,9 +132,18 @@ export default function SpendingLimitsPage() {
 
       {/* Existing limits */}
       {spendingLimits.length === 0 ? (
-        <div className="card text-center py-8 text-gray-400">
+        <div className="card text-center py-12 text-gray-400">
+          <div className="text-4xl mb-3 opacity-30">&#x26D4;</div>
           <p className="text-lg mb-1">{t('spending.noLimits')}</p>
-          <p className="text-sm">{t('spending.noLimitsDesc')}</p>
+          <p className="text-sm mb-4">{t('spending.noLimitsDesc')}</p>
+          {!showForm && (
+            <button
+              onClick={() => setShowForm(true)}
+              className="text-sm font-medium text-gold-500 hover:text-gold-400 transition"
+            >
+              + {t('spending.addLimit')}
+            </button>
+          )}
         </div>
       ) : (
         <div className="space-y-3">
@@ -163,6 +172,7 @@ export default function SpendingLimitsPage() {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => toggleSpendingLimit(limit.id)}
+                      aria-label={limit.isActive ? t('spending.paused') : t('spending.active')}
                       className={`text-xs px-2 py-1 rounded transition ${
                         limit.isActive
                           ? 'bg-green-500/20 text-green-400'
@@ -176,6 +186,7 @@ export default function SpendingLimitsPage() {
                         removeSpendingLimit(limit.id);
                         showToast('success', t('spending.removed'));
                       }}
+                      aria-label={t('common.remove')}
                       className="text-xs text-red-400 hover:text-red-300"
                     >
                       {t('common.remove')}

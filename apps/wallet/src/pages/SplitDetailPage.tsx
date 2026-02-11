@@ -104,7 +104,7 @@ export default function SplitDetailPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <Link to="/more" className="text-gray-400 hover:text-white">
+        <Link to="/more" className="text-gray-400 hover:text-white" aria-label={t('common.back')}>
           <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path
               strokeLinecap="round"
@@ -182,7 +182,7 @@ export default function SplitDetailPage() {
                 {idx + 1}
               </div>
               <div>
-                <p className="text-sm font-mono">
+                <p className="text-sm font-mono" title={p.requesteeAddress || undefined}>
                   {p.requesteeAddress
                     ? `${p.requesteeAddress.slice(0, 6)}...${p.requesteeAddress.slice(-4)}`
                     : '—'}

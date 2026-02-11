@@ -146,7 +146,7 @@ export default function ContactsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <Link to="/more" className="text-gray-400 hover:text-white">
+        <Link to="/more" className="text-gray-400 hover:text-white" aria-label={t('common.back')}>
           <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path
               strokeLinecap="round"
@@ -219,7 +219,16 @@ export default function ContactsPage() {
 
       {/* Contact List */}
       {sorted.length === 0 ? (
-        <p className="text-center text-gray-500 text-sm py-8">{t('contacts.empty')}</p>
+        <div className="text-center py-12 text-gray-400">
+          <div className="text-4xl mb-3 opacity-30">&#x1F465;</div>
+          <p className="text-sm mb-4">{t('contacts.empty')}</p>
+          <button
+            onClick={() => setShowAdd(true)}
+            className="text-sm font-medium text-gold-500 hover:text-gold-400 transition"
+          >
+            + {t('contacts.addContact')}
+          </button>
+        </div>
       ) : (
         <div className="space-y-2">
           {sorted.map((contact) => {
@@ -237,13 +246,17 @@ export default function ContactsPage() {
                   {/* Info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <p className="font-medium text-sm truncate">{contact.label}</p>
+                      <p className="font-medium text-sm truncate" title={contact.label}>
+                        {contact.label}
+                      </p>
                       {profile?.username && (
                         <span className="text-[10px] text-gold-400">@{profile.username}</span>
                       )}
                     </div>
                     <button
                       onClick={() => handleCopy(contact.address)}
+                      title={contact.address}
+                      aria-label={t('common.copy')}
                       className="font-mono text-xs text-gray-500 hover:text-gray-300 transition truncate block max-w-full"
                     >
                       {contact.address.slice(0, 12)}...{contact.address.slice(-8)}

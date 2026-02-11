@@ -337,14 +337,19 @@ export default function HistoryPage() {
 
                     {/* Description or counterparty */}
                     {tx.description ? (
-                      <p className="text-xs text-gray-400 truncate">{tx.description}</p>
+                      <p className="text-xs text-gray-400 truncate" title={tx.description}>
+                        {tx.description}
+                      </p>
                     ) : tx.counterparty ? (
-                      <p className="text-xs text-gray-500 font-mono truncate">
+                      <p
+                        className="text-xs text-gray-500 font-mono truncate"
+                        title={tx.counterparty}
+                      >
                         {tx.isOutgoing ? '\u2192' : '\u2190'} {tx.counterparty.slice(0, 8)}...
                         {tx.counterparty.slice(-4)}
                       </p>
                     ) : (
-                      <p className="text-xs font-mono text-gray-500 truncate">
+                      <p className="text-xs font-mono text-gray-500 truncate" title={tx.signature}>
                         {tx.signature.slice(0, 16)}...
                       </p>
                     )}

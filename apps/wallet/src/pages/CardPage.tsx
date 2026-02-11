@@ -773,6 +773,7 @@ function CardDashboardView() {
       <div className="grid grid-cols-4 gap-3">
         <button
           onClick={() => setShowFundModal(true)}
+          aria-label={t('card.fundCard')}
           className="card p-3 flex flex-col items-center gap-2 hover:bg-white/10 transition"
         >
           <div className="w-10 h-10 bg-green-500/20 rounded-full flex items-center justify-center">
@@ -796,6 +797,7 @@ function CardDashboardView() {
         <button
           onClick={handleToggleFreeze}
           disabled={freezing}
+          aria-label={isFrozen ? t('card.unfreeze') : t('card.freeze')}
           className="card p-3 flex flex-col items-center gap-2 hover:bg-white/10 transition disabled:opacity-50"
         >
           <div
@@ -831,6 +833,7 @@ function CardDashboardView() {
 
         <button
           onClick={() => setShowPan(!showPan)}
+          aria-label={showPan ? t('card.hideNumber') : t('card.showNumber')}
           className="card p-3 flex flex-col items-center gap-2 hover:bg-white/10 transition"
         >
           <div className="w-10 h-10 bg-purple-500/20 rounded-full flex items-center justify-center">
@@ -865,6 +868,7 @@ function CardDashboardView() {
         <button
           onClick={handleAddToWallet}
           disabled={provisioning}
+          aria-label={t('card.addToWallet')}
           className="card p-3 flex flex-col items-center gap-2 hover:bg-white/10 transition disabled:opacity-50"
         >
           <div className="w-10 h-10 bg-blue-500/20 rounded-full flex items-center justify-center">

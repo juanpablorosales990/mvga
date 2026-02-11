@@ -115,7 +115,7 @@ export default function TransparencyPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <Link to="/more" className="text-gray-400 hover:text-white">
+        <Link to="/more" className="text-gray-400 hover:text-white" aria-label={t('common.back')}>
           <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path
               strokeLinecap="round"
