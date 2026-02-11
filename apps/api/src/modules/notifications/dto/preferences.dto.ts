@@ -21,4 +21,14 @@ export class UpdatePreferencesDto {
   @IsOptional()
   @IsBoolean()
   grants?: boolean;
+
+  @ApiProperty({ description: 'Receive payment notifications', required: false })
+  @IsOptional()
+  @IsBoolean()
+  payments?: boolean;
+
+  @ApiProperty({ description: 'Receive price alert notifications', required: false })
+  @IsOptional()
+  @IsBoolean()
+  priceAlerts?: boolean;
 }

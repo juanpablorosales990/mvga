@@ -110,6 +110,7 @@ export class NotificationsService {
       referrals?: boolean;
       grants?: boolean;
       payments?: boolean;
+      priceAlerts?: boolean;
     }
   ) {
     return this.prisma.notificationPreference.upsert({
@@ -351,11 +352,44 @@ export class NotificationsService {
     });
   }
 
+  // ── Price Alert Events ───────────────────────────────────────────────
+
+  @OnEvent('price.alert.triggered')
+  async onPriceAlertTriggered(event: {
+    walletAddress: string;
+    alertType: string;
+    token?: string | null;
+    vesRateType?: string | null;
+    condition: string;
+    targetPrice: number;
+    currentPrice: number;
+  }) {
+    const isVes = event.alertType === 'VES_RATE';
+    const label = isVes
+      ? event.vesRateType === 'BCV_OFFICIAL'
+        ? 'BCV Oficial'
+        : 'Paralelo'
+      : event.token || 'Token';
+
+    const title = isVes ? `Alerta tasa VES (${label})` : `Alerta de precio: ${label}`;
+
+    const body = isVes
+      ? `Tasa ${label}: ${event.currentPrice.toFixed(2)} VES/USD (objetivo: ${event.targetPrice.toFixed(2)})`
+      : `${label} ahora $${event.currentPrice.toFixed(2)} (objetivo: $${event.targetPrice.toFixed(2)})`;
+
+    await this.notifyIfEnabled(event.walletAddress, 'priceAlerts', {
+      title,
+      body,
+      url: '/price-alerts',
+      tag: `price-alert-${label}`,
+    });
+  }
+
   // ── Helpers ─────────────────────────────────────────────────────────
 
   private async notifyIfEnabled(
     walletAddress: string,
-    category: 'p2pTrades' | 'staking' | 'referrals' | 'grants' | 'payments',
+    category: 'p2pTrades' | 'staking' | 'referrals' | 'grants' | 'payments' | 'priceAlerts',
     payload: PushPayload
   ) {
     try {

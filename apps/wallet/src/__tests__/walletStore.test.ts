@@ -20,7 +20,6 @@ describe('walletStore', () => {
       cardStatus: 'none',
       balanceVersion: 0,
       recentRecipients: [],
-      priceAlerts: [],
       tourCompleted: false,
       checklistDismissed: false,
       firstSendCompleted: false,
@@ -270,44 +269,6 @@ describe('walletStore', () => {
       expect(recipients[0].address).toBe('addr1');
       expect(recipients[1].address).toBe('addr3');
       expect(recipients[2].address).toBe('addr2');
-    });
-  });
-
-  describe('price alerts', () => {
-    it('adds a price alert', () => {
-      useWalletStore.getState().addPriceAlert({
-        token: 'SOL',
-        condition: 'above',
-        targetPrice: 200,
-      });
-      const alerts = useWalletStore.getState().priceAlerts;
-      expect(alerts).toHaveLength(1);
-      expect(alerts[0].token).toBe('SOL');
-      expect(alerts[0].condition).toBe('above');
-      expect(alerts[0].targetPrice).toBe(200);
-      expect(alerts[0].triggered).toBe(false);
-    });
-
-    it('removes a price alert', () => {
-      useWalletStore.getState().addPriceAlert({
-        token: 'SOL',
-        condition: 'above',
-        targetPrice: 200,
-      });
-      const id = useWalletStore.getState().priceAlerts[0].id;
-      useWalletStore.getState().removePriceAlert(id);
-      expect(useWalletStore.getState().priceAlerts).toHaveLength(0);
-    });
-
-    it('triggers a price alert', () => {
-      useWalletStore.getState().addPriceAlert({
-        token: 'SOL',
-        condition: 'below',
-        targetPrice: 100,
-      });
-      const id = useWalletStore.getState().priceAlerts[0].id;
-      useWalletStore.getState().triggerPriceAlert(id);
-      expect(useWalletStore.getState().priceAlerts[0].triggered).toBe(true);
     });
   });
 

@@ -26,15 +26,6 @@ export interface RecentRecipient {
 
 export type KycStatus = 'UNVERIFIED' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED';
 
-export interface PriceAlert {
-  id: string;
-  token: string; // SOL, USDC, MVGA
-  condition: 'above' | 'below';
-  targetPrice: number;
-  triggered: boolean;
-  createdAt: number;
-}
-
 export type SpendingPeriod = 'daily' | 'weekly' | 'monthly';
 
 export interface SpendingLimit {
@@ -82,9 +73,6 @@ interface WalletState {
   // Recent Recipients
   recentRecipients: RecentRecipient[];
 
-  // Price Alerts
-  priceAlerts: PriceAlert[];
-
   // Spending Limits
   spendingLimits: SpendingLimit[];
   spendingHistory: SpendingRecord[];
@@ -129,9 +117,6 @@ interface WalletState {
   removeAddress: (address: string) => void;
   addRecentRecipient: (address: string, label?: string) => void;
   setPendingExecutionCount: (count: number) => void;
-  addPriceAlert: (alert: Omit<PriceAlert, 'id' | 'triggered' | 'createdAt'>) => void;
-  removePriceAlert: (id: string) => void;
-  triggerPriceAlert: (id: string) => void;
   addSpendingLimit: (limit: Omit<SpendingLimit, 'id' | 'createdAt'>) => void;
   removeSpendingLimit: (id: string) => void;
   toggleSpendingLimit: (id: string) => void;
@@ -164,7 +149,6 @@ export const useWalletStore = create<WalletState>()(
       preferredCurrency: 'USD',
       addressBook: [],
       recentRecipients: [],
-      priceAlerts: [],
       spendingLimits: [],
       spendingHistory: [],
       pendingExecutionCount: 0,
@@ -229,21 +213,6 @@ export const useWalletStore = create<WalletState>()(
           };
         }),
       setPendingExecutionCount: (count) => set({ pendingExecutionCount: count }),
-      addPriceAlert: (alert) =>
-        set((state) => ({
-          priceAlerts: [
-            ...state.priceAlerts,
-            { ...alert, id: crypto.randomUUID(), triggered: false, createdAt: Date.now() },
-          ],
-        })),
-      removePriceAlert: (id) =>
-        set((state) => ({
-          priceAlerts: state.priceAlerts.filter((a) => a.id !== id),
-        })),
-      triggerPriceAlert: (id) =>
-        set((state) => ({
-          priceAlerts: state.priceAlerts.map((a) => (a.id === id ? { ...a, triggered: true } : a)),
-        })),
       addSpendingLimit: (limit) =>
         set((state) => ({
           spendingLimits: [
@@ -299,7 +268,6 @@ export const useWalletStore = create<WalletState>()(
         preferredCurrency: state.preferredCurrency,
         addressBook: state.addressBook,
         recentRecipients: state.recentRecipients,
-        priceAlerts: state.priceAlerts,
         spendingLimits: state.spendingLimits,
         spendingHistory: state.spendingHistory,
         autoCompoundDefault: state.autoCompoundDefault,

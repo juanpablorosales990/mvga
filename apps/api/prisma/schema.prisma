@@ -659,6 +659,7 @@ model NotificationPreference {
   referrals     Boolean  @default(true)
   grants        Boolean  @default(true)
   payments      Boolean  @default(true)
+  priceAlerts   Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }
@@ -1221,4 +1222,48 @@ model AnalyticsEvent {
   @@index([event])
   @@index([createdAt])
   @@index([event, createdAt])
+}
+
+// ============================================================================
+// PRICE ALERTS
+// ============================================================================
+
+model PriceAlert {
+  id            String         @id @default(uuid())
+  walletAddress String
+  alertType     PriceAlertType @default(TOKEN_PRICE)
+  token         String?
+  vesRateType   VesRateType?
+  condition     AlertCondition
+  targetPrice   Float
+  status        AlertStatus    @default(ACTIVE)
+  cooldownUntil DateTime?
+  lastTriggered DateTime?
+  triggerCount  Int            @default(0)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@index([walletAddress, status])
+  @@index([status, cooldownUntil])
+}
+
+enum PriceAlertType {
+  TOKEN_PRICE
+  VES_RATE
+}
+
+enum VesRateType {
+  BCV_OFFICIAL
+  PARALLEL_MARKET
+}
+
+enum AlertCondition {
+  ABOVE
+  BELOW
+}
+
+enum AlertStatus {
+  ACTIVE
+  TRIGGERED
+  DISABLED
 }

@@ -30,6 +30,7 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { GiftCardModule } from './modules/giftcard/giftcard.module';
 import { VesOnrampModule } from './modules/ves-onramp/ves-onramp.module';
 import { SocialModule } from './modules/social/social.module';
+import { PriceAlertsModule } from './modules/price-alerts/price-alerts.module';
 import { HealthController } from './health.controller';
 
 @Module({
@@ -71,6 +72,7 @@ import { HealthController } from './health.controller';
     GiftCardModule,
     VesOnrampModule,
     SocialModule,
+    PriceAlertsModule,
   ],
   controllers: [HealthController],
   providers: [

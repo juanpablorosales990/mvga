@@ -22,6 +22,8 @@ interface Preferences {
   staking: boolean;
   referrals: boolean;
   grants: boolean;
+  payments: boolean;
+  priceAlerts: boolean;
 }
 
 const TYPE_CONFIG: Record<string, { color: string; labelKey: string }> = {
@@ -39,6 +41,8 @@ const PREF_KEYS: { key: keyof Preferences; labelKey: string }[] = [
   { key: 'staking', labelKey: 'notifications.prefStaking' },
   { key: 'referrals', labelKey: 'notifications.prefReferrals' },
   { key: 'grants', labelKey: 'notifications.prefGrants' },
+  { key: 'payments', labelKey: 'notifications.prefPayments' },
+  { key: 'priceAlerts', labelKey: 'notifications.prefPriceAlerts' },
 ];
 
 function relativeTime(dateStr: string): string {
@@ -97,6 +101,8 @@ export default function NotificationsPage() {
           staking: data.staking,
           referrals: data.referrals,
           grants: data.grants,
+          payments: data.payments ?? true,
+          priceAlerts: data.priceAlerts ?? true,
         })
       )
       .catch(() => {});

@@ -68,13 +68,11 @@ import SupportChat from './components/SupportChat';
 // Auth & Referral
 import { useAuth } from './hooks/useAuth';
 import { useReferral } from './hooks/useReferral';
-import { usePriceAlerts } from './hooks/usePriceAlerts';
 import { useWalletStore } from './stores/walletStore';
 
 function AuthProvider({ children }: { children: React.ReactNode }) {
   useAuth(); // auto-authenticates on wallet unlock
   useReferral(); // captures ?ref= and auto-claims on connect
-  usePriceAlerts(); // checks price alerts against live prices
   return <>{children}</>;
 }
 

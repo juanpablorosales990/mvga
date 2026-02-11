@@ -731,7 +731,9 @@
     "prefP2p": "Operaciones P2P",
     "prefStaking": "Staking",
     "prefReferrals": "Referidos",
-    "prefGrants": "Subvenciones"
+    "prefGrants": "Subvenciones",
+    "prefPayments": "Pagos",
+    "prefPriceAlerts": "Alertas de Precio"
   },
   "portfolio": {
     "title": "Portafolio",
@@ -985,20 +987,29 @@
   },
   "priceAlerts": {
     "title": "Alertas de Precio",
-    "subtitle": "Recibe notificaciones cuando los tokens lleguen a tu precio objetivo",
+    "subtitle": "Recibe notificaciones cuando tokens o tasas VES lleguen a tu objetivo",
     "addAlert": "Agregar Alerta",
     "token": "Token",
     "condition": "Condición",
     "above": "Sube por encima de",
     "below": "Baja por debajo de",
-    "targetPrice": "Precio Objetivo (USD)",
+    "targetPrice": "Precio Objetivo",
     "create": "Crear Alerta",
     "active": "Alertas Activas",
     "triggered": "Activada",
     "noAlerts": "Sin alertas de precio aún. Crea una para recibir notificaciones.",
     "alertTriggered": "{{token}} está ahora en ${{price}} (objetivo: ${{target}})",
     "delete": "Eliminar",
-    "currentPrice": "Actual: ${{price}}"
+    "currentPrice": "Actual: ${{price}}",
+    "tokenPrices": "Precios de Tokens",
+    "vesRates": "Tasas VES",
+    "bcvOfficial": "BCV Oficial",
+    "parallelMarket": "Mercado Paralelo",
+    "currentRate": "Actual: {{rate}} VES/USD",
+    "vesPerUsd": "VES por USD",
+    "rateType": "Tipo de Tasa",
+    "cooldownActive": "Próxima alerta en {{minutes}}m",
+    "maxAlertsReached": "Máximo de 20 alertas alcanzado"
   },
   "batchSend": {
     "title": "Envio Masivo",
