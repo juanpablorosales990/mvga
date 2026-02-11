@@ -191,7 +191,7 @@ export default function WalletPage() {
   return (
     <div className="space-y-6">
       {/* Total Balance Card */}
-      <div className="card text-center py-8">
+      <div className="card text-center py-8" data-wizard-target="balance-card">
         <p className="text-xs text-white/40 font-mono uppercase tracking-wider mb-2">
           {t('wallet.totalBalance')}
         </p>
@@ -204,14 +204,22 @@ export default function WalletPage() {
       </div>
 
       {/* Primary actions (Meru-style, MVGA-brutalist) */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-        <Link to="/deposit" className="btn-primary flex items-center justify-center gap-2">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3" data-wizard-target="actions-grid">
+        <Link
+          to="/deposit"
+          className="btn-primary flex items-center justify-center gap-2"
+          data-wizard-target="deposit-btn"
+        >
           <span className="text-lg" aria-hidden="true">
             ↑
           </span>
           {t('wallet.deposit')}
         </Link>
-        <Link to="/cashout" className="btn-secondary flex items-center justify-center gap-2">
+        <Link
+          to="/cashout"
+          className="btn-secondary flex items-center justify-center gap-2"
+          data-wizard-target="cashout-btn"
+        >
           <span className="text-lg" aria-hidden="true">
             ↓
           </span>
@@ -293,7 +301,7 @@ export default function WalletPage() {
       </Link>
 
       {/* Token List */}
-      <div>
+      <div data-wizard-target="token-list">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-bold uppercase tracking-wider">{t('wallet.assets')}</h2>
           <Link to="/history" className="text-xs text-gold-500 font-mono uppercase tracking-wider">

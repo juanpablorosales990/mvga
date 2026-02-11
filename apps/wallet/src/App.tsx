@@ -53,8 +53,10 @@ const RequestPage = lazy(() => import('./pages/RequestPage'));
 const RequestsInboxPage = lazy(() => import('./pages/RequestsInboxPage'));
 const SplitPage = lazy(() => import('./pages/SplitPage'));
 const SplitDetailPage = lazy(() => import('./pages/SplitDetailPage'));
+const SpendingLimitsPage = lazy(() => import('./pages/SpendingLimitsPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 const WelcomeTour = lazy(() => import('./components/WelcomeTour'));
+const OnboardingWizard = lazy(() => import('./components/OnboardingWizard'));
 
 // Components
 import BottomNav from './components/BottomNav';
@@ -79,6 +81,7 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
 function AppShell() {
   const { walletState } = useSelfCustodyWallet();
   const tourCompleted = useWalletStore((s) => s.tourCompleted);
+  const wizardCompleted = useWalletStore((s) => s.wizardCompleted);
 
   if (walletState === 'NO_WALLET') return <OnboardingScreen />;
   if (walletState === 'LOCKED') return <LockScreen />;
@@ -150,6 +153,7 @@ function AppShell() {
                 <Route path="/giftcards" element={<GiftCardsPage />} />
                 <Route path="/citizen" element={<CitizenCardPage />} />
                 <Route path="/ves-onramp" element={<VesOnrampPage />} />
+                <Route path="/spending-limits" element={<SpendingLimitsPage />} />
                 <Route path="*" element={<NotFoundPage />} />
               </Routes>
             </Suspense>
@@ -157,6 +161,11 @@ function AppShell() {
         </main>
 
         <BottomNav />
+        {!wizardCompleted && (
+          <Suspense fallback={null}>
+            <OnboardingWizard />
+          </Suspense>
+        )}
         <SupportChat />
       </div>
     </AuthProvider>

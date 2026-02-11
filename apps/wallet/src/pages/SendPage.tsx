@@ -19,6 +19,8 @@ import { parseSolanaPayUrl } from '../utils/solana-pay';
 import { showToast } from '../hooks/useToast';
 import { track, AnalyticsEvents } from '../lib/analytics';
 import { apiFetch } from '../lib/apiClient';
+import ReceiptModal from '../components/ReceiptModal';
+import type { ReceiptData } from '../lib/receiptGenerator';
 
 const TOKEN_MINTS: Record<string, { mint: string; decimals: number }> = {
   USDC: { mint: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', decimals: 6 },
@@ -34,6 +36,7 @@ export default function SendPage() {
   const recentRecipients = useWalletStore((s) => s.recentRecipients);
   const addRecentRecipient = useWalletStore((s) => s.addRecentRecipient);
   const markFirstSend = useWalletStore((s) => s.markFirstSend);
+  const recordSpending = useWalletStore((s) => s.recordSpending);
   const addressBook = useWalletStore((s) => s.addressBook);
   const addAddress = useWalletStore((s) => s.addAddress);
 
@@ -73,7 +76,10 @@ export default function SendPage() {
   const [showAddressBook, setShowAddressBook] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
   const [saveContactName, setSaveContactName] = useState('');
+  const [showReceipt, setShowReceipt] = useState(false);
   const lastSentRecipient = useRef('');
+  const lastSentAmount = useRef(0);
+  const lastSentToken = useRef('SOL');
 
   const [checkingBalance, setCheckingBalance] = useState(false);
 
@@ -290,7 +296,10 @@ export default function SendPage() {
         resolvedUser?.displayName || resolvedUser?.username || contactMatch?.label;
       addRecentRecipient(recipient, recipientLabel || undefined);
       markFirstSend();
+      recordSpending(amountNum, token);
       lastSentRecipient.current = recipient;
+      lastSentAmount.current = amountNum;
+      lastSentToken.current = token;
       sentViaUsername.current = !!resolvedUser?.username;
       track(AnalyticsEvents.SEND_COMPLETED, { token, amount: amountNum });
       if (resolvedUser?.username) {
@@ -473,14 +482,19 @@ export default function SendPage() {
         {txSignature && (
           <div className="bg-green-500/10 border border-green-500/30 px-4 py-3 text-green-400 text-sm space-y-2">
             <p>{t('send.success')}</p>
-            <a
-              href={`https://solscan.io/tx/${txSignature}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline"
-            >
-              {t('common.viewOnSolscan')}
-            </a>
+            <div className="flex gap-3">
+              <a
+                href={`https://solscan.io/tx/${txSignature}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline"
+              >
+                {t('common.viewOnSolscan')}
+              </a>
+              <button onClick={() => setShowReceipt(true)} className="text-gold-400 underline">
+                {t('receipt.viewReceipt')}
+              </button>
+            </div>
             {/* Save to contacts prompt */}
             {lastSentRecipient.current &&
               !addressBook.find((c) => c.address === lastSentRecipient.current) && (
@@ -563,6 +577,24 @@ export default function SendPage() {
         onClose={() => setShowScanner(false)}
         onScan={handleQRScan}
       />
+
+      {txSignature && publicKey && (
+        <ReceiptModal
+          open={showReceipt}
+          onClose={() => setShowReceipt(false)}
+          data={{
+            signature: txSignature,
+            timestamp: Math.floor(Date.now() / 1000),
+            type: 'TRANSFER',
+            amount: lastSentAmount.current,
+            token: lastSentToken.current,
+            isOutgoing: true,
+            counterparty: lastSentRecipient.current,
+            status: 'CONFIRMED',
+          }}
+          walletAddress={publicKey.toBase58()}
+        />
+      )}
     </div>
   );
 }

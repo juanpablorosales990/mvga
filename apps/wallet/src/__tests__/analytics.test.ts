@@ -86,6 +86,10 @@ describe('analytics', () => {
     expect(AnalyticsEvents.SPLIT_CREATED).toBe('split_created');
     expect(AnalyticsEvents.SPLIT_VIEWED).toBe('split_viewed');
     expect(AnalyticsEvents.SPLIT_CANCELLED).toBe('split_cancelled');
-    expect(Object.keys(AnalyticsEvents).length).toBe(35);
+    expect(AnalyticsEvents.RECEIPT_SHARED).toBe('receipt_shared');
+    expect(AnalyticsEvents.RECEIPT_DOWNLOADED).toBe('receipt_downloaded');
+    expect(AnalyticsEvents.WIZARD_COMPLETED).toBe('wizard_completed');
+    expect(AnalyticsEvents.WIZARD_SKIPPED).toBe('wizard_skipped');
+    expect(Object.keys(AnalyticsEvents).length).toBe(39);
   });
 });

@@ -35,6 +35,23 @@ export interface PriceAlert {
   createdAt: number;
 }
 
+export type SpendingPeriod = 'daily' | 'weekly' | 'monthly';
+
+export interface SpendingLimit {
+  id: string;
+  period: SpendingPeriod;
+  amount: number; // USD limit
+  token: string; // 'ALL' or specific token
+  isActive: boolean;
+  createdAt: number;
+}
+
+export interface SpendingRecord {
+  amount: number; // USD
+  token: string;
+  timestamp: number; // Unix ms
+}
+
 interface WalletState {
   // Wallet
   publicKey: string | null;
@@ -68,6 +85,10 @@ interface WalletState {
   // Price Alerts
   priceAlerts: PriceAlert[];
 
+  // Spending Limits
+  spendingLimits: SpendingLimit[];
+  spendingHistory: SpendingRecord[];
+
   // Pending scheduled executions (not persisted, fetched from API)
   pendingExecutionCount: number;
 
@@ -86,6 +107,7 @@ interface WalletState {
 
   // Onboarding
   tourCompleted: boolean;
+  wizardCompleted: boolean;
   checklistDismissed: boolean;
   firstSendCompleted: boolean;
 
@@ -110,6 +132,10 @@ interface WalletState {
   addPriceAlert: (alert: Omit<PriceAlert, 'id' | 'triggered' | 'createdAt'>) => void;
   removePriceAlert: (id: string) => void;
   triggerPriceAlert: (id: string) => void;
+  addSpendingLimit: (limit: Omit<SpendingLimit, 'id' | 'createdAt'>) => void;
+  removeSpendingLimit: (id: string) => void;
+  toggleSpendingLimit: (id: string) => void;
+  recordSpending: (amount: number, token: string) => void;
   setKycStatus: (status: KycStatus) => void;
   setKycTier: (tier: number) => void;
   setProfile: (profile: {
@@ -119,6 +145,7 @@ interface WalletState {
     citizenNumber?: number | null;
   }) => void;
   completeTour: () => void;
+  completeWizard: () => void;
   dismissChecklist: () => void;
   markFirstSend: () => void;
   disconnect: () => void;
@@ -138,6 +165,8 @@ export const useWalletStore = create<WalletState>()(
       addressBook: [],
       recentRecipients: [],
       priceAlerts: [],
+      spendingLimits: [],
+      spendingHistory: [],
       pendingExecutionCount: 0,
       autoCompoundDefault: false,
       readNotifications: [],
@@ -151,6 +180,7 @@ export const useWalletStore = create<WalletState>()(
       username: null,
       citizenNumber: null,
       tourCompleted: false,
+      wizardCompleted: false,
       checklistDismissed: false,
       firstSendCompleted: false,
 
@@ -214,6 +244,32 @@ export const useWalletStore = create<WalletState>()(
         set((state) => ({
           priceAlerts: state.priceAlerts.map((a) => (a.id === id ? { ...a, triggered: true } : a)),
         })),
+      addSpendingLimit: (limit) =>
+        set((state) => ({
+          spendingLimits: [
+            ...state.spendingLimits,
+            { ...limit, id: crypto.randomUUID(), createdAt: Date.now() },
+          ],
+        })),
+      removeSpendingLimit: (id) =>
+        set((state) => ({
+          spendingLimits: state.spendingLimits.filter((l) => l.id !== id),
+        })),
+      toggleSpendingLimit: (id) =>
+        set((state) => ({
+          spendingLimits: state.spendingLimits.map((l) =>
+            l.id === id ? { ...l, isActive: !l.isActive } : l
+          ),
+        })),
+      recordSpending: (amount, token) =>
+        set((state) => ({
+          spendingHistory: [
+            ...state.spendingHistory.filter(
+              (r) => r.timestamp > Date.now() - 31 * 24 * 60 * 60 * 1000 // keep last 31 days
+            ),
+            { amount, token, timestamp: Date.now() },
+          ],
+        })),
       setKycStatus: (status) => set({ kycStatus: status }),
       setKycTier: (tier) => set({ kycTier: tier }),
       setProfile: (profile) =>
@@ -225,6 +281,7 @@ export const useWalletStore = create<WalletState>()(
             profile.citizenNumber !== undefined ? profile.citizenNumber : state.citizenNumber,
         })),
       completeTour: () => set({ tourCompleted: true }),
+      completeWizard: () => set({ wizardCompleted: true }),
       dismissChecklist: () => set({ checklistDismissed: true }),
       markFirstSend: () => set({ firstSendCompleted: true }),
       disconnect: () =>
@@ -243,6 +300,8 @@ export const useWalletStore = create<WalletState>()(
         addressBook: state.addressBook,
         recentRecipients: state.recentRecipients,
         priceAlerts: state.priceAlerts,
+        spendingLimits: state.spendingLimits,
+        spendingHistory: state.spendingHistory,
         autoCompoundDefault: state.autoCompoundDefault,
         readNotifications: state.readNotifications,
         savingsGoal: state.savingsGoal,
@@ -254,6 +313,7 @@ export const useWalletStore = create<WalletState>()(
         username: state.username,
         citizenNumber: state.citizenNumber,
         tourCompleted: state.tourCompleted,
+        wizardCompleted: state.wizardCompleted,
         checklistDismissed: state.checklistDismissed,
         firstSendCompleted: state.firstSendCompleted,
       }),

@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { showToast } from '../hooks/useToast';
 import { API_URL } from '../config';
 import { track, AnalyticsEvents } from '../lib/analytics';
+import ReceiptModal from '../components/ReceiptModal';
+import type { ReceiptData } from '../lib/receiptGenerator';
 
 interface EnhancedTx {
   signature: string;
@@ -125,6 +127,7 @@ export default function HistoryPage() {
   const { connected, publicKey } = useSelfCustodyWallet();
   const [items, setItems] = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [receiptTx, setReceiptTx] = useState<HistoryItem | null>(null);
 
   useEffect(() => {
     if (!connected || !publicKey) return;
@@ -378,11 +381,56 @@ export default function HistoryPage() {
                       {tx.status === 'CONFIRMED' ? 'OK' : tx.status}
                     </span>
                   )}
+
+                  {/* Receipt button */}
+                  {tx.amount != null && (
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setReceiptTx(tx);
+                      }}
+                      className="flex-shrink-0 w-7 h-7 flex items-center justify-center text-white/30 hover:text-gold-400 transition"
+                      title={t('receipt.viewReceipt')}
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                        className="w-4 h-4"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M4.5 2A1.5 1.5 0 003 3.5v13A1.5 1.5 0 004.5 18h11a1.5 1.5 0 001.5-1.5V7.621a1.5 1.5 0 00-.44-1.06l-4.12-4.122A1.5 1.5 0 0011.378 2H4.5zm2.25 8.5a.75.75 0 000 1.5h6.5a.75.75 0 000-1.5h-6.5zm0 3a.75.75 0 000 1.5h6.5a.75.75 0 000-1.5h-6.5z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </button>
+                  )}
                 </a>
               ))}
             </div>
           </div>
         ))
+      )}
+
+      {receiptTx && publicKey && (
+        <ReceiptModal
+          open={!!receiptTx}
+          onClose={() => setReceiptTx(null)}
+          data={{
+            signature: receiptTx.signature,
+            timestamp: receiptTx.timestamp,
+            type: receiptTx.type,
+            amount: receiptTx.amount || 0,
+            token: receiptTx.token || 'SOL',
+            isOutgoing: receiptTx.isOutgoing,
+            counterparty: receiptTx.counterparty,
+            status: receiptTx.status || 'CONFIRMED',
+            fee: receiptTx.fee,
+          }}
+          walletAddress={publicKey.toBase58()}
+        />
       )}
     </div>
   );

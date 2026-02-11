@@ -40,6 +40,12 @@ export const AnalyticsEvents = {
   SPLIT_CREATED: 'split_created',
   SPLIT_VIEWED: 'split_viewed',
   SPLIT_CANCELLED: 'split_cancelled',
+  // Transaction receipts
+  RECEIPT_SHARED: 'receipt_shared',
+  RECEIPT_DOWNLOADED: 'receipt_downloaded',
+  // Onboarding wizard
+  WIZARD_COMPLETED: 'wizard_completed',
+  WIZARD_SKIPPED: 'wizard_skipped',
 } as const;
 
 export type AnalyticsEvent = (typeof AnalyticsEvents)[keyof typeof AnalyticsEvents];
