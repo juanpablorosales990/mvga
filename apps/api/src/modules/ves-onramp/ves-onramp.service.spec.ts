@@ -103,6 +103,7 @@ describe('VesOnrampService', () => {
         phoneNumber: '04163334455',
         ciNumber: 'V12345678',
         status: 'ACTIVE',
+        direction: 'ON_RAMP',
         totalOrders: 0,
         completedOrders: 0,
         createdAt: new Date(),
@@ -142,38 +143,65 @@ describe('VesOnrampService', () => {
   });
 
   describe('getOffers', () => {
-    it('returns active offers sorted by rate', async () => {
-      mockPrisma.vesOffer.findMany.mockResolvedValue([
-        {
-          id: 'offer-1',
-          lpWalletAddress: lpWallet,
-          availableUsdc: BigInt(100_000_000),
-          vesRate: 40.0,
-          feePercent: 1.0,
-          minOrderUsdc: BigInt(5_000_000),
-          maxOrderUsdc: BigInt(100_000_000),
-          bankCode: '0105',
-          bankName: 'Mercantil',
-          phoneNumber: '04161112233',
-          ciNumber: 'V99999999',
-          status: 'ACTIVE',
-          totalOrders: 5,
-          completedOrders: 4,
-          createdAt: new Date(),
-          lpUser: { walletAddress: lpWallet, reputation: { rating: 4.5, completedTrades: 10 } },
-        },
-      ]);
+    const mockOffer = {
+      id: 'offer-1',
+      lpWalletAddress: lpWallet,
+      availableUsdc: BigInt(100_000_000),
+      vesRate: 40.0,
+      feePercent: 1.0,
+      minOrderUsdc: BigInt(5_000_000),
+      maxOrderUsdc: BigInt(100_000_000),
+      bankCode: '0105',
+      bankName: 'Mercantil',
+      phoneNumber: '04161112233',
+      ciNumber: 'V99999999',
+      status: 'ACTIVE',
+      direction: 'ON_RAMP',
+      totalOrders: 5,
+      completedOrders: 4,
+      createdAt: new Date(),
+      lpUser: { walletAddress: lpWallet, reputation: { rating: 4.5, completedTrades: 10 } },
+    };
+
+    it('returns active offers sorted by rate (no filter)', async () => {
+      mockPrisma.vesOffer.findMany.mockResolvedValue([mockOffer]);
 
       const result = await service.getOffers();
 
       expect(result).toHaveLength(1);
       expect(result[0].vesRate).toBe(40.0);
       expect(result[0].lpRating).toBe(4.5);
-      expect(result[0].lpCompletedTrades).toBe(10);
+      expect(result[0].direction).toBe('ON_RAMP');
       expect(mockPrisma.vesOffer.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { status: 'ACTIVE' },
           orderBy: { vesRate: 'asc' },
+        })
+      );
+    });
+
+    it('filters by ON_RAMP direction', async () => {
+      mockPrisma.vesOffer.findMany.mockResolvedValue([mockOffer]);
+
+      await service.getOffers('ON_RAMP');
+
+      expect(mockPrisma.vesOffer.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { status: 'ACTIVE', direction: 'ON_RAMP' },
+          orderBy: { vesRate: 'asc' },
+        })
+      );
+    });
+
+    it('filters by OFF_RAMP direction (desc sort)', async () => {
+      mockPrisma.vesOffer.findMany.mockResolvedValue([{ ...mockOffer, direction: 'OFF_RAMP' }]);
+
+      await service.getOffers('OFF_RAMP');
+
+      expect(mockPrisma.vesOffer.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { status: 'ACTIVE', direction: 'OFF_RAMP' },
+          orderBy: { vesRate: 'desc' },
         })
       );
     });
@@ -234,6 +262,7 @@ describe('VesOnrampService', () => {
         vesRate: 42.5,
         feePercent: 1.5,
         status: 'PENDING',
+        direction: 'ON_RAMP',
         escrowTx: null,
         releaseTx: null,
         disputeReason: null,
@@ -264,6 +293,7 @@ describe('VesOnrampService', () => {
               minOrderUsdc: BigInt(5_000_000),
               maxOrderUsdc: BigInt(200_000_000),
               status: 'ACTIVE',
+              direction: 'ON_RAMP',
             },
           ]),
           vesOffer: { update: jest.fn() },
@@ -311,6 +341,7 @@ describe('VesOnrampService', () => {
               feePercent: 1.5,
               minOrderUsdc: BigInt(5_000_000),
               maxOrderUsdc: BigInt(200_000_000),
+              direction: 'ON_RAMP',
             },
           ]),
         };
@@ -335,6 +366,7 @@ describe('VesOnrampService', () => {
         vesRate: 42.5,
         feePercent: 1.5,
         status: 'PENDING',
+        direction: 'ON_RAMP',
         escrowTx: null,
         releaseTx: null,
         disputeReason: null,
@@ -384,6 +416,7 @@ describe('VesOnrampService', () => {
           vesRate: 42.5,
           feePercent: 1.5,
           status: 'COMPLETED',
+          direction: 'ON_RAMP',
           escrowTx: 'tx1',
           releaseTx: 'tx2',
           disputeReason: null,
@@ -413,13 +446,14 @@ describe('VesOnrampService', () => {
   // ============ PAYMENT FLOW ============
 
   describe('markPaid', () => {
-    it('marks order as paid when buyer calls', async () => {
+    it('marks order as paid when buyer calls (ON_RAMP)', async () => {
       mockPrisma.$queryRaw.mockResolvedValue([
         {
           id: 'order-1',
           buyerWalletAddress: buyerWallet,
           lpWalletAddress: lpWallet,
           status: 'ESCROW_LOCKED',
+          direction: 'ON_RAMP',
           amountVes: 1000,
         },
       ]);
@@ -439,13 +473,14 @@ describe('VesOnrampService', () => {
       );
     });
 
-    it('rejects when non-buyer tries to mark paid', async () => {
+    it('rejects when non-VES-sender tries to mark paid', async () => {
       mockPrisma.$queryRaw.mockResolvedValue([
         {
           id: 'order-1',
           buyerWalletAddress: 'someone-else',
           lpWalletAddress: lpWallet,
           status: 'ESCROW_LOCKED',
+          direction: 'ON_RAMP',
         },
       ]);
 
@@ -460,6 +495,7 @@ describe('VesOnrampService', () => {
           id: 'order-1',
           buyerWalletAddress: buyerWallet,
           status: 'PENDING',
+          direction: 'ON_RAMP',
         },
       ]);
 
@@ -477,6 +513,7 @@ describe('VesOnrampService', () => {
           buyerWalletAddress: buyerWallet,
           lpWalletAddress: lpWallet,
           status: 'PAYMENT_SENT',
+          direction: 'ON_RAMP',
         },
       ]);
       mockPrisma.vesOrder.update.mockResolvedValue({});
@@ -529,13 +566,14 @@ describe('VesOnrampService', () => {
   // ============ ESCROW PARAMS ============
 
   describe('getEscrowLockParams', () => {
-    it('returns legacy escrow params for LP', async () => {
+    it('returns legacy escrow params for LP (ON_RAMP)', async () => {
       mockPrisma.vesOrder.findUnique.mockResolvedValue({
         id: 'order-1',
         lpWalletAddress: lpWallet,
         buyerWalletAddress: buyerWallet,
         amountUsdc: BigInt(25_000_000),
         status: 'PENDING',
+        direction: 'ON_RAMP',
         offer: {},
       });
 
@@ -547,11 +585,13 @@ describe('VesOnrampService', () => {
       expect(result.mintAddress).toBe('EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v');
     });
 
-    it('rejects when non-LP requests params', async () => {
+    it('rejects when non-locker requests params (ON_RAMP)', async () => {
       mockPrisma.vesOrder.findUnique.mockResolvedValue({
         id: 'order-1',
         lpWalletAddress: 'other-lp',
+        buyerWalletAddress: buyerWallet,
         status: 'PENDING',
+        direction: 'ON_RAMP',
         offer: {},
       });
 
@@ -564,13 +604,251 @@ describe('VesOnrampService', () => {
       mockPrisma.vesOrder.findUnique.mockResolvedValue({
         id: 'order-1',
         lpWalletAddress: lpWallet,
+        buyerWalletAddress: buyerWallet,
         status: 'ESCROW_LOCKED',
+        direction: 'ON_RAMP',
         offer: {},
       });
 
       await expect(service.getEscrowLockParams('order-1', lpWallet)).rejects.toThrow(
         'Order is not in PENDING status'
       );
+    });
+  });
+
+  // ============ OFF_RAMP DIRECTION TESTS ============
+
+  describe('OFF_RAMP direction', () => {
+    describe('createOffer with direction', () => {
+      it('creates an OFF_RAMP offer', async () => {
+        mockPrisma.user.findUnique.mockResolvedValue({ id: 'user-1', walletAddress: lpWallet });
+        mockPrisma.vesOffer.create.mockResolvedValue({
+          id: 'offer-offramp',
+          lpWalletAddress: lpWallet,
+          availableUsdc: BigInt(500_000_000),
+          vesRate: 42.5,
+          feePercent: 1.5,
+          minOrderUsdc: BigInt(5_000_000),
+          maxOrderUsdc: BigInt(200_000_000),
+          bankCode: '0105',
+          bankName: 'Banco Mercantil',
+          phoneNumber: '04163334455',
+          ciNumber: 'V12345678',
+          status: 'ACTIVE',
+          direction: 'OFF_RAMP',
+          totalOrders: 0,
+          completedOrders: 0,
+          createdAt: new Date(),
+          lpUser: { walletAddress: lpWallet },
+        });
+
+        const result = await service.createOffer(
+          {
+            vesRate: 42.5,
+            feePercent: 1.5,
+            availableUsdc: 500,
+            minOrderUsdc: 5,
+            maxOrderUsdc: 200,
+            bankCode: '0105',
+            bankName: 'Banco Mercantil',
+            phoneNumber: '04163334455',
+            ciNumber: 'V12345678',
+            direction: 'OFF_RAMP',
+          },
+          lpWallet
+        );
+
+        expect(result.direction).toBe('OFF_RAMP');
+        expect(mockPrisma.vesOffer.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data: expect.objectContaining({ direction: 'OFF_RAMP' }),
+          })
+        );
+      });
+    });
+
+    describe('createOrder OFF_RAMP', () => {
+      it('requires seller bank details for OFF_RAMP orders', async () => {
+        mockPrisma.user.findUnique.mockResolvedValue({ id: 'buyer-1', walletAddress: buyerWallet });
+        mockPrisma.$transaction.mockImplementation(async (cb: any) => {
+          const mockTx = {
+            $queryRaw: jest.fn().mockResolvedValue([
+              {
+                id: 'offer-offramp',
+                lpWalletAddress: lpWallet,
+                lpUserId: 'lp-user-1',
+                availableUsdc: BigInt(500_000_000),
+                vesRate: 42.5,
+                feePercent: 1.5,
+                minOrderUsdc: BigInt(5_000_000),
+                maxOrderUsdc: BigInt(200_000_000),
+                status: 'ACTIVE',
+                direction: 'OFF_RAMP',
+              },
+            ]),
+          };
+          return cb(mockTx);
+        });
+
+        await expect(
+          service.createOrder(
+            'offer-offramp',
+            { offerId: 'offer-offramp', amountVes: 1000 },
+            buyerWallet
+          )
+        ).rejects.toThrow('Seller Pago Movil details');
+      });
+
+      it('creates OFF_RAMP order with seller bank details', async () => {
+        mockPrisma.user.findUnique.mockResolvedValue({
+          id: 'seller-1',
+          walletAddress: buyerWallet,
+        });
+
+        const mockOrder = {
+          id: 'order-offramp',
+          offerId: 'offer-offramp',
+          buyerWalletAddress: buyerWallet,
+          lpWalletAddress: lpWallet,
+          amountUsdc: BigInt(23_255_813),
+          amountVes: 1000,
+          vesRate: 42.5,
+          feePercent: 1.5,
+          status: 'PENDING',
+          direction: 'OFF_RAMP',
+          escrowTx: null,
+          releaseTx: null,
+          disputeReason: null,
+          sellerBankCode: '0102',
+          sellerBankName: 'Banco de Venezuela',
+          sellerPhoneNumber: '04121234567',
+          sellerCiNumber: 'V87654321',
+          createdAt: new Date(),
+          paidAt: null,
+          confirmedAt: null,
+          completedAt: null,
+          expiresAt: new Date(Date.now() + 1800000),
+          offer: {
+            bankCode: '0105',
+            bankName: 'Mercantil',
+            phoneNumber: '04163334455',
+            ciNumber: 'V12345678',
+          },
+        };
+
+        mockPrisma.$transaction.mockImplementation(async (cb: any) => {
+          const mockTx = {
+            $queryRaw: jest.fn().mockResolvedValue([
+              {
+                id: 'offer-offramp',
+                lpWalletAddress: lpWallet,
+                lpUserId: 'lp-user-1',
+                availableUsdc: BigInt(500_000_000),
+                vesRate: 42.5,
+                feePercent: 1.5,
+                minOrderUsdc: BigInt(5_000_000),
+                maxOrderUsdc: BigInt(200_000_000),
+                status: 'ACTIVE',
+                direction: 'OFF_RAMP',
+              },
+            ]),
+            vesOffer: { update: jest.fn() },
+            vesOrder: { create: jest.fn().mockResolvedValue(mockOrder) },
+          };
+          return cb(mockTx);
+        });
+
+        const result = await service.createOrder(
+          'offer-offramp',
+          {
+            offerId: 'offer-offramp',
+            amountVes: 1000,
+            bankCode: '0102',
+            bankName: 'Banco de Venezuela',
+            phoneNumber: '04121234567',
+            ciNumber: 'V87654321',
+          },
+          buyerWallet
+        );
+
+        expect(result.direction).toBe('OFF_RAMP');
+        // OFF_RAMP orders show seller's Pago Movil, not LP's
+        expect(result.pagoMovil?.bankCode).toBe('0102');
+        expect(result.pagoMovil?.bankName).toBe('Banco de Venezuela');
+      });
+    });
+
+    describe('getEscrowLockParams OFF_RAMP', () => {
+      it('allows seller (buyer field) to lock escrow in OFF_RAMP', async () => {
+        mockPrisma.vesOrder.findUnique.mockResolvedValue({
+          id: 'order-offramp',
+          lpWalletAddress: lpWallet,
+          buyerWalletAddress: buyerWallet,
+          amountUsdc: BigInt(25_000_000),
+          status: 'PENDING',
+          direction: 'OFF_RAMP',
+          offer: {},
+        });
+
+        // In OFF_RAMP, the buyer (seller of USDC) locks escrow
+        const result = await service.getEscrowLockParams('order-offramp', buyerWallet);
+
+        expect(result.mode).toBe('legacy');
+        expect(result.amount).toBe(25);
+      });
+
+      it('rejects LP from locking escrow in OFF_RAMP', async () => {
+        mockPrisma.vesOrder.findUnique.mockResolvedValue({
+          id: 'order-offramp',
+          lpWalletAddress: lpWallet,
+          buyerWalletAddress: buyerWallet,
+          amountUsdc: BigInt(25_000_000),
+          status: 'PENDING',
+          direction: 'OFF_RAMP',
+          offer: {},
+        });
+
+        await expect(service.getEscrowLockParams('order-offramp', lpWallet)).rejects.toThrow(
+          'Only the seller can lock escrow for off-ramp orders'
+        );
+      });
+    });
+
+    describe('markPaid OFF_RAMP', () => {
+      it('allows LP to mark VES as sent in OFF_RAMP', async () => {
+        mockPrisma.$queryRaw.mockResolvedValue([
+          {
+            id: 'order-offramp',
+            buyerWalletAddress: buyerWallet,
+            lpWalletAddress: lpWallet,
+            status: 'ESCROW_LOCKED',
+            direction: 'OFF_RAMP',
+            amountVes: 1000,
+          },
+        ]);
+        mockPrisma.vesOrder.update.mockResolvedValue({});
+
+        // In OFF_RAMP, LP is the VES sender
+        const result = await service.markPaid('order-offramp', lpWallet);
+
+        expect(result.success).toBe(true);
+      });
+
+      it('rejects seller from marking paid in OFF_RAMP', async () => {
+        mockPrisma.$queryRaw.mockResolvedValue([
+          {
+            id: 'order-offramp',
+            buyerWalletAddress: buyerWallet,
+            lpWalletAddress: lpWallet,
+            status: 'ESCROW_LOCKED',
+            direction: 'OFF_RAMP',
+          },
+        ]);
+
+        await expect(service.markPaid('order-offramp', buyerWallet)).rejects.toThrow(
+          'Only the LP can mark VES as sent for off-ramp orders'
+        );
+      });
     });
   });
 });

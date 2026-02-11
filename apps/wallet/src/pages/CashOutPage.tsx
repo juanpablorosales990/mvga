@@ -245,6 +245,18 @@ export default function CashOutPage() {
         </div>
       )}
 
+      {/* VES Off-Ramp — primary P2P option */}
+      <Link
+        to="/ves-onramp?tab=sell"
+        className="card flex items-center justify-between border border-gold-500/30 hover:bg-gold-500/5 transition"
+      >
+        <div>
+          <p className="text-sm font-medium text-gold-500">{t('vesOnramp.cashoutLink')}</p>
+          <p className="text-xs text-white/30">{t('vesOnramp.cashoutLinkDesc')}</p>
+        </div>
+        <span className="text-gold-500 text-sm font-mono">&rarr;</span>
+      </Link>
+
       {/* MoneyGram link */}
       <Link
         to="/moneygram?tab=offramp"

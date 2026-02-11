@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { VesOnrampService } from './ves-onramp.service';
@@ -13,6 +23,7 @@ import { AuthGuard } from '../auth/auth.guard';
 import { AdminGuard } from '../auth/admin.guard';
 import { Roles } from '../auth/roles.decorator';
 import { CurrentUser } from '../auth/auth.decorator';
+import { VesDirection } from '@prisma/client';
 
 @ApiTags('VES On-Ramp')
 @Controller('ves-onramp')
@@ -23,9 +34,13 @@ export class VesOnrampController {
 
   @Get('offers')
   @Throttle({ default: { limit: 30, ttl: 60000 } })
-  @ApiOperation({ summary: 'List active LP offers (sorted by best rate)' })
-  async getOffers() {
-    return this.vesOnrampService.getOffers();
+  @ApiOperation({
+    summary: 'List active offers, optionally filtered by direction (ON_RAMP or OFF_RAMP)',
+  })
+  async getOffers(@Query('direction') direction?: string) {
+    const dir =
+      direction === 'ON_RAMP' || direction === 'OFF_RAMP' ? (direction as VesDirection) : undefined;
+    return this.vesOnrampService.getOffers(dir);
   }
 
   @Post('offers')

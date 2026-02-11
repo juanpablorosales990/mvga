@@ -1,11 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router-dom';
 import { useSelfCustodyWallet } from '../contexts/WalletContext';
 import { apiFetch } from '../lib/apiClient';
 import { showToast } from '../hooks/useToast';
 import { track, AnalyticsEvents } from '../lib/analytics';
 
 // ── Types ──────────────────────────────────────────────────────
+
+type Direction = 'ON_RAMP' | 'OFF_RAMP';
 
 interface VesOffer {
   id: string;
@@ -23,6 +26,7 @@ interface VesOffer {
   status: string;
   totalOrders: number;
   completedOrders: number;
+  direction: Direction;
   lpRating: number;
   lpCompletedTrades: number;
   createdAt: string;
@@ -41,6 +45,7 @@ interface VesOrder {
   escrowTx: string | null;
   releaseTx: string | null;
   disputeReason: string | null;
+  direction: Direction;
   pagoMovil?: {
     bankCode: string;
     bankName: string;
@@ -53,7 +58,7 @@ interface VesOrder {
   expiresAt: string;
 }
 
-type Tab = 'buy' | 'orders' | 'lp';
+type Tab = 'buy' | 'sell' | 'orders' | 'lp';
 
 // ── Helpers ────────────────────────────────────────────────────
 
@@ -87,8 +92,10 @@ export default function VesOnrampPage() {
   const { t } = useTranslation();
   const { connected, publicKey } = useSelfCustodyWallet();
   const walletAddress = publicKey?.toBase58() || '';
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  const [tab, setTab] = useState<Tab>('buy');
+  const initialTab = (searchParams.get('tab') as Tab) || 'buy';
+  const [tab, setTab] = useState<Tab>(initialTab);
   const [offers, setOffers] = useState<VesOffer[]>([]);
   const [orders, setOrders] = useState<VesOrder[]>([]);
   const [loading, setLoading] = useState(false);
@@ -98,11 +105,20 @@ export default function VesOnrampPage() {
   const [vesAmount, setVesAmount] = useState('');
   const [ordering, setOrdering] = useState(false);
 
+  // Sell flow state — seller provides bank details
+  const [sellBankCode, setSellBankCode] = useState('');
+  const [sellBankName, setSellBankName] = useState('');
+  const [sellPhone, setSellPhone] = useState('');
+  const [sellCi, setSellCi] = useState('');
+  const [sellUsdcAmount, setSellUsdcAmount] = useState('');
+
   // Active order tracking
   const [activeOrder, setActiveOrder] = useState<VesOrder | null>(null);
   const [markingPaid, setMarkingPaid] = useState(false);
+  const [confirmingRelease, setConfirmingRelease] = useState(false);
 
   // LP form state
+  const [lpDirection, setLpDirection] = useState<Direction>('ON_RAMP');
   const [lpForm, setLpForm] = useState({
     vesRate: '',
     feePercent: '1.5',
@@ -116,12 +132,22 @@ export default function VesOnrampPage() {
   });
   const [creatingOffer, setCreatingOffer] = useState(false);
 
+  // ── Tab sync with URL ──────────────────────────────────────
+  const handleTabChange = (newTab: Tab) => {
+    setTab(newTab);
+    setSearchParams({ tab: newTab });
+    setSelectedOffer(null);
+    setVesAmount('');
+    setSellUsdcAmount('');
+  };
+
   // ── Data loading ─────────────────────────────────────────────
 
-  const loadOffers = useCallback(async () => {
+  const loadOffers = useCallback(async (direction?: Direction) => {
     setLoading(true);
     try {
-      const data = await apiFetch<VesOffer[]>('/ves-onramp/offers');
+      const query = direction ? `?direction=${direction}` : '';
+      const data = await apiFetch<VesOffer[]>(`/ves-onramp/offers${query}`);
       setOffers(data);
     } catch {
       // silent
@@ -143,12 +169,11 @@ export default function VesOnrampPage() {
   }, []);
 
   useEffect(() => {
-    if (connected) loadOffers();
-  }, [connected, loadOffers]);
-
-  useEffect(() => {
-    if (tab === 'orders' && connected) loadOrders();
-  }, [tab, connected, loadOrders]);
+    if (!connected) return;
+    if (tab === 'buy') loadOffers('ON_RAMP');
+    else if (tab === 'sell') loadOffers('OFF_RAMP');
+    else if (tab === 'orders') loadOrders();
+  }, [tab, connected, loadOffers, loadOrders]);
 
   // Refresh active order every 15s
   useEffect(() => {
@@ -163,6 +188,11 @@ export default function VesOnrampPage() {
         setActiveOrder(updated);
         if (updated.status === 'COMPLETED') {
           showToast('success', t('vesOnramp.orderCompleted'));
+          if (updated.direction === 'OFF_RAMP') {
+            track(AnalyticsEvents.VES_OFFRAMP_COMPLETED, { amountUsdc: updated.amountUsdc });
+          } else {
+            track(AnalyticsEvents.VES_ONRAMP_COMPLETED, { amountUsdc: updated.amountUsdc });
+          }
         }
       } catch {
         // silent
@@ -173,7 +203,8 @@ export default function VesOnrampPage() {
 
   // ── Actions ──────────────────────────────────────────────────
 
-  const handleCreateOrder = async () => {
+  // ON_RAMP: buyer creates order (sends VES, receives USDC)
+  const handleCreateBuyOrder = async () => {
     if (!selectedOffer || !vesAmount) return;
     setOrdering(true);
     try {
@@ -195,6 +226,40 @@ export default function VesOnrampPage() {
     }
   };
 
+  // OFF_RAMP: seller creates order (sends USDC, receives VES)
+  const handleCreateSellOrder = async () => {
+    if (!selectedOffer || !sellUsdcAmount) return;
+    if (!sellBankCode || !sellBankName || !sellPhone || !sellCi) {
+      showToast('error', t('vesOnramp.sellerBankRequired'));
+      return;
+    }
+    setOrdering(true);
+    try {
+      const usdcAmount = parseFloat(sellUsdcAmount);
+      const amountVes = usdcAmount * selectedOffer.effectiveRate;
+      const order = await apiFetch<VesOrder>('/ves-onramp/orders', {
+        method: 'POST',
+        body: JSON.stringify({
+          offerId: selectedOffer.id,
+          amountVes,
+          bankCode: sellBankCode,
+          bankName: sellBankName,
+          phoneNumber: sellPhone,
+          ciNumber: sellCi,
+        }),
+      });
+      track(AnalyticsEvents.VES_OFFRAMP_STARTED, { amountUsdc: usdcAmount });
+      setActiveOrder(order);
+      setSelectedOffer(null);
+      setSellUsdcAmount('');
+    } catch (err) {
+      showToast('error', err instanceof Error ? err.message : t('vesOnramp.orderFailed'));
+    } finally {
+      setOrdering(false);
+    }
+  };
+
+  // ON_RAMP: buyer marks VES as sent
   const handleMarkPaid = async () => {
     if (!activeOrder) return;
     setMarkingPaid(true);
@@ -209,12 +274,33 @@ export default function VesOnrampPage() {
     }
   };
 
+  // OFF_RAMP: seller confirms VES received, releases USDC to LP
+  const handleConfirmVesReceipt = async () => {
+    if (!activeOrder) return;
+    setConfirmingRelease(true);
+    try {
+      await apiFetch(`/ves-onramp/orders/${activeOrder.id}/confirm`, { method: 'PATCH' });
+      setActiveOrder({
+        ...activeOrder,
+        status: 'COMPLETED',
+        completedAt: new Date().toISOString(),
+      });
+      showToast('success', t('vesOnramp.sellCompleted'));
+      track(AnalyticsEvents.VES_OFFRAMP_COMPLETED, { amountUsdc: activeOrder.amountUsdc });
+    } catch (err) {
+      showToast('error', err instanceof Error ? err.message : t('vesOnramp.confirmVesFailed'));
+    } finally {
+      setConfirmingRelease(false);
+    }
+  };
+
   const handleCreateLpOffer = async () => {
     setCreatingOffer(true);
     try {
       await apiFetch('/ves-onramp/offers', {
         method: 'POST',
         body: JSON.stringify({
+          direction: lpDirection,
           vesRate: parseFloat(lpForm.vesRate),
           feePercent: parseFloat(lpForm.feePercent),
           availableUsdc: parseFloat(lpForm.availableUsdc),
@@ -258,6 +344,9 @@ export default function VesOnrampPage() {
   const usdcFromVes =
     selectedOffer && vesAmount ? parseFloat(vesAmount) / selectedOffer.effectiveRate : 0;
 
+  const vesFromUsdc =
+    selectedOffer && sellUsdcAmount ? parseFloat(sellUsdcAmount) * selectedOffer.effectiveRate : 0;
+
   // ── Render ───────────────────────────────────────────────────
 
   if (!connected) {
@@ -268,16 +357,38 @@ export default function VesOnrampPage() {
     );
   }
 
-  // Active order flow (takes over the page)
+  // ── Active Order Flow ─────────────────────────────────────────
   if (
     activeOrder &&
     !['COMPLETED', 'CANCELLED', 'REFUNDED', 'EXPIRED'].includes(activeOrder.status)
   ) {
+    const isOffRamp = activeOrder.direction === 'OFF_RAMP';
+    const isEscrowLocker = isOffRamp
+      ? activeOrder.buyerWalletAddress === walletAddress
+      : activeOrder.lpWalletAddress === walletAddress;
+    const isVesSender = isOffRamp
+      ? activeOrder.lpWalletAddress === walletAddress
+      : activeOrder.buyerWalletAddress === walletAddress;
+    const isVesReceiver = isOffRamp
+      ? activeOrder.buyerWalletAddress === walletAddress
+      : activeOrder.lpWalletAddress === walletAddress;
+
     return (
       <div className="space-y-4">
         <h1 className="text-lg font-bold uppercase tracking-tight">
           {t('vesOnramp.orderInProgress')}
         </h1>
+
+        {/* Direction badge */}
+        <div className="flex items-center gap-2">
+          <span
+            className={`text-[10px] px-2 py-0.5 font-mono uppercase ${
+              isOffRamp ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'
+            }`}
+          >
+            {isOffRamp ? t('vesOnramp.direction_OFF_RAMP') : t('vesOnramp.direction_ON_RAMP')}
+          </span>
+        </div>
 
         {/* Progress steps */}
         <div className="flex gap-1">
@@ -297,15 +408,23 @@ export default function VesOnrampPage() {
         {/* Order details card */}
         <div className="card space-y-3">
           <div className="flex justify-between text-sm">
-            <span className="text-white/40">{t('vesOnramp.sending')}</span>
+            <span className="text-white/40">
+              {isOffRamp ? t('vesOnramp.youSend') : t('vesOnramp.sending')}
+            </span>
             <span className="text-white font-bold">
-              Bs. {activeOrder.amountVes.toLocaleString()}
+              {isOffRamp
+                ? `$${activeOrder.amountUsdc.toFixed(2)} USDC`
+                : `Bs. ${activeOrder.amountVes.toLocaleString()}`}
             </span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-white/40">{t('vesOnramp.receiving')}</span>
+            <span className="text-white/40">
+              {isOffRamp ? t('vesOnramp.youReceiveVes') : t('vesOnramp.receiving')}
+            </span>
             <span className="text-gold-500 font-bold">
-              ${activeOrder.amountUsdc.toFixed(2)} USDC
+              {isOffRamp
+                ? `Bs. ${activeOrder.amountVes.toLocaleString()}`
+                : `$${activeOrder.amountUsdc.toFixed(2)} USDC`}
             </span>
           </div>
           <div className="flex justify-between text-sm">
@@ -324,47 +443,149 @@ export default function VesOnrampPage() {
           </div>
         </div>
 
-        {/* Pago Movil details — shown when escrow is locked */}
-        {activeOrder.status === 'ESCROW_LOCKED' && activeOrder.pagoMovil && (
-          <div className="card space-y-3">
-            <p className="text-sm font-medium">{t('vesOnramp.sendVesVia')}</p>
-            <div className="space-y-2">
-              {[
-                { label: t('vesOnramp.bank'), value: activeOrder.pagoMovil.bankName },
-                { label: t('vesOnramp.phone'), value: activeOrder.pagoMovil.phoneNumber },
-                { label: t('vesOnramp.ci'), value: activeOrder.pagoMovil.ciNumber },
-                {
-                  label: t('vesOnramp.amount'),
-                  value: `Bs. ${activeOrder.amountVes.toLocaleString()}`,
-                },
-              ].map(({ label, value }) => (
-                <div key={label} className="flex items-center justify-between bg-white/5 px-3 py-2">
-                  <div>
-                    <p className="text-[10px] text-white/30 uppercase">{label}</p>
-                    <p className="text-sm font-mono">{value}</p>
-                  </div>
-                  <button
-                    onClick={() => copyToClipboard(value)}
-                    className="text-xs text-gold-500 font-mono"
+        {/* ── ON_RAMP: ESCROW_LOCKED — Buyer sends VES via Pago Movil */}
+        {!isOffRamp &&
+          activeOrder.status === 'ESCROW_LOCKED' &&
+          activeOrder.pagoMovil &&
+          isVesSender && (
+            <div className="card space-y-3">
+              <p className="text-sm font-medium">{t('vesOnramp.sendVesVia')}</p>
+              <div className="space-y-2">
+                {[
+                  { label: t('vesOnramp.bank'), value: activeOrder.pagoMovil.bankName },
+                  { label: t('vesOnramp.phone'), value: activeOrder.pagoMovil.phoneNumber },
+                  { label: t('vesOnramp.ci'), value: activeOrder.pagoMovil.ciNumber },
+                  {
+                    label: t('vesOnramp.amount'),
+                    value: `Bs. ${activeOrder.amountVes.toLocaleString()}`,
+                  },
+                ].map(({ label, value }) => (
+                  <div
+                    key={label}
+                    className="flex items-center justify-between bg-white/5 px-3 py-2"
                   >
-                    {t('common.copy')}
-                  </button>
-                </div>
-              ))}
+                    <div>
+                      <p className="text-[10px] text-white/30 uppercase">{label}</p>
+                      <p className="text-sm font-mono">{value}</p>
+                    </div>
+                    <button
+                      onClick={() => copyToClipboard(value)}
+                      className="text-xs text-gold-500 font-mono"
+                    >
+                      {t('common.copy')}
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <button
+                onClick={handleMarkPaid}
+                disabled={markingPaid}
+                className="btn-primary w-full"
+              >
+                {markingPaid ? t('common.processing') : t('vesOnramp.markPaid')}
+              </button>
             </div>
+          )}
 
-            <button onClick={handleMarkPaid} disabled={markingPaid} className="btn-primary w-full">
-              {markingPaid ? t('common.processing') : t('vesOnramp.markPaid')}
+        {/* ── OFF_RAMP: ESCROW_LOCKED — Waiting for LP to send VES */}
+        {isOffRamp && activeOrder.status === 'ESCROW_LOCKED' && isEscrowLocker && (
+          <div className="card text-center space-y-3">
+            <div className="w-10 h-10 border-2 border-gold-500 border-t-transparent rounded-full animate-spin mx-auto" />
+            <p className="text-sm text-white/60">{t('vesOnramp.waitingVes')}</p>
+            <p className="text-xs text-white/30">{t('vesOnramp.waitingVesDesc')}</p>
+          </div>
+        )}
+
+        {/* ── OFF_RAMP: PAYMENT_SENT — LP sent VES, seller confirms receipt */}
+        {isOffRamp && activeOrder.status === 'PAYMENT_SENT' && isVesReceiver && (
+          <div className="card space-y-3">
+            <p className="text-sm font-medium">{t('vesOnramp.lpSentVes')}</p>
+            <p className="text-xs text-white/40">{t('vesOnramp.confirmVesReceiptDesc')}</p>
+            <button
+              onClick={handleConfirmVesReceipt}
+              disabled={confirmingRelease}
+              className="btn-primary w-full"
+            >
+              {confirmingRelease ? t('common.processing') : t('vesOnramp.confirmVesReceipt')}
             </button>
           </div>
         )}
 
-        {/* Waiting for LP confirmation */}
-        {activeOrder.status === 'PAYMENT_SENT' && (
+        {/* ── ON_RAMP: PAYMENT_SENT — Waiting for LP to confirm VES receipt */}
+        {!isOffRamp && activeOrder.status === 'PAYMENT_SENT' && (
           <div className="card text-center space-y-3">
             <div className="w-10 h-10 border-2 border-gold-500 border-t-transparent rounded-full animate-spin mx-auto" />
             <p className="text-sm text-white/60">{t('vesOnramp.waitingLp')}</p>
             <p className="text-xs text-white/30">{t('vesOnramp.waitingLpDesc')}</p>
+          </div>
+        )}
+
+        {/* ── OFF_RAMP: ESCROW_LOCKED — LP sees Pago Movil + mark paid button */}
+        {isOffRamp &&
+          activeOrder.status === 'ESCROW_LOCKED' &&
+          isVesSender &&
+          activeOrder.pagoMovil && (
+            <div className="card space-y-3">
+              <p className="text-sm font-medium">{t('vesOnramp.sendVesToSeller')}</p>
+              <div className="space-y-2">
+                {[
+                  { label: t('vesOnramp.bank'), value: activeOrder.pagoMovil.bankName },
+                  { label: t('vesOnramp.phone'), value: activeOrder.pagoMovil.phoneNumber },
+                  { label: t('vesOnramp.ci'), value: activeOrder.pagoMovil.ciNumber },
+                  {
+                    label: t('vesOnramp.amount'),
+                    value: `Bs. ${activeOrder.amountVes.toLocaleString()}`,
+                  },
+                ].map(({ label, value }) => (
+                  <div
+                    key={label}
+                    className="flex items-center justify-between bg-white/5 px-3 py-2"
+                  >
+                    <div>
+                      <p className="text-[10px] text-white/30 uppercase">{label}</p>
+                      <p className="text-sm font-mono">{value}</p>
+                    </div>
+                    <button
+                      onClick={() => copyToClipboard(value)}
+                      className="text-xs text-gold-500 font-mono"
+                    >
+                      {t('common.copy')}
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <button
+                onClick={handleMarkPaid}
+                disabled={markingPaid}
+                className="btn-primary w-full"
+              >
+                {markingPaid ? t('common.processing') : t('vesOnramp.markPaid')}
+              </button>
+            </div>
+          )}
+
+        {/* ── ON_RAMP: ESCROW_LOCKED — LP views Pago Movil details (waiting for buyer) */}
+        {!isOffRamp &&
+          activeOrder.status === 'ESCROW_LOCKED' &&
+          !isVesSender &&
+          activeOrder.pagoMovil && (
+            <div className="card text-center space-y-3">
+              <div className="w-10 h-10 border-2 border-gold-500 border-t-transparent rounded-full animate-spin mx-auto" />
+              <p className="text-sm text-white/60">{t('vesOnramp.waitingBuyerPayment')}</p>
+            </div>
+          )}
+
+        {/* ── ON_RAMP: PAYMENT_SENT — LP confirms VES receipt */}
+        {!isOffRamp && activeOrder.status === 'PAYMENT_SENT' && isVesReceiver && (
+          <div className="card space-y-3">
+            <p className="text-sm font-medium">{t('vesOnramp.buyerSentVes')}</p>
+            <button
+              onClick={handleConfirmVesReceipt}
+              disabled={confirmingRelease}
+              className="btn-primary w-full"
+            >
+              {confirmingRelease ? t('common.processing') : t('vesOnramp.confirmVesReceipt')}
+            </button>
           </div>
         )}
 
@@ -383,10 +604,10 @@ export default function VesOnrampPage() {
 
       {/* Tabs */}
       <div className="flex gap-2">
-        {(['buy', 'orders', 'lp'] as Tab[]).map((t2) => (
+        {(['buy', 'sell', 'orders', 'lp'] as Tab[]).map((t2) => (
           <button
             key={t2}
-            onClick={() => setTab(t2)}
+            onClick={() => handleTabChange(t2)}
             className={`flex-1 py-2 text-sm font-medium border transition ${
               tab === t2
                 ? 'border-gold-500 bg-gold-500/10 text-gold-500'
@@ -471,7 +692,7 @@ export default function VesOnrampPage() {
                       )}
 
                       <button
-                        onClick={handleCreateOrder}
+                        onClick={handleCreateBuyOrder}
                         disabled={
                           !vesAmount ||
                           usdcFromVes < offer.minOrderUsdc ||
@@ -481,6 +702,164 @@ export default function VesOnrampPage() {
                         className="btn-primary w-full text-sm disabled:opacity-50"
                       >
                         {ordering ? t('common.processing') : t('vesOnramp.buyUsdc')}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ── SELL TAB ────────────────────────────────────────── */}
+      {tab === 'sell' && (
+        <>
+          {loading ? (
+            <div className="flex justify-center py-12">
+              <div className="w-8 h-8 border-2 border-gold-500 border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : offers.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-white/30 text-sm">{t('vesOnramp.noSellOffers')}</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {offers.map((offer) => (
+                <div
+                  key={offer.id}
+                  className={`card cursor-pointer transition hover:bg-white/5 ${
+                    selectedOffer?.id === offer.id ? 'border-gold-500' : ''
+                  }`}
+                  onClick={() => {
+                    setSelectedOffer(selectedOffer?.id === offer.id ? null : offer);
+                    setSellUsdcAmount('');
+                  }}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-bold">
+                        1 USDC = {offer.effectiveRate.toFixed(2)} VES
+                      </p>
+                      <p className="text-xs text-white/40">
+                        {offer.bankName} &middot; {t('vesOnramp.fee')}: {offer.feePercent}%
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-gold-500 font-mono">
+                        ${offer.availableUsdc.toFixed(0)}
+                      </p>
+                      <p className="text-[10px] text-white/30">
+                        {offer.completedOrders}/{offer.totalOrders} {t('vesOnramp.trades')}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Expanded: USDC amount + bank details */}
+                  {selectedOffer?.id === offer.id && (
+                    <div
+                      className="mt-3 pt-3 border-t border-white/10 space-y-3"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div>
+                        <label className="text-[10px] text-white/30 uppercase block mb-1">
+                          {t('vesOnramp.usdcAmount')}
+                        </label>
+                        <input
+                          type="number"
+                          inputMode="decimal"
+                          value={sellUsdcAmount}
+                          onChange={(e) => setSellUsdcAmount(e.target.value)}
+                          placeholder={`${offer.minOrderUsdc} - ${offer.maxOrderUsdc} USDC`}
+                          className="w-full bg-black/50 border border-white/10 px-3 py-2 text-white text-sm"
+                        />
+                      </div>
+
+                      {sellUsdcAmount && vesFromUsdc > 0 && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-white/40">{t('vesOnramp.youReceiveVes')}</span>
+                          <span className="text-gold-500 font-bold">
+                            Bs. {vesFromUsdc.toFixed(2)}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Seller Pago Movil details */}
+                      <p className="text-xs text-white/40 pt-2 border-t border-white/10">
+                        {t('vesOnramp.yourPagoMovil')}
+                      </p>
+                      <p className="text-[10px] text-white/20">
+                        {t('vesOnramp.yourPagoMovilDesc')}
+                      </p>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-[10px] text-white/30 uppercase block mb-1">
+                            {t('vesOnramp.bankCode')}
+                          </label>
+                          <input
+                            type="text"
+                            value={sellBankCode}
+                            onChange={(e) => setSellBankCode(e.target.value)}
+                            placeholder="0105"
+                            maxLength={4}
+                            className="w-full bg-black/50 border border-white/10 px-3 py-2 text-white text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] text-white/30 uppercase block mb-1">
+                            {t('vesOnramp.bankName')}
+                          </label>
+                          <input
+                            type="text"
+                            value={sellBankName}
+                            onChange={(e) => setSellBankName(e.target.value)}
+                            placeholder="Banco Mercantil"
+                            className="w-full bg-black/50 border border-white/10 px-3 py-2 text-white text-sm"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-[10px] text-white/30 uppercase block mb-1">
+                            {t('vesOnramp.phone')}
+                          </label>
+                          <input
+                            type="tel"
+                            value={sellPhone}
+                            onChange={(e) => setSellPhone(e.target.value)}
+                            placeholder="04163334455"
+                            className="w-full bg-black/50 border border-white/10 px-3 py-2 text-white text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] text-white/30 uppercase block mb-1">
+                            {t('vesOnramp.ci')}
+                          </label>
+                          <input
+                            type="text"
+                            value={sellCi}
+                            onChange={(e) => setSellCi(e.target.value)}
+                            placeholder="V12345678"
+                            className="w-full bg-black/50 border border-white/10 px-3 py-2 text-white text-sm"
+                          />
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={handleCreateSellOrder}
+                        disabled={
+                          !sellUsdcAmount ||
+                          parseFloat(sellUsdcAmount) < offer.minOrderUsdc ||
+                          parseFloat(sellUsdcAmount) > offer.maxOrderUsdc ||
+                          !sellBankCode ||
+                          !sellBankName ||
+                          !sellPhone ||
+                          !sellCi ||
+                          ordering
+                        }
+                        className="btn-primary w-full text-sm disabled:opacity-50"
+                      >
+                        {ordering ? t('common.processing') : t('vesOnramp.sellUsdc')}
                       </button>
                     </div>
                   )}
@@ -513,7 +892,9 @@ export default function VesOnrampPage() {
               >
                 <div>
                   <p className="text-sm font-medium">
-                    Bs. {order.amountVes.toLocaleString()} &rarr; ${order.amountUsdc.toFixed(2)}
+                    {order.direction === 'OFF_RAMP'
+                      ? `$${order.amountUsdc.toFixed(2)} → Bs. ${order.amountVes.toLocaleString()}`
+                      : `Bs. ${order.amountVes.toLocaleString()} → $${order.amountUsdc.toFixed(2)}`}
                   </p>
                   <p className="text-xs text-white/40">
                     {new Date(order.createdAt).toLocaleDateString()}
@@ -523,12 +904,15 @@ export default function VesOnrampPage() {
                   <p className={`text-xs font-medium ${statusColor(order.status)}`}>
                     {t(`vesOnramp.status_${order.status}`)}
                   </p>
-                  {order.buyerWalletAddress === walletAddress && (
-                    <p className="text-[10px] text-white/20">{t('vesOnramp.buyer')}</p>
-                  )}
-                  {order.lpWalletAddress === walletAddress && (
-                    <p className="text-[10px] text-white/20">{t('vesOnramp.lp')}</p>
-                  )}
+                  <span
+                    className={`text-[10px] px-1.5 py-0.5 font-mono ${
+                      order.direction === 'OFF_RAMP'
+                        ? 'bg-red-500/10 text-red-400'
+                        : 'bg-green-500/10 text-green-400'
+                    }`}
+                  >
+                    {order.direction === 'OFF_RAMP' ? t('vesOnramp.seller') : t('vesOnramp.buyer')}
+                  </span>
                 </div>
               </div>
             ))
@@ -541,7 +925,34 @@ export default function VesOnrampPage() {
         <div className="space-y-4">
           <div className="card space-y-3">
             <p className="text-sm font-medium">{t('vesOnramp.lpTitle')}</p>
-            <p className="text-xs text-white/40">{t('vesOnramp.lpDesc')}</p>
+
+            {/* Direction toggle */}
+            <div className="flex gap-2">
+              <button
+                onClick={() => setLpDirection('ON_RAMP')}
+                className={`flex-1 py-2 text-xs font-medium border transition ${
+                  lpDirection === 'ON_RAMP'
+                    ? 'border-green-500 bg-green-500/10 text-green-400'
+                    : 'border-white/10 text-white/50'
+                }`}
+              >
+                {t('vesOnramp.lpDirectionOnramp')}
+              </button>
+              <button
+                onClick={() => setLpDirection('OFF_RAMP')}
+                className={`flex-1 py-2 text-xs font-medium border transition ${
+                  lpDirection === 'OFF_RAMP'
+                    ? 'border-red-500 bg-red-500/10 text-red-400'
+                    : 'border-white/10 text-white/50'
+                }`}
+              >
+                {t('vesOnramp.lpDirectionOfframp')}
+              </button>
+            </div>
+
+            <p className="text-xs text-white/40">
+              {lpDirection === 'ON_RAMP' ? t('vesOnramp.lpDesc') : t('vesOnramp.lpDescOfframp')}
+            </p>
 
             {/* Rate & Fee */}
             <div className="grid grid-cols-2 gap-3">

@@ -11,7 +11,7 @@ import { PrismaService } from '../../common/prisma.service';
 import { TransactionLoggerService } from '../../common/transaction-logger.service';
 import { SolanaService } from '../wallet/solana.service';
 import { CreateVesOfferDto, CreateVesOrderDto } from './ves-onramp.dto';
-import { VesOfferStatus, VesOrderStatus } from '@prisma/client';
+import { VesOfferStatus, VesOrderStatus, VesDirection } from '@prisma/client';
 import { Keypair, PublicKey, Transaction, sendAndConfirmTransaction } from '@solana/web3.js';
 import { getAssociatedTokenAddress, createTransferInstruction } from '@solana/spl-token';
 
@@ -47,6 +47,7 @@ interface RawOfferRow {
   minOrderUsdc: bigint;
   maxOrderUsdc: bigint;
   status: string;
+  direction: VesDirection;
 }
 
 interface RawOrderRow {
@@ -63,6 +64,7 @@ interface RawOrderRow {
   escrowTx: string | null;
   releaseTx: string | null;
   expiresAt: Date;
+  direction: VesDirection;
 }
 
 @Injectable()
@@ -100,6 +102,46 @@ export class VesOnrampService {
     }
   }
 
+  // ============ DIRECTION HELPERS ============
+  // ON_RAMP: LP locks USDC, buyer sends VES, LP receives VES, buyer gets USDC
+  // OFF_RAMP: User/seller locks USDC, LP sends VES, user receives VES, LP gets USDC
+
+  /** Who locks USDC into escrow */
+  private getEscrowLocker(order: {
+    direction: VesDirection;
+    buyerWalletAddress: string;
+    lpWalletAddress: string;
+  }): string {
+    return order.direction === 'OFF_RAMP' ? order.buyerWalletAddress : order.lpWalletAddress;
+  }
+
+  /** Who receives USDC when escrow is released */
+  private getEscrowRecipient(order: {
+    direction: VesDirection;
+    buyerWalletAddress: string;
+    lpWalletAddress: string;
+  }): string {
+    return order.direction === 'OFF_RAMP' ? order.lpWalletAddress : order.buyerWalletAddress;
+  }
+
+  /** Who sends VES via Pago Movil */
+  private getVesSender(order: {
+    direction: VesDirection;
+    buyerWalletAddress: string;
+    lpWalletAddress: string;
+  }): string {
+    return order.direction === 'OFF_RAMP' ? order.lpWalletAddress : order.buyerWalletAddress;
+  }
+
+  /** Who receives VES via Pago Movil */
+  private getVesReceiver(order: {
+    direction: VesDirection;
+    buyerWalletAddress: string;
+    lpWalletAddress: string;
+  }): string {
+    return order.direction === 'OFF_RAMP' ? order.buyerWalletAddress : order.lpWalletAddress;
+  }
+
   // ============ OFFERS ============
 
   async createOffer(dto: CreateVesOfferDto, walletAddress: string) {
@@ -112,6 +154,8 @@ export class VesOnrampService {
 
     const user = await this.prisma.user.findUnique({ where: { walletAddress } });
     if (!user) throw new NotFoundException('User not found');
+
+    const direction: VesDirection = (dto.direction as VesDirection) || 'ON_RAMP';
 
     const offer = await this.prisma.vesOffer.create({
       data: {
@@ -126,6 +170,7 @@ export class VesOnrampService {
         bankName: dto.bankName,
         phoneNumber: dto.phoneNumber,
         ciNumber: dto.ciNumber,
+        direction,
       },
       include: { lpUser: true },
     });
@@ -133,13 +178,18 @@ export class VesOnrampService {
     return this.formatOffer(offer);
   }
 
-  async getOffers() {
+  async getOffers(direction?: VesDirection) {
+    const where: Record<string, unknown> = { status: 'ACTIVE' };
+    if (direction) where.direction = direction;
+
     const offers = await this.prisma.vesOffer.findMany({
-      where: { status: 'ACTIVE' },
+      where,
       include: {
         lpUser: { include: { reputation: true } },
       },
-      orderBy: { vesRate: 'asc' }, // Best rate first (lowest VES per USDC)
+      // ON_RAMP: lowest rate first (best buy price)
+      // OFF_RAMP: highest rate first (best sell price)
+      orderBy: { vesRate: direction === 'OFF_RAMP' ? 'desc' : 'asc' },
     });
 
     return offers.map((o) => this.formatOffer(o));
@@ -193,6 +243,17 @@ export class VesOnrampService {
           throw new BadRequestException('Cannot buy from your own offer');
         }
 
+        const direction = offer.direction;
+
+        // For OFF_RAMP: seller (buyer field) must provide their Pago Movil details
+        if (direction === 'OFF_RAMP') {
+          if (!dto.bankCode || !dto.bankName || !dto.phoneNumber || !dto.ciNumber) {
+            throw new BadRequestException(
+              'Seller Pago Movil details (bankCode, bankName, phoneNumber, ciNumber) are required for off-ramp orders'
+            );
+          }
+        }
+
         // Calculate USDC from VES amount
         const effectiveRate = offer.vesRate * (1 + offer.feePercent / 100);
         const amountUsdc = dto.amountVes / effectiveRate;
@@ -237,7 +298,15 @@ export class VesOnrampService {
             amountVes: dto.amountVes,
             vesRate: offer.vesRate,
             feePercent: offer.feePercent,
+            direction,
             expiresAt: new Date(Date.now() + DEFAULT_ESCROW_TIMEOUT * 1000),
+            // Seller bank details for OFF_RAMP orders
+            ...(direction === 'OFF_RAMP' && {
+              sellerBankCode: dto.bankCode,
+              sellerBankName: dto.bankName,
+              sellerPhoneNumber: dto.phoneNumber,
+              sellerCiNumber: dto.ciNumber,
+            }),
           },
           include: { offer: true },
         });
@@ -249,6 +318,7 @@ export class VesOnrampService {
       orderId: order.id,
       buyerWallet: walletAddress,
       lpWallet: order.lpWalletAddress,
+      direction: order.direction,
     });
 
     return this.formatOrder(order);
@@ -285,8 +355,14 @@ export class VesOnrampService {
       include: { offer: true },
     });
     if (!order) throw new NotFoundException('Order not found');
-    if (order.lpWalletAddress !== walletAddress) {
-      throw new ForbiddenException('Only the LP can lock escrow');
+
+    const locker = this.getEscrowLocker(order);
+    if (locker !== walletAddress) {
+      throw new ForbiddenException(
+        order.direction === 'OFF_RAMP'
+          ? 'Only the seller can lock escrow for off-ramp orders'
+          : 'Only the LP can lock escrow'
+      );
     }
     if (order.status !== 'PENDING') {
       throw new BadRequestException('Order is not in PENDING status');
@@ -295,12 +371,15 @@ export class VesOnrampService {
     const amount = toNumber(order.amountUsdc);
 
     if (this.escrowMode === 'onchain') {
+      // For on-chain escrow, buyer/seller roles in the program are direction-dependent
+      const escrowBuyer = this.getEscrowRecipient(order);
+      const escrowSeller = this.getEscrowLocker(order);
       return {
         mode: 'onchain' as const,
         programId: ESCROW_PROGRAM_ID,
         adminPubkey: this.escrowAdminPubkey,
-        buyerAddress: order.buyerWalletAddress,
-        sellerAddress: order.lpWalletAddress,
+        buyerAddress: escrowBuyer,
+        sellerAddress: escrowSeller,
         mintAddress: USDC_MINT,
         amount,
         decimals: USDC_DECIMALS,
@@ -333,8 +412,13 @@ export class VesOnrampService {
           FOR UPDATE
         `;
         if (!order) throw new NotFoundException('Order not found');
-        if (order.lpWalletAddress !== walletAddress) {
-          throw new ForbiddenException('Only the LP can confirm escrow lock');
+        const locker = this.getEscrowLocker(order);
+        if (locker !== walletAddress) {
+          throw new ForbiddenException(
+            order.direction === 'OFF_RAMP'
+              ? 'Only the seller can confirm escrow lock for off-ramp orders'
+              : 'Only the LP can confirm escrow lock'
+          );
         }
         if (order.status !== 'PENDING') {
           if (order.escrowTx === signature) return { success: true, orderId, signature };
@@ -360,13 +444,13 @@ export class VesOnrampService {
           throw new BadRequestException('Transaction not found or failed');
         }
 
-        // Verify signer is LP
+        // Verify signer is the escrow locker (LP for ON_RAMP, seller for OFF_RAMP)
         const signers = parsedTx.transaction.message.accountKeys
           .filter((k: { signer: boolean }) => k.signer)
           .map((k: { pubkey: { toBase58(): string } }) => k.pubkey.toBase58());
 
-        if (!signers.includes(order.lpWalletAddress)) {
-          throw new BadRequestException('Transaction was not signed by the LP');
+        if (!signers.includes(locker)) {
+          throw new BadRequestException('Transaction was not signed by the escrow locker');
         }
 
         // Verify correct amount transferred
@@ -414,7 +498,7 @@ export class VesOnrampService {
 
         this.txLogger
           .log({
-            walletAddress: order.lpWalletAddress,
+            walletAddress: locker,
             type: 'VES_ESCROW_LOCK',
             signature,
             amount: toNumber(order.amountUsdc),
@@ -428,6 +512,7 @@ export class VesOnrampService {
           buyerWallet: order.buyerWalletAddress,
           lpWallet: order.lpWalletAddress,
           amountUsdc: toNumber(order.amountUsdc),
+          direction: order.direction,
         });
 
         return { success: true, orderId, signature };
@@ -445,8 +530,14 @@ export class VesOnrampService {
       FOR UPDATE
     `;
     if (!order) throw new NotFoundException('Order not found');
-    if (order.buyerWalletAddress !== walletAddress) {
-      throw new ForbiddenException('Only the buyer can mark as paid');
+
+    const vesSender = this.getVesSender(order);
+    if (vesSender !== walletAddress) {
+      throw new ForbiddenException(
+        order.direction === 'OFF_RAMP'
+          ? 'Only the LP can mark VES as sent for off-ramp orders'
+          : 'Only the buyer can mark as paid'
+      );
     }
     if (order.status !== 'ESCROW_LOCKED') {
       throw new BadRequestException(`Cannot mark as paid: order is ${order.status}`);
@@ -462,6 +553,7 @@ export class VesOnrampService {
       buyerWallet: order.buyerWalletAddress,
       lpWallet: order.lpWalletAddress,
       amountVes: order.amountVes,
+      direction: order.direction,
     });
 
     return { success: true };
@@ -487,8 +579,13 @@ export class VesOnrampService {
           FOR UPDATE
         `;
         if (!order) throw new NotFoundException('Order not found');
-        if (order.lpWalletAddress !== walletAddress) {
-          throw new ForbiddenException('Only the LP can confirm release');
+        const vesReceiver = this.getVesReceiver(order);
+        if (vesReceiver !== walletAddress) {
+          throw new ForbiddenException(
+            order.direction === 'OFF_RAMP'
+              ? 'Only the seller can confirm release for off-ramp orders'
+              : 'Only the LP can confirm release'
+          );
         }
         if (order.releaseTx === signature) {
           return { success: true, orderId, signature };
@@ -556,9 +653,10 @@ export class VesOnrampService {
           data: { completedOrders: { increment: 1 } },
         });
 
+        const recipient = this.getEscrowRecipient(order);
         this.txLogger
           .log({
-            walletAddress: order.buyerWalletAddress,
+            walletAddress: recipient,
             type: 'VES_ESCROW_RELEASE',
             signature,
             amount: toNumber(order.amountUsdc),
@@ -573,6 +671,7 @@ export class VesOnrampService {
           lpWallet: order.lpWalletAddress,
           amountUsdc: toNumber(order.amountUsdc),
           amountVes: order.amountVes,
+          direction: order.direction,
         });
 
         return { success: true, orderId, signature };
@@ -614,7 +713,7 @@ export class VesOnrampService {
 
   async resolveDispute(
     orderId: string,
-    resolution: 'RELEASE_TO_BUYER' | 'REFUND_TO_LP',
+    resolution: 'RELEASE_TO_RECIPIENT' | 'REFUND_TO_LOCKER',
     adminAddress: string,
     notes: string
   ) {
@@ -626,7 +725,7 @@ export class VesOnrampService {
       throw new BadRequestException(`Order is not disputed (current: ${order.status})`);
     }
 
-    if (resolution === 'RELEASE_TO_BUYER') {
+    if (resolution === 'RELEASE_TO_RECIPIENT') {
       if (this.escrowMode === 'onchain') {
         throw new BadRequestException(
           'On-chain: admin must call confirm-release with the release tx signature'
@@ -663,8 +762,15 @@ export class VesOnrampService {
           FOR UPDATE
         `;
         if (!order) throw new NotFoundException('Order not found');
-        if (walletAddress && order.lpWalletAddress !== walletAddress) {
-          throw new ForbiddenException('Only the LP can confirm receipt');
+        if (walletAddress) {
+          const vesReceiver = this.getVesReceiver(order);
+          if (vesReceiver !== walletAddress) {
+            throw new ForbiddenException(
+              order.direction === 'OFF_RAMP'
+                ? 'Only the seller can confirm receipt for off-ramp orders'
+                : 'Only the LP can confirm receipt'
+            );
+          }
         }
         if (order.releaseTx) return { success: true, orderId, signature: order.releaseTx };
         if (
@@ -680,14 +786,20 @@ export class VesOnrampService {
 
         const rawAmount = BigInt(Math.round(toNumber(order.amountUsdc) * 10 ** USDC_DECIMALS));
         const mintPubkey = new PublicKey(USDC_MINT);
-        const buyerPubkey = new PublicKey(order.buyerWalletAddress);
+        const recipientAddress = this.getEscrowRecipient(order);
+        const recipientPubkey = new PublicKey(recipientAddress);
         const connection = this.solana.getConnection();
 
         const escrowAta = await getAssociatedTokenAddress(mintPubkey, this.escrowKeypair.publicKey);
-        const buyerAta = await getAssociatedTokenAddress(mintPubkey, buyerPubkey);
+        const recipientAta = await getAssociatedTokenAddress(mintPubkey, recipientPubkey);
 
         const solanaTx = new Transaction().add(
-          createTransferInstruction(escrowAta, buyerAta, this.escrowKeypair.publicKey, rawAmount)
+          createTransferInstruction(
+            escrowAta,
+            recipientAta,
+            this.escrowKeypair.publicKey,
+            rawAmount
+          )
         );
 
         const sig = await sendAndConfirmTransaction(connection, solanaTx, [this.escrowKeypair]);
@@ -709,7 +821,7 @@ export class VesOnrampService {
 
         this.txLogger
           .log({
-            walletAddress: order.buyerWalletAddress,
+            walletAddress: recipientAddress,
             type: 'VES_ESCROW_RELEASE',
             signature: sig,
             amount: toNumber(order.amountUsdc),
@@ -724,6 +836,7 @@ export class VesOnrampService {
           lpWallet: order.lpWalletAddress,
           amountUsdc: toNumber(order.amountUsdc),
           amountVes: order.amountVes,
+          direction: order.direction,
         });
 
         return { success: true, orderId, signature: sig };
@@ -763,14 +876,15 @@ export class VesOnrampService {
 
         const rawAmount = BigInt(Math.round(toNumber(order.amountUsdc) * 10 ** USDC_DECIMALS));
         const mintPubkey = new PublicKey(USDC_MINT);
-        const lpPubkey = new PublicKey(order.lpWalletAddress);
+        const refundAddress = this.getEscrowLocker(order);
+        const refundPubkey = new PublicKey(refundAddress);
         const connection = this.solana.getConnection();
 
         const escrowAta = await getAssociatedTokenAddress(mintPubkey, this.escrowKeypair.publicKey);
-        const lpAta = await getAssociatedTokenAddress(mintPubkey, lpPubkey);
+        const refundAta = await getAssociatedTokenAddress(mintPubkey, refundPubkey);
 
         const solanaTx = new Transaction().add(
-          createTransferInstruction(escrowAta, lpAta, this.escrowKeypair.publicKey, rawAmount)
+          createTransferInstruction(escrowAta, refundAta, this.escrowKeypair.publicKey, rawAmount)
         );
 
         const sig = await sendAndConfirmTransaction(connection, solanaTx, [this.escrowKeypair]);
@@ -791,7 +905,7 @@ export class VesOnrampService {
 
         this.txLogger
           .log({
-            walletAddress: order.lpWalletAddress,
+            walletAddress: refundAddress,
             type: 'VES_ESCROW_REFUND',
             signature: sig,
             amount: toNumber(order.amountUsdc),
@@ -827,6 +941,7 @@ export class VesOnrampService {
     status: string;
     totalOrders: number;
     completedOrders: number;
+    direction: VesDirection;
     createdAt: Date;
   }) {
     const effectiveRate = offer.vesRate * (1 + offer.feePercent / 100);
@@ -846,6 +961,7 @@ export class VesOnrampService {
       status: offer.status,
       totalOrders: offer.totalOrders,
       completedOrders: offer.completedOrders,
+      direction: offer.direction,
       lpRating: offer.lpUser?.reputation?.rating ?? 5.0,
       lpCompletedTrades: offer.lpUser?.reputation?.completedTrades ?? 0,
       createdAt: offer.createdAt,
@@ -865,6 +981,11 @@ export class VesOnrampService {
     escrowTx: string | null;
     releaseTx: string | null;
     disputeReason: string | null;
+    direction: VesDirection;
+    sellerBankCode?: string | null;
+    sellerBankName?: string | null;
+    sellerPhoneNumber?: string | null;
+    sellerCiNumber?: string | null;
     createdAt: Date;
     paidAt: Date | null;
     confirmedAt: Date | null;
@@ -877,6 +998,27 @@ export class VesOnrampService {
       ciNumber: string;
     };
   }) {
+    // ON_RAMP: LP's Pago Movil from offer (buyer sends VES to LP)
+    // OFF_RAMP: Seller's Pago Movil from order (LP sends VES to seller)
+    const pagoMovil =
+      order.direction === 'OFF_RAMP'
+        ? order.sellerBankCode
+          ? {
+              bankCode: order.sellerBankCode,
+              bankName: order.sellerBankName || '',
+              phoneNumber: order.sellerPhoneNumber || '',
+              ciNumber: order.sellerCiNumber || '',
+            }
+          : undefined
+        : order.offer
+          ? {
+              bankCode: order.offer.bankCode,
+              bankName: order.offer.bankName,
+              phoneNumber: order.offer.phoneNumber,
+              ciNumber: order.offer.ciNumber,
+            }
+          : undefined;
+
     return {
       id: order.id,
       offerId: order.offerId,
@@ -890,15 +1032,8 @@ export class VesOnrampService {
       escrowTx: order.escrowTx,
       releaseTx: order.releaseTx,
       disputeReason: order.disputeReason,
-      // Show Pago Movil details only for active orders
-      pagoMovil: order.offer
-        ? {
-            bankCode: order.offer.bankCode,
-            bankName: order.offer.bankName,
-            phoneNumber: order.offer.phoneNumber,
-            ciNumber: order.offer.ciNumber,
-          }
-        : undefined,
+      direction: order.direction,
+      pagoMovil,
       createdAt: order.createdAt,
       paidAt: order.paidAt,
       confirmedAt: order.confirmedAt,

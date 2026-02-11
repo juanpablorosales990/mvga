@@ -43,6 +43,9 @@ export const AnalyticsEvents = {
   // Transaction receipts
   RECEIPT_SHARED: 'receipt_shared',
   RECEIPT_DOWNLOADED: 'receipt_downloaded',
+  // VES Off-Ramp
+  VES_OFFRAMP_STARTED: 'ves_offramp_started',
+  VES_OFFRAMP_COMPLETED: 'ves_offramp_completed',
   // Onboarding wizard
   WIZARD_COMPLETED: 'wizard_completed',
   WIZARD_SKIPPED: 'wizard_skipped',

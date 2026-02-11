@@ -88,8 +88,10 @@ describe('analytics', () => {
     expect(AnalyticsEvents.SPLIT_CANCELLED).toBe('split_cancelled');
     expect(AnalyticsEvents.RECEIPT_SHARED).toBe('receipt_shared');
     expect(AnalyticsEvents.RECEIPT_DOWNLOADED).toBe('receipt_downloaded');
+    expect(AnalyticsEvents.VES_OFFRAMP_STARTED).toBe('ves_offramp_started');
+    expect(AnalyticsEvents.VES_OFFRAMP_COMPLETED).toBe('ves_offramp_completed');
     expect(AnalyticsEvents.WIZARD_COMPLETED).toBe('wizard_completed');
     expect(AnalyticsEvents.WIZARD_SKIPPED).toBe('wizard_skipped');
-    expect(Object.keys(AnalyticsEvents).length).toBe(39);
+    expect(Object.keys(AnalyticsEvents).length).toBe(41);
   });
 });

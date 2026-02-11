@@ -1090,13 +1090,15 @@ model VesOffer {
   lpUserId            String
   lpUser              User           @relation("LpVesOffers", fields: [lpUserId], references: [id], onDelete: Cascade)
 
+  direction           VesDirection   @default(ON_RAMP) // ON_RAMP = buy USDC, OFF_RAMP = sell USDC
+
   availableUsdc       BigInt         // USDC available (smallest units, 6 decimals)
   vesRate             Float          // VES per 1 USDC (e.g., 42.5)
   feePercent          Float          // LP fee (e.g., 1.5 = 1.5%)
   minOrderUsdc        BigInt         // Min order in USDC smallest units
   maxOrderUsdc        BigInt         // Max order in USDC smallest units
 
-  // Pago Móvil details (shown to buyers)
+  // Pago Móvil details — ON_RAMP: buyer sends VES here; OFF_RAMP: LP sends VES from here
   bankCode            String         // e.g., "0105" (Mercantil)
   bankName            String         // e.g., "Banco Mercantil"
   phoneNumber         String         // e.g., "04163334455"
@@ -1110,9 +1112,14 @@ model VesOffer {
   createdAt           DateTime       @default(now())
   updatedAt           DateTime       @updatedAt
 
-  @@index([status])
+  @@index([status, direction])
   @@index([lpWalletAddress])
   @@index([vesRate])
+}
+
+enum VesDirection {
+  ON_RAMP
+  OFF_RAMP
 }
 
 enum VesOfferStatus {
@@ -1126,15 +1133,23 @@ model VesOrder {
   offerId             String
   offer               VesOffer       @relation(fields: [offerId], references: [id])
 
+  direction           VesDirection   @default(ON_RAMP)
+
   buyerWalletAddress  String
   buyerUserId         String
   buyer               User           @relation("BuyerVesOrders", fields: [buyerUserId], references: [id])
   lpWalletAddress     String
 
   amountUsdc          BigInt         // USDC amount (smallest units)
-  amountVes           Float          // VES amount buyer sends
+  amountVes           Float          // VES amount
   vesRate             Float          // Locked rate at order time
   feePercent          Float          // Locked fee at order time
+
+  // OFF_RAMP only: seller's Pago Móvil details (where LP sends VES)
+  sellerBankCode      String?
+  sellerBankName      String?
+  sellerPhoneNumber   String?
+  sellerCiNumber      String?
 
   status              VesOrderStatus @default(PENDING)
   escrowTx            String?        @unique
@@ -1152,7 +1167,7 @@ model VesOrder {
 
   @@index([buyerWalletAddress])
   @@index([lpWalletAddress])
-  @@index([status])
+  @@index([status, direction])
   @@index([expiresAt])
 }
 
