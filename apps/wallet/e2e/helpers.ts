@@ -62,24 +62,40 @@ async function unlockIfLocked(page: Page): Promise<boolean> {
   return true;
 }
 
+async function skipOnboardingWizardIfPresent(page: Page): Promise<boolean> {
+  // OnboardingWizard overlay has a "Skip Tour" / "Saltar Tour" button.
+  const skip = page.getByRole('button', { name: /skip tour|saltar tour/i });
+
+  if (!(await skip.isVisible().catch(() => false))) return false;
+  await skip.scrollIntoViewIfNeeded().catch(() => {});
+  await skip.click({ timeout: 5000 });
+  return true;
+}
+
 async function waitForAppShell(page: Page) {
   const header = page.locator('header');
   const deadline = Date.now() + 30000;
 
   while (Date.now() < deadline) {
-    if (await header.isVisible().catch(() => false)) return;
-
     // Handle whichever blocking screen is currently visible.
     const acted =
       (await skipBiometricsSetupIfPresent(page)) ||
       (await skipProfileSetupIfPresent(page)) ||
       (await completeCitizenRevealIfPresent(page)) ||
       (await unlockIfLocked(page)) ||
-      (await skipWelcomeTourIfPresent(page));
+      (await skipWelcomeTourIfPresent(page)) ||
+      (await skipOnboardingWizardIfPresent(page));
 
     if (acted) {
       await page.waitForTimeout(250);
       continue;
+    }
+
+    if (await header.isVisible().catch(() => false)) {
+      // Header is visible — but wizard overlay might still be on top.
+      // Give it one more chance to dismiss.
+      await skipOnboardingWizardIfPresent(page);
+      return;
     }
 
     await page.waitForTimeout(250);
