@@ -143,6 +143,9 @@ export class PaymentsService {
       });
     }
 
+    // Update split payment progress if this is a split share
+    await this.updateSplitProgress(id);
+
     return { status: 'PAID', signature };
   }
 
@@ -342,6 +345,7 @@ export class PaymentsService {
     requesteeAddress?: string | null;
     note?: string | null;
     declinedAt?: Date | null;
+    splitPaymentId?: string | null;
   }) {
     const decimals = TOKEN_DECIMALS[request.token] ?? 6;
     return {
@@ -361,6 +365,253 @@ export class PaymentsService {
       requesteeAddress: request.requesteeAddress || null,
       note: request.note || null,
       declinedAt: request.declinedAt?.toISOString() || null,
+      // Phase 3 fields
+      splitPaymentId: request.splitPaymentId || null,
+    };
+  }
+
+  // ── Split Payments (Phase 3) ──────────────────────────────────────────
+
+  async createSplit(
+    creatorId: string,
+    creatorWallet: string,
+    dto: {
+      token: string;
+      totalAmount: number;
+      description: string;
+      participants: Array<{ recipientIdentifier: string; amount: number }>;
+    }
+  ) {
+    const decimals = TOKEN_DECIMALS[dto.token];
+    if (!decimals) throw new BadRequestException('Unsupported token');
+
+    // Validate shares sum ≈ total (1 cent tolerance)
+    const sharesSum = dto.participants.reduce((sum, p) => sum + p.amount, 0);
+    if (Math.abs(sharesSum - dto.totalAmount) > 0.01) {
+      throw new BadRequestException(
+        `Shares (${sharesSum}) must equal total amount (${dto.totalAmount})`
+      );
+    }
+
+    // Resolve all participant identifiers
+    const resolved = await Promise.all(
+      dto.participants.map(async (p) => {
+        const identifier = p.recipientIdentifier.trim();
+        let requesteeAddress: string;
+
+        if (identifier.startsWith('@') || identifier.startsWith('#')) {
+          const params: { username?: string; citizen?: string } = {};
+          if (identifier.startsWith('@')) {
+            params.username = identifier.slice(1);
+          } else {
+            params.citizen = identifier.slice(1);
+          }
+          const user = await this.socialService.lookupUser(params);
+          requesteeAddress = user.walletAddress;
+        } else {
+          requesteeAddress = identifier;
+        }
+
+        if (requesteeAddress === creatorWallet) {
+          throw new BadRequestException('Cannot split with yourself');
+        }
+
+        return { requesteeAddress, amount: p.amount };
+      })
+    );
+
+    const totalAmountSmallest = BigInt(Math.round(dto.totalAmount * 10 ** decimals));
+
+    // Lookup creator username for denormalized display
+    const creator = await this.prisma.user.findUnique({
+      where: { id: creatorId },
+      select: { username: true },
+    });
+
+    // Create split + individual requests atomically
+    const result = await this.prisma.$transaction(async (tx) => {
+      const splitPayment = await tx.splitPayment.create({
+        data: {
+          creatorId,
+          creatorAddress: creatorWallet,
+          totalAmount: totalAmountSmallest,
+          token: dto.token,
+          description: dto.description,
+          participantCount: resolved.length,
+        },
+      });
+
+      const expiresAt = new Date(Date.now() + 72 * 60 * 60 * 1000);
+      const requests = await Promise.all(
+        resolved.map((p) =>
+          tx.paymentRequest.create({
+            data: {
+              recipientAddress: creatorWallet,
+              token: dto.token,
+              amount: BigInt(Math.round(p.amount * 10 ** decimals)),
+              expiresAt,
+              requesterId: creatorId,
+              requesterUsername: creator?.username || null,
+              requesteeAddress: p.requesteeAddress,
+              note: `Split: ${dto.description}`,
+              splitPaymentId: splitPayment.id,
+            },
+          })
+        )
+      );
+
+      return { splitPayment, requests };
+    });
+
+    // Emit notifications to all participants
+    for (const req of result.requests) {
+      this.eventEmitter.emit('split.request.created', {
+        splitId: result.splitPayment.id,
+        requestId: req.id,
+        creatorWallet,
+        creatorUsername: creator?.username || null,
+        requesteeAddress: req.requesteeAddress,
+        amount: Number(req.amount) / 10 ** decimals,
+        token: dto.token,
+        description: dto.description,
+        totalAmount: dto.totalAmount,
+      });
+    }
+
+    return this.formatSplit(result.splitPayment, result.requests);
+  }
+
+  async getSplit(splitId: string, walletAddress: string) {
+    const split = await this.prisma.splitPayment.findUnique({
+      where: { id: splitId },
+      include: { requests: { orderBy: { createdAt: 'asc' } } },
+    });
+    if (!split) throw new NotFoundException('Split payment not found');
+    if (split.creatorAddress !== walletAddress) {
+      throw new BadRequestException('Only the split creator can view this');
+    }
+    return this.formatSplit(split, split.requests);
+  }
+
+  async getMySplits(walletAddress: string) {
+    const splits = await this.prisma.splitPayment.findMany({
+      where: { creatorAddress: walletAddress },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+      include: { requests: { orderBy: { createdAt: 'asc' } } },
+    });
+    return splits.map((s) => this.formatSplit(s, s.requests));
+  }
+
+  async cancelSplit(splitId: string, walletAddress: string) {
+    const split = await this.prisma.splitPayment.findUnique({
+      where: { id: splitId },
+    });
+    if (!split) throw new NotFoundException('Split payment not found');
+    if (split.creatorAddress !== walletAddress) {
+      throw new BadRequestException('Only the split creator can cancel');
+    }
+    if (split.status === 'COMPLETED') {
+      throw new BadRequestException('Cannot cancel a completed split');
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.splitPayment.update({
+        where: { id: splitId },
+        data: { status: 'CANCELLED' },
+      });
+      await tx.paymentRequest.updateMany({
+        where: { splitPaymentId: splitId, status: 'PENDING' },
+        data: { status: 'CANCELLED' },
+      });
+    });
+
+    return { status: 'CANCELLED' };
+  }
+
+  private async updateSplitProgress(requestId: string) {
+    const request = await this.prisma.paymentRequest.findUnique({
+      where: { id: requestId },
+      select: { splitPaymentId: true, amount: true },
+    });
+    if (!request?.splitPaymentId) return;
+
+    const split = await this.prisma.splitPayment.findUnique({
+      where: { id: request.splitPaymentId },
+      include: { requests: { select: { status: true, amount: true } } },
+    });
+    if (!split) return;
+
+    const paidRequests = split.requests.filter((r) => r.status === 'PAID');
+    const paidCount = paidRequests.length;
+    const totalCollected = paidRequests.reduce((sum, r) => sum + r.amount, BigInt(0));
+    const newStatus =
+      paidCount === split.participantCount ? 'COMPLETED' : paidCount > 0 ? 'PARTIAL' : 'PENDING';
+
+    await this.prisma.splitPayment.update({
+      where: { id: request.splitPaymentId },
+      data: {
+        paidCount,
+        totalCollected,
+        status: newStatus as any,
+        completedAt: newStatus === 'COMPLETED' ? new Date() : null,
+      },
+    });
+
+    if (newStatus === 'COMPLETED') {
+      const decimals = TOKEN_DECIMALS[split.token] ?? 6;
+      this.eventEmitter.emit('split.completed', {
+        splitId: split.id,
+        creatorWallet: split.creatorAddress,
+        totalAmount: Number(split.totalAmount) / 10 ** decimals,
+        token: split.token,
+        description: split.description,
+      });
+    }
+  }
+
+  private formatSplit(
+    split: {
+      id: string;
+      creatorAddress: string;
+      totalAmount: bigint;
+      token: string;
+      description: string;
+      participantCount: number;
+      status: string;
+      paidCount: number;
+      totalCollected: bigint;
+      createdAt: Date;
+      completedAt: Date | null;
+    },
+    requests: Array<{
+      id: string;
+      requesteeAddress: string | null;
+      amount: bigint;
+      status: string;
+      paymentTx: string | null;
+    }>
+  ) {
+    const decimals = TOKEN_DECIMALS[split.token] ?? 6;
+    return {
+      id: split.id,
+      creatorAddress: split.creatorAddress,
+      totalAmount: Number(split.totalAmount) / 10 ** decimals,
+      token: split.token,
+      description: split.description,
+      participantCount: split.participantCount,
+      status: split.status,
+      paidCount: split.paidCount,
+      totalCollected: Number(split.totalCollected) / 10 ** decimals,
+      createdAt: split.createdAt.toISOString(),
+      completedAt: split.completedAt?.toISOString() || null,
+      participants: requests.map((r) => ({
+        requestId: r.id,
+        requesteeAddress: r.requesteeAddress,
+        amount: Number(r.amount) / 10 ** decimals,
+        status: r.status,
+        paymentTx: r.paymentTx,
+      })),
     };
   }
 }

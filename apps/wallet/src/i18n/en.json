@@ -21,7 +21,8 @@
     "unexpectedError": "An unexpected error occurred. Please try again.",
     "close": "Close",
     "pageNotFound": "Page not found",
-    "goHome": "Go Home"
+    "goHome": "Go Home",
+    "remove": "Remove"
   },
   "error": {
     "title": "Something went wrong",
@@ -343,7 +344,8 @@
     "citizen": "Ciudadano Digital",
     "scan": "Scan & Pay",
     "requestMoney": "Request Money",
-    "requestsInbox": "Requests Inbox"
+    "requestsInbox": "Requests Inbox",
+    "splitPayment": "Split Payment"
   },
   "grants": {
     "title": "Grants",
@@ -1385,5 +1387,39 @@
     "statusPaid": "Paid",
     "statusDeclined": "Declined",
     "statusExpired": "Expired"
+  },
+  "split": {
+    "title": "Split Payment",
+    "subtitle": "Split a bill with friends — each gets a payment request",
+    "totalAmount": "Total Amount",
+    "description": "Description",
+    "descriptionPlaceholder": "Dinner, Uber, Groceries...",
+    "participants": "Participants",
+    "participant": "Participant",
+    "addParticipant": "Add Participant",
+    "shareAmount": "Share",
+    "share": "Share",
+    "equalSplit": "Equal",
+    "customSplit": "Custom",
+    "create": "Split & Request",
+    "success": "Split created! Requests sent to all participants.",
+    "failed": "Failed to create split",
+    "invalidTotal": "Enter a valid total amount",
+    "descriptionRequired": "Add a description",
+    "allParticipantsRequired": "All participants must be filled",
+    "invalidShares": "All share amounts must be positive",
+    "sharesMismatch": "Shares don't add up to the total",
+    "maxParticipants": "Maximum 20 participants",
+    "detail": "Split Details",
+    "collected": "Collected",
+    "paid": "Paid",
+    "progress": "Progress",
+    "participantsList": "Participants",
+    "cancel": "Cancel Split",
+    "cancelled": "Split cancelled",
+    "cancelFailed": "Failed to cancel split",
+    "cancelConfirm": "Cancel this split? All pending requests will be cancelled.",
+    "loadFailed": "Failed to load split",
+    "notFound": "Split not found"
   }
 }

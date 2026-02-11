@@ -397,6 +397,233 @@ describe('PaymentsService.getMyRequests', () => {
   });
 });
 
+describe('PaymentsService.createSplit', () => {
+  const prisma: any = {
+    paymentRequest: { create: jest.fn() },
+    splitPayment: { create: jest.fn() },
+    user: { findUnique: jest.fn() },
+    $transaction: jest.fn(),
+  };
+
+  const eventEmitter: any = { emit: jest.fn() };
+  const socialService: any = { lookupUser: jest.fn() };
+  const service = new PaymentsService(prisma, eventEmitter, socialService);
+
+  beforeEach(() => {
+    jest.resetAllMocks();
+  });
+
+  it('creates a split with equal shares', async () => {
+    socialService.lookupUser
+      .mockResolvedValueOnce({ walletAddress: 'Friend1111111111111111111111111111111111111' })
+      .mockResolvedValueOnce({ walletAddress: 'Friend2222222222222222222222222222222222222' });
+    prisma.user.findUnique.mockResolvedValue({ username: 'juan' });
+
+    const mockSplit = {
+      id: 'split-1',
+      creatorAddress: 'Creator1111111111111111111111111111111111111',
+      totalAmount: 30_000_000n,
+      token: 'USDC',
+      description: 'Dinner',
+      participantCount: 2,
+      status: 'PENDING',
+      paidCount: 0,
+      totalCollected: 0n,
+      createdAt: new Date('2026-02-10T00:00:00Z'),
+      completedAt: null,
+    };
+    const mockRequests = [
+      {
+        id: 'req-1',
+        requesteeAddress: 'Friend1111111111111111111111111111111111111',
+        amount: 15_000_000n,
+        status: 'PENDING',
+        paymentTx: null,
+      },
+      {
+        id: 'req-2',
+        requesteeAddress: 'Friend2222222222222222222222222222222222222',
+        amount: 15_000_000n,
+        status: 'PENDING',
+        paymentTx: null,
+      },
+    ];
+
+    prisma.$transaction.mockImplementation(async (fn: any) => {
+      const tx = {
+        splitPayment: { create: jest.fn().mockResolvedValue(mockSplit) },
+        paymentRequest: {
+          create: jest
+            .fn()
+            .mockResolvedValueOnce(mockRequests[0])
+            .mockResolvedValueOnce(mockRequests[1]),
+        },
+      };
+      return fn(tx);
+    });
+
+    const result = await service.createSplit(
+      'user-1',
+      'Creator1111111111111111111111111111111111111',
+      {
+        token: 'USDC',
+        totalAmount: 30,
+        description: 'Dinner',
+        participants: [
+          { recipientIdentifier: '@friend1', amount: 15 },
+          { recipientIdentifier: '@friend2', amount: 15 },
+        ],
+      }
+    );
+
+    expect(result.id).toBe('split-1');
+    expect(result.participantCount).toBe(2);
+    expect(result.participants).toHaveLength(2);
+    expect(eventEmitter.emit).toHaveBeenCalledTimes(2);
+    expect(eventEmitter.emit).toHaveBeenCalledWith('split.request.created', expect.any(Object));
+  });
+
+  it('rejects when shares do not sum to total', async () => {
+    await expect(
+      service.createSplit('user-1', 'Creator1', {
+        token: 'USDC',
+        totalAmount: 30,
+        description: 'Dinner',
+        participants: [
+          { recipientIdentifier: '@a', amount: 10 },
+          { recipientIdentifier: '@b', amount: 10 },
+        ],
+      })
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('rejects self-split', async () => {
+    socialService.lookupUser.mockResolvedValue({
+      walletAddress: 'Creator1111111111111111111111111111111111111',
+    });
+
+    await expect(
+      service.createSplit('user-1', 'Creator1111111111111111111111111111111111111', {
+        token: 'USDC',
+        totalAmount: 10,
+        description: 'Self',
+        participants: [{ recipientIdentifier: '@me', amount: 10 }],
+      })
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+});
+
+describe('PaymentsService.cancelSplit', () => {
+  const prisma: any = {
+    splitPayment: { findUnique: jest.fn(), update: jest.fn() },
+    paymentRequest: { updateMany: jest.fn() },
+    $transaction: jest.fn(),
+  };
+
+  const service = new PaymentsService(prisma, mockEventEmitter, mockSocialService);
+
+  beforeEach(() => {
+    jest.resetAllMocks();
+  });
+
+  it('cancels a pending split', async () => {
+    prisma.splitPayment.findUnique.mockResolvedValue({
+      id: 'split-1',
+      creatorAddress: 'Creator111',
+      status: 'PENDING',
+    });
+    prisma.$transaction.mockImplementation(async (fn: any) => {
+      const tx = {
+        splitPayment: { update: jest.fn() },
+        paymentRequest: { updateMany: jest.fn() },
+      };
+      return fn(tx);
+    });
+
+    const result = await service.cancelSplit('split-1', 'Creator111');
+    expect(result.status).toBe('CANCELLED');
+  });
+
+  it('rejects if not creator', async () => {
+    prisma.splitPayment.findUnique.mockResolvedValue({
+      id: 'split-1',
+      creatorAddress: 'Creator111',
+      status: 'PENDING',
+    });
+
+    await expect(service.cancelSplit('split-1', 'WrongWallet')).rejects.toBeInstanceOf(
+      BadRequestException
+    );
+  });
+
+  it('rejects if completed', async () => {
+    prisma.splitPayment.findUnique.mockResolvedValue({
+      id: 'split-1',
+      creatorAddress: 'Creator111',
+      status: 'COMPLETED',
+    });
+
+    await expect(service.cancelSplit('split-1', 'Creator111')).rejects.toBeInstanceOf(
+      BadRequestException
+    );
+  });
+});
+
+describe('PaymentsService.getSplit', () => {
+  const prisma: any = {
+    splitPayment: { findUnique: jest.fn() },
+  };
+
+  const service = new PaymentsService(prisma, mockEventEmitter, mockSocialService);
+
+  beforeEach(() => {
+    jest.resetAllMocks();
+  });
+
+  it('returns formatted split for creator', async () => {
+    prisma.splitPayment.findUnique.mockResolvedValue({
+      id: 'split-1',
+      creatorAddress: 'Creator111',
+      totalAmount: 50_000_000n,
+      token: 'USDC',
+      description: 'Dinner',
+      participantCount: 2,
+      status: 'PARTIAL',
+      paidCount: 1,
+      totalCollected: 25_000_000n,
+      createdAt: new Date('2026-02-10'),
+      completedAt: null,
+      requests: [
+        { id: 'r1', requesteeAddress: 'A', amount: 25_000_000n, status: 'PAID', paymentTx: 'tx1' },
+        {
+          id: 'r2',
+          requesteeAddress: 'B',
+          amount: 25_000_000n,
+          status: 'PENDING',
+          paymentTx: null,
+        },
+      ],
+    });
+
+    const result = await service.getSplit('split-1', 'Creator111');
+    expect(result.id).toBe('split-1');
+    expect(result.totalAmount).toBe(50);
+    expect(result.paidCount).toBe(1);
+    expect(result.participants).toHaveLength(2);
+  });
+
+  it('rejects if not creator', async () => {
+    prisma.splitPayment.findUnique.mockResolvedValue({
+      id: 'split-1',
+      creatorAddress: 'Creator111',
+    });
+
+    await expect(service.getSplit('split-1', 'WrongWallet')).rejects.toBeInstanceOf(
+      BadRequestException
+    );
+  });
+});
+
 describe('PaymentsService.declineRequest', () => {
   const prisma: any = {
     paymentRequest: {

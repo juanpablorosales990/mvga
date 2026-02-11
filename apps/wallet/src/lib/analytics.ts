@@ -36,6 +36,10 @@ export const AnalyticsEvents = {
   REQUEST_DECLINED: 'request_declined',
   REQUEST_PAGE_VIEWED: 'request_page_viewed',
   INBOX_VIEWED: 'inbox_viewed',
+  // Social payments (Phase 3 — Splits)
+  SPLIT_CREATED: 'split_created',
+  SPLIT_VIEWED: 'split_viewed',
+  SPLIT_CANCELLED: 'split_cancelled',
 } as const;
 
 export type AnalyticsEvent = (typeof AnalyticsEvents)[keyof typeof AnalyticsEvents];

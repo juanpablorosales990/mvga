@@ -7,6 +7,7 @@ import { PaymentsService } from './payments.service';
 import {
   CreatePaymentRequestDto,
   RequestFromUserDto,
+  CreateSplitDto,
   VerifyPaymentDto,
 } from './dto/create-payment-request.dto';
 
@@ -70,5 +71,43 @@ export class PaymentsController {
   @ApiBearerAuth()
   async declineRequest(@Param('id') id: string, @CurrentUser('wallet') wallet: string) {
     return this.paymentsService.declineRequest(id, wallet);
+  }
+
+  // ── Split Payments (Phase 3) ───────────────────────────────────────
+
+  @Post('split')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  async createSplit(
+    @CurrentUser('id') userId: string,
+    @CurrentUser('wallet') wallet: string,
+    @Body() dto: CreateSplitDto
+  ) {
+    return this.paymentsService.createSplit(userId, wallet, dto);
+  }
+
+  @Get('split/:id')
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  async getSplit(@Param('id') id: string, @CurrentUser('wallet') wallet: string) {
+    return this.paymentsService.getSplit(id, wallet);
+  }
+
+  @Get('my-splits')
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  async getMySplits(@CurrentUser('wallet') wallet: string) {
+    return this.paymentsService.getMySplits(wallet);
+  }
+
+  @Patch('split/:id/cancel')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  async cancelSplit(@Param('id') id: string, @CurrentUser('wallet') wallet: string) {
+    return this.paymentsService.cancelSplit(id, wallet);
   }
 }

@@ -43,6 +43,9 @@ model User {
   // Social (Phase 2) — Payment requests created by this user
   sentRequests   PaymentRequest[] @relation("RequesterRequests")
 
+  // Social (Phase 3) — Split payments created by this user
+  createdSplits  SplitPayment[]   @relation("CreatorSplits")
+
   @@index([walletAddress])
 }
 
@@ -763,11 +766,16 @@ model PaymentRequest {
   note              String?              // "for arepas" (off-chain note)
   declinedAt        DateTime?
 
+  // Phase 3: Split payment link
+  splitPaymentId    String?
+  splitPayment      SplitPayment?        @relation("SplitRequests", fields: [splitPaymentId], references: [id])
+
   @@index([recipientAddress])
   @@index([status])
   @@index([expiresAt])
   @@index([requesteeAddress])
   @@index([requesterId])
+  @@index([splitPaymentId])
 }
 
 enum PaymentRequestStatus {
@@ -776,6 +784,40 @@ enum PaymentRequestStatus {
   EXPIRED
   CANCELLED
   DECLINED
+}
+
+// ============================================================================
+// Split Payments (Group Expense Sharing)
+// ============================================================================
+
+model SplitPayment {
+  id               String              @id @default(uuid())
+  creatorId        String
+  creator          User                @relation("CreatorSplits", fields: [creatorId], references: [id])
+  creatorAddress   String
+  totalAmount      BigInt
+  token            String
+  description      String
+  participantCount Int
+  status           SplitPaymentStatus  @default(PENDING)
+  paidCount        Int                 @default(0)
+  totalCollected   BigInt              @default(0)
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  completedAt      DateTime?
+
+  requests         PaymentRequest[]    @relation("SplitRequests")
+
+  @@index([creatorId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum SplitPaymentStatus {
+  PENDING
+  PARTIAL
+  COMPLETED
+  CANCELLED
 }
 
 // ============================================================================

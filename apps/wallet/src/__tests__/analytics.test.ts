@@ -83,6 +83,9 @@ describe('analytics', () => {
     expect(AnalyticsEvents.REQUEST_DECLINED).toBe('request_declined');
     expect(AnalyticsEvents.REQUEST_PAGE_VIEWED).toBe('request_page_viewed');
     expect(AnalyticsEvents.INBOX_VIEWED).toBe('inbox_viewed');
-    expect(Object.keys(AnalyticsEvents).length).toBe(32);
+    expect(AnalyticsEvents.SPLIT_CREATED).toBe('split_created');
+    expect(AnalyticsEvents.SPLIT_VIEWED).toBe('split_viewed');
+    expect(AnalyticsEvents.SPLIT_CANCELLED).toBe('split_cancelled');
+    expect(Object.keys(AnalyticsEvents).length).toBe(35);
   });
 });

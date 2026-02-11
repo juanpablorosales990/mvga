@@ -21,7 +21,8 @@
     "unexpectedError": "Ocurrió un error inesperado. Por favor intenta de nuevo.",
     "close": "Cerrar",
     "pageNotFound": "Página no encontrada",
-    "goHome": "Ir al Inicio"
+    "goHome": "Ir al Inicio",
+    "remove": "Eliminar"
   },
   "error": {
     "title": "Algo salió mal",
@@ -343,7 +344,8 @@
     "citizen": "Ciudadano Digital",
     "scan": "Escanear y Pagar",
     "requestMoney": "Solicitar Dinero",
-    "requestsInbox": "Buzón de Solicitudes"
+    "requestsInbox": "Buzón de Solicitudes",
+    "splitPayment": "Dividir Pago"
   },
   "grants": {
     "title": "Subvenciones",
@@ -1385,5 +1387,39 @@
     "statusPaid": "Pagada",
     "statusDeclined": "Rechazada",
     "statusExpired": "Expirada"
+  },
+  "split": {
+    "title": "Dividir Pago",
+    "subtitle": "Divide una cuenta con amigos — cada uno recibe una solicitud de pago",
+    "totalAmount": "Monto Total",
+    "description": "Descripción",
+    "descriptionPlaceholder": "Cena, Uber, Compras...",
+    "participants": "Participantes",
+    "participant": "Participante",
+    "addParticipant": "Agregar Participante",
+    "shareAmount": "Parte",
+    "share": "Parte",
+    "equalSplit": "Igual",
+    "customSplit": "Personalizado",
+    "create": "Dividir y Solicitar",
+    "success": "¡Split creado! Solicitudes enviadas a todos los participantes.",
+    "failed": "Error al crear el split",
+    "invalidTotal": "Ingresa un monto total válido",
+    "descriptionRequired": "Agrega una descripción",
+    "allParticipantsRequired": "Todos los participantes deben estar completos",
+    "invalidShares": "Todos los montos deben ser positivos",
+    "sharesMismatch": "Las partes no suman el total",
+    "maxParticipants": "Máximo 20 participantes",
+    "detail": "Detalles del Split",
+    "collected": "Recolectado",
+    "paid": "Pagado",
+    "progress": "Progreso",
+    "participantsList": "Participantes",
+    "cancel": "Cancelar Split",
+    "cancelled": "Split cancelado",
+    "cancelFailed": "Error al cancelar split",
+    "cancelConfirm": "¿Cancelar este split? Se cancelarán todas las solicitudes pendientes.",
+    "loadFailed": "Error al cargar split",
+    "notFound": "Split no encontrado"
   }
 }

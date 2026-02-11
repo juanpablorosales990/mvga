@@ -21,6 +21,7 @@ interface PaymentRequestItem {
   requesteeAddress: string | null;
   note: string | null;
   declinedAt: string | null;
+  splitPaymentId: string | null;
 }
 
 function timeAgo(dateStr: string): string {
@@ -185,7 +186,12 @@ export default function RequestsInboxPage() {
 
               {/* Note */}
               {req.note && (
-                <p className="text-xs text-gray-400 bg-white/5 px-3 py-1.5 rounded">{req.note}</p>
+                <p className="text-xs text-gray-400 bg-white/5 px-3 py-1.5 rounded">
+                  {req.splitPaymentId && (
+                    <span className="text-gold-400 font-medium mr-1">Split:</span>
+                  )}
+                  {req.note}
+                </p>
               )}
 
               {/* Actions (incoming + pending only) */}

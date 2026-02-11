@@ -310,6 +310,47 @@ export class NotificationsService {
     });
   }
 
+  // ── Split Payment Events (Phase 3) ─────────────────────────────────
+
+  @OnEvent('split.request.created')
+  async onSplitRequestCreated(event: {
+    splitId: string;
+    requestId: string;
+    creatorWallet: string;
+    creatorUsername: string | null;
+    requesteeAddress: string;
+    amount: number;
+    token: string;
+    description: string;
+    totalAmount: number;
+  }) {
+    const from = event.creatorUsername
+      ? `@${event.creatorUsername}`
+      : event.creatorWallet.slice(0, 8);
+    await this.notifyIfEnabled(event.requesteeAddress, 'payments', {
+      title: 'Split de pago',
+      body: `${from} dividió "${event.description}" ($${event.totalAmount.toFixed(2)}) — tu parte: $${event.amount.toFixed(2)} ${event.token}`,
+      url: '/requests',
+      tag: `split-${event.splitId}`,
+    });
+  }
+
+  @OnEvent('split.completed')
+  async onSplitCompleted(event: {
+    splitId: string;
+    creatorWallet: string;
+    totalAmount: number;
+    token: string;
+    description: string;
+  }) {
+    await this.notifyIfEnabled(event.creatorWallet, 'payments', {
+      title: 'Split completado',
+      body: `"${event.description}" — todos pagaron. Recibiste $${event.totalAmount.toFixed(2)} ${event.token}`,
+      url: `/split/${event.splitId}`,
+      tag: `split-complete-${event.splitId}`,
+    });
+  }
+
   // ── Helpers ─────────────────────────────────────────────────────────
 
   private async notifyIfEnabled(
