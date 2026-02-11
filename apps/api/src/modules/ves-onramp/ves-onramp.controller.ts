@@ -18,6 +18,7 @@ import {
   ConfirmLockDto,
   DisputeOrderDto,
   ResolveDisputeDto,
+  MarkPaidDto,
 } from './ves-onramp.dto';
 import { AuthGuard } from '../auth/auth.guard';
 import { AdminGuard } from '../auth/admin.guard';
@@ -120,9 +121,13 @@ export class VesOnrampController {
   @Throttle({ default: { limit: 10, ttl: 60000 } })
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Mark VES as sent via Pago Movil (buyer action)' })
-  async markPaid(@Param('id') id: string, @CurrentUser('wallet') wallet: string) {
-    return this.vesOnrampService.markPaid(id, wallet);
+  @ApiOperation({ summary: 'Mark VES as sent via Pago Movil with optional receipt' })
+  async markPaid(
+    @Param('id') id: string,
+    @Body() dto: MarkPaidDto,
+    @CurrentUser('wallet') wallet: string
+  ) {
+    return this.vesOnrampService.markPaid(id, wallet, dto);
   }
 
   @Patch('orders/:id/confirm')

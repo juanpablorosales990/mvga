@@ -145,4 +145,10 @@ export class MarkPaidDto {
   @IsString()
   @MaxLength(500)
   reference?: string;
+
+  @ApiProperty({ description: 'Base64-encoded receipt image (max ~200KB)', required: false })
+  @IsOptional()
+  @IsString()
+  @MaxLength(300000)
+  receipt?: string;
 }

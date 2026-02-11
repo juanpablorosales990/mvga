@@ -501,6 +501,95 @@ describe('VesOnrampService', () => {
 
       await expect(service.markPaid('order-1', buyerWallet)).rejects.toThrow('Cannot mark as paid');
     });
+
+    it('stores receipt and reference when provided', async () => {
+      mockPrisma.$queryRaw.mockResolvedValue([
+        {
+          id: 'order-1',
+          buyerWalletAddress: buyerWallet,
+          lpWalletAddress: lpWallet,
+          status: 'ESCROW_LOCKED',
+          direction: 'ON_RAMP',
+          amountVes: 1000,
+        },
+      ]);
+      mockPrisma.vesOrder.update.mockResolvedValue({});
+
+      const receipt = 'data:image/jpeg;base64,' + 'A'.repeat(1000);
+      await service.markPaid('order-1', buyerWallet, {
+        reference: 'REF123456',
+        receipt,
+      });
+
+      expect(mockPrisma.vesOrder.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            status: 'PAYMENT_SENT',
+            paymentReference: 'REF123456',
+            paymentReceipt: receipt,
+            receiptUploadedAt: expect.any(Date),
+          }),
+        })
+      );
+    });
+
+    it('rejects receipt over 250KB', async () => {
+      mockPrisma.$queryRaw.mockResolvedValue([
+        {
+          id: 'order-1',
+          buyerWalletAddress: buyerWallet,
+          lpWalletAddress: lpWallet,
+          status: 'ESCROW_LOCKED',
+          direction: 'ON_RAMP',
+        },
+      ]);
+
+      const largeReceipt = 'data:image/jpeg;base64,' + 'A'.repeat(350000);
+      await expect(
+        service.markPaid('order-1', buyerWallet, { receipt: largeReceipt })
+      ).rejects.toThrow('Receipt image too large');
+    });
+
+    it('rejects invalid base64 format', async () => {
+      mockPrisma.$queryRaw.mockResolvedValue([
+        {
+          id: 'order-1',
+          buyerWalletAddress: buyerWallet,
+          lpWalletAddress: lpWallet,
+          status: 'ESCROW_LOCKED',
+          direction: 'ON_RAMP',
+        },
+      ]);
+
+      await expect(
+        service.markPaid('order-1', buyerWallet, { receipt: 'not-valid-base64' })
+      ).rejects.toThrow('Receipt must be a base64-encoded image');
+    });
+
+    it('works without receipt (backward compat)', async () => {
+      mockPrisma.$queryRaw.mockResolvedValue([
+        {
+          id: 'order-1',
+          buyerWalletAddress: buyerWallet,
+          lpWalletAddress: lpWallet,
+          status: 'ESCROW_LOCKED',
+          direction: 'ON_RAMP',
+          amountVes: 1000,
+        },
+      ]);
+      mockPrisma.vesOrder.update.mockResolvedValue({});
+
+      const result = await service.markPaid('order-1', buyerWallet, {});
+      expect(result.success).toBe(true);
+      expect(mockPrisma.vesOrder.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            paymentReference: undefined,
+            paymentReceipt: undefined,
+          }),
+        })
+      );
+    });
   });
 
   // ============ DISPUTES ============

@@ -5,6 +5,7 @@ import { useSelfCustodyWallet } from '../contexts/WalletContext';
 import { apiFetch } from '../lib/apiClient';
 import { showToast } from '../hooks/useToast';
 import { track, AnalyticsEvents } from '../lib/analytics';
+import { compressImage, validateImageFile } from '../lib/imageCompression';
 
 // ── Types ──────────────────────────────────────────────────────
 
@@ -52,6 +53,9 @@ interface VesOrder {
     phoneNumber: string;
     ciNumber: string;
   };
+  paymentReceipt?: string | null;
+  paymentReference?: string | null;
+  receiptUploadedAt?: string | null;
   createdAt: string;
   paidAt: string | null;
   completedAt: string | null;
@@ -116,6 +120,11 @@ export default function VesOnrampPage() {
   const [activeOrder, setActiveOrder] = useState<VesOrder | null>(null);
   const [markingPaid, setMarkingPaid] = useState(false);
   const [confirmingRelease, setConfirmingRelease] = useState(false);
+
+  // Receipt upload state
+  const [receiptFile, setReceiptFile] = useState<string | null>(null);
+  const [receiptReference, setReceiptReference] = useState('');
+  const [compressingReceipt, setCompressingReceipt] = useState(false);
 
   // LP form state
   const [lpDirection, setLpDirection] = useState<Direction>('ON_RAMP');
@@ -259,18 +268,53 @@ export default function VesOnrampPage() {
     }
   };
 
-  // ON_RAMP: buyer marks VES as sent
+  // ON_RAMP: buyer marks VES as sent / OFF_RAMP: LP marks VES as sent
   const handleMarkPaid = async () => {
     if (!activeOrder) return;
     setMarkingPaid(true);
     try {
-      await apiFetch(`/ves-onramp/orders/${activeOrder.id}/paid`, { method: 'PATCH' });
-      setActiveOrder({ ...activeOrder, status: 'PAYMENT_SENT', paidAt: new Date().toISOString() });
+      await apiFetch(`/ves-onramp/orders/${activeOrder.id}/paid`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          reference: receiptReference || undefined,
+          receipt: receiptFile || undefined,
+        }),
+      });
+      setActiveOrder({
+        ...activeOrder,
+        status: 'PAYMENT_SENT',
+        paidAt: new Date().toISOString(),
+        paymentReceipt: receiptFile,
+        paymentReference: receiptReference || null,
+      });
       showToast('success', t('vesOnramp.paymentSent'));
+      setReceiptFile(null);
+      setReceiptReference('');
     } catch (err) {
       showToast('error', err instanceof Error ? err.message : t('vesOnramp.markPaidFailed'));
     } finally {
       setMarkingPaid(false);
+    }
+  };
+
+  const handleReceiptUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const validation = validateImageFile(file);
+    if (!validation.valid) {
+      showToast('error', validation.error || t('vesOnramp.invalidImage'));
+      return;
+    }
+    setCompressingReceipt(true);
+    try {
+      const compressed = await compressImage(file, 180);
+      setReceiptFile(compressed);
+      showToast('success', t('vesOnramp.receiptUploaded'));
+    } catch {
+      showToast('error', t('vesOnramp.receiptTooLarge'));
+      setReceiptFile(null);
+    } finally {
+      setCompressingReceipt(false);
     }
   };
 
@@ -477,6 +521,57 @@ export default function VesOnrampPage() {
                   </div>
                 ))}
               </div>
+
+              {/* Receipt upload */}
+              <div className="space-y-2 pt-3 border-t border-white/10">
+                <p className="text-xs text-white/40">{t('vesOnramp.uploadProof')}</p>
+                <input
+                  type="text"
+                  value={receiptReference}
+                  onChange={(e) => setReceiptReference(e.target.value)}
+                  placeholder={t('vesOnramp.referencePlaceholder')}
+                  maxLength={50}
+                  className="w-full bg-black/50 border border-white/10 px-3 py-2 text-white text-sm"
+                  aria-label={t('vesOnramp.referenceNumber')}
+                />
+                {!receiptFile ? (
+                  <label className="block">
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/jpg,image/png,image/webp"
+                      capture="environment"
+                      onChange={handleReceiptUpload}
+                      disabled={compressingReceipt}
+                      className="hidden"
+                    />
+                    <div className="flex items-center justify-center gap-2 bg-white/5 border border-dashed border-white/20 px-4 py-3 cursor-pointer hover:bg-white/10 transition">
+                      {compressingReceipt ? (
+                        <div className="w-4 h-4 border-2 border-gold-500 border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <span className="text-sm text-gold-500">
+                          {t('vesOnramp.uploadReceipt')}
+                        </span>
+                      )}
+                    </div>
+                  </label>
+                ) : (
+                  <div className="relative">
+                    <img
+                      src={receiptFile}
+                      alt="Receipt"
+                      className="w-full max-h-48 object-contain border border-white/10"
+                    />
+                    <button
+                      onClick={() => setReceiptFile(null)}
+                      className="absolute top-1 right-1 bg-black/70 text-white/60 hover:text-white p-1 text-xs"
+                    >
+                      &times;
+                    </button>
+                  </div>
+                )}
+                <p className="text-[10px] text-white/20">{t('vesOnramp.receiptHelp')}</p>
+              </div>
+
               <button
                 onClick={handleMarkPaid}
                 disabled={markingPaid}
@@ -501,6 +596,24 @@ export default function VesOnrampPage() {
           <div className="card space-y-3">
             <p className="text-sm font-medium">{t('vesOnramp.lpSentVes')}</p>
             <p className="text-xs text-white/40">{t('vesOnramp.confirmVesReceiptDesc')}</p>
+            {activeOrder.paymentReceipt && (
+              <div className="space-y-2">
+                <p className="text-xs text-white/40">{t('vesOnramp.paymentProof')}</p>
+                <img
+                  src={activeOrder.paymentReceipt}
+                  alt="Payment receipt"
+                  className="w-full max-h-64 object-contain border border-white/10"
+                />
+                {activeOrder.paymentReference && (
+                  <div className="bg-white/5 px-3 py-2">
+                    <p className="text-[10px] text-white/30 uppercase">
+                      {t('vesOnramp.referenceNumber')}
+                    </p>
+                    <p className="text-sm font-mono">{activeOrder.paymentReference}</p>
+                  </div>
+                )}
+              </div>
+            )}
             <button
               onClick={handleConfirmVesReceipt}
               disabled={confirmingRelease}
@@ -554,6 +667,57 @@ export default function VesOnrampPage() {
                   </div>
                 ))}
               </div>
+
+              {/* Receipt upload */}
+              <div className="space-y-2 pt-3 border-t border-white/10">
+                <p className="text-xs text-white/40">{t('vesOnramp.uploadProof')}</p>
+                <input
+                  type="text"
+                  value={receiptReference}
+                  onChange={(e) => setReceiptReference(e.target.value)}
+                  placeholder={t('vesOnramp.referencePlaceholder')}
+                  maxLength={50}
+                  className="w-full bg-black/50 border border-white/10 px-3 py-2 text-white text-sm"
+                  aria-label={t('vesOnramp.referenceNumber')}
+                />
+                {!receiptFile ? (
+                  <label className="block">
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/jpg,image/png,image/webp"
+                      capture="environment"
+                      onChange={handleReceiptUpload}
+                      disabled={compressingReceipt}
+                      className="hidden"
+                    />
+                    <div className="flex items-center justify-center gap-2 bg-white/5 border border-dashed border-white/20 px-4 py-3 cursor-pointer hover:bg-white/10 transition">
+                      {compressingReceipt ? (
+                        <div className="w-4 h-4 border-2 border-gold-500 border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <span className="text-sm text-gold-500">
+                          {t('vesOnramp.uploadReceipt')}
+                        </span>
+                      )}
+                    </div>
+                  </label>
+                ) : (
+                  <div className="relative">
+                    <img
+                      src={receiptFile}
+                      alt="Receipt"
+                      className="w-full max-h-48 object-contain border border-white/10"
+                    />
+                    <button
+                      onClick={() => setReceiptFile(null)}
+                      className="absolute top-1 right-1 bg-black/70 text-white/60 hover:text-white p-1 text-xs"
+                    >
+                      &times;
+                    </button>
+                  </div>
+                )}
+                <p className="text-[10px] text-white/20">{t('vesOnramp.receiptHelp')}</p>
+              </div>
+
               <button
                 onClick={handleMarkPaid}
                 disabled={markingPaid}
@@ -579,6 +743,24 @@ export default function VesOnrampPage() {
         {!isOffRamp && activeOrder.status === 'PAYMENT_SENT' && isVesReceiver && (
           <div className="card space-y-3">
             <p className="text-sm font-medium">{t('vesOnramp.buyerSentVes')}</p>
+            {activeOrder.paymentReceipt && (
+              <div className="space-y-2">
+                <p className="text-xs text-white/40">{t('vesOnramp.paymentProof')}</p>
+                <img
+                  src={activeOrder.paymentReceipt}
+                  alt="Payment receipt"
+                  className="w-full max-h-64 object-contain border border-white/10"
+                />
+                {activeOrder.paymentReference && (
+                  <div className="bg-white/5 px-3 py-2">
+                    <p className="text-[10px] text-white/30 uppercase">
+                      {t('vesOnramp.referenceNumber')}
+                    </p>
+                    <p className="text-sm font-mono">{activeOrder.paymentReference}</p>
+                  </div>
+                )}
+              </div>
+            )}
             <button
               onClick={handleConfirmVesReceipt}
               disabled={confirmingRelease}

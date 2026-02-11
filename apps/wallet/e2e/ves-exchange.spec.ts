@@ -408,3 +408,44 @@ test.describe('CashOut — VES Off-Ramp Link', () => {
     await expect(page).toHaveURL(/ves-onramp.*tab=sell/);
   });
 });
+
+// ── Receipt Upload Tests ────────────────────────────────────────
+
+test.describe('VES Exchange — Payment Receipt', () => {
+  test('receipt fields exist in order response shape', async ({ page }) => {
+    const orderWithReceipt = {
+      ...MOCK_ORDERS[0],
+      status: 'PAYMENT_SENT',
+      paymentReceipt: 'data:image/jpeg;base64,/9j/4AAQSkZJRg==',
+      paymentReference: 'REF123456',
+      receiptUploadedAt: new Date().toISOString(),
+    };
+
+    await page.route('**/api/ves-onramp/offers**', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(MOCK_ON_RAMP_OFFERS),
+      })
+    );
+    await page.route('**/api/ves-onramp/orders', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([orderWithReceipt]),
+      })
+    );
+
+    await createWalletAndUnlock(page);
+    await navigateToVesOnramp(page);
+
+    // Navigate to orders tab
+    await page
+      .getByRole('button', { name: /orders|órdenes/i })
+      .first()
+      .click();
+
+    // Verify order with receipt is listed (i18n: "Payment Sent" / "Pago Enviado")
+    await expect(page.getByText(/payment sent|pago enviado/i).first()).toBeVisible();
+  });
+});

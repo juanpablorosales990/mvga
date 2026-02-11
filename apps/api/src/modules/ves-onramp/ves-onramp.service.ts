@@ -10,7 +10,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../../common/prisma.service';
 import { TransactionLoggerService } from '../../common/transaction-logger.service';
 import { SolanaService } from '../wallet/solana.service';
-import { CreateVesOfferDto, CreateVesOrderDto } from './ves-onramp.dto';
+import { CreateVesOfferDto, CreateVesOrderDto, MarkPaidDto } from './ves-onramp.dto';
 import { VesOfferStatus, VesOrderStatus, VesDirection } from '@prisma/client';
 import { Keypair, PublicKey, Transaction, sendAndConfirmTransaction } from '@solana/web3.js';
 import { getAssociatedTokenAddress, createTransferInstruction } from '@solana/spl-token';
@@ -523,7 +523,7 @@ export class VesOnrampService {
 
   // ============ PAYMENT FLOW ============
 
-  async markPaid(orderId: string, walletAddress: string) {
+  async markPaid(orderId: string, walletAddress: string, dto?: MarkPaidDto) {
     const [order] = await this.prisma.$queryRaw<RawOrderRow[]>`
       SELECT * FROM "VesOrder"
       WHERE "id" = ${orderId}
@@ -543,9 +543,26 @@ export class VesOnrampService {
       throw new BadRequestException(`Cannot mark as paid: order is ${order.status}`);
     }
 
+    // Validate receipt if provided
+    if (dto?.receipt) {
+      const estimatedBytes = (dto.receipt.length * 3) / 4;
+      if (estimatedBytes > 250_000) {
+        throw new BadRequestException('Receipt image too large. Must be under 200KB compressed.');
+      }
+      if (!dto.receipt.match(/^data:image\/(jpeg|jpg|png|webp);base64,/)) {
+        throw new BadRequestException('Receipt must be a base64-encoded image');
+      }
+    }
+
     await this.prisma.vesOrder.update({
       where: { id: orderId },
-      data: { status: 'PAYMENT_SENT', paidAt: new Date() },
+      data: {
+        status: 'PAYMENT_SENT',
+        paidAt: new Date(),
+        paymentReference: dto?.reference,
+        paymentReceipt: dto?.receipt,
+        receiptUploadedAt: dto?.receipt ? new Date() : undefined,
+      },
     });
 
     this.eventEmitter.emit('ves-onramp.payment.sent', {
@@ -554,6 +571,7 @@ export class VesOnrampService {
       lpWallet: order.lpWalletAddress,
       amountVes: order.amountVes,
       direction: order.direction,
+      hasReceipt: !!dto?.receipt,
     });
 
     return { success: true };
@@ -986,6 +1004,9 @@ export class VesOnrampService {
     sellerBankName?: string | null;
     sellerPhoneNumber?: string | null;
     sellerCiNumber?: string | null;
+    paymentReceipt?: string | null;
+    paymentReference?: string | null;
+    receiptUploadedAt?: Date | null;
     createdAt: Date;
     paidAt: Date | null;
     confirmedAt: Date | null;
@@ -1034,6 +1055,9 @@ export class VesOnrampService {
       disputeReason: order.disputeReason,
       direction: order.direction,
       pagoMovil,
+      paymentReceipt: order.paymentReceipt,
+      paymentReference: order.paymentReference,
+      receiptUploadedAt: order.receiptUploadedAt,
       createdAt: order.createdAt,
       paidAt: order.paidAt,
       confirmedAt: order.confirmedAt,
