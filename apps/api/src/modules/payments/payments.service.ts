@@ -1,5 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../../common/prisma.service';
+import { SocialService } from '../social/social.service';
 import { Connection } from '@solana/web3.js';
 
 interface TokenBalance {
@@ -24,7 +26,11 @@ const TOKEN_MINTS: Record<string, string> = {
 export class PaymentsService {
   private readonly connection: Connection;
 
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly eventEmitter: EventEmitter2,
+    private readonly socialService: SocialService
+  ) {
     this.connection = new Connection(
       process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com',
       'confirmed'
@@ -125,6 +131,18 @@ export class PaymentsService {
       throw new BadRequestException('Payment request already processed');
     }
 
+    // Emit event for push notifications (if social request)
+    if (request.requesterId) {
+      this.eventEmitter.emit('payment.request.paid', {
+        requestId: request.id,
+        requesterWallet: request.recipientAddress,
+        requesteeAddress: request.requesteeAddress,
+        amount: Number(request.amount) / 10 ** (TOKEN_DECIMALS[request.token] ?? 6),
+        token: request.token,
+        note: request.note,
+      });
+    }
+
     return { status: 'PAID', signature };
   }
 
@@ -159,6 +177,156 @@ export class PaymentsService {
     return sumForOwner(post) - sumForOwner(pre);
   }
 
+  // ── Social Requests (Phase 2) ────────────────────────────────────────
+
+  async requestFromUser(
+    requesterId: string,
+    requesterWallet: string,
+    dto: { recipientIdentifier: string; token: string; amount: number; note?: string }
+  ) {
+    const decimals = TOKEN_DECIMALS[dto.token];
+    if (!decimals) throw new BadRequestException('Unsupported token');
+
+    // Resolve recipient identifier (@username, #citizen, or raw address)
+    let requesteeAddress: string;
+    const identifier = dto.recipientIdentifier.trim();
+
+    if (identifier.startsWith('@') || identifier.startsWith('#')) {
+      const params: { username?: string; citizen?: string } = {};
+      if (identifier.startsWith('@')) {
+        params.username = identifier.slice(1);
+      } else {
+        params.citizen = identifier.slice(1);
+      }
+      const resolved = await this.socialService.lookupUser(params);
+      requesteeAddress = resolved.walletAddress;
+    } else {
+      requesteeAddress = identifier;
+    }
+
+    // Validate not self-request
+    if (requesteeAddress === requesterWallet) {
+      throw new BadRequestException('Cannot request payment from yourself');
+    }
+
+    // Look up requester username for denormalized display
+    const requester = await this.prisma.user.findUnique({
+      where: { id: requesterId },
+      select: { username: true },
+    });
+
+    const amountSmallest = BigInt(Math.round(dto.amount * 10 ** decimals));
+    const expiresAt = new Date(Date.now() + 72 * 60 * 60 * 1000); // 72h for social requests
+
+    const request = await this.prisma.paymentRequest.create({
+      data: {
+        recipientAddress: requesterWallet,
+        token: dto.token,
+        amount: amountSmallest,
+        expiresAt,
+        requesterId,
+        requesterUsername: requester?.username || null,
+        requesteeAddress,
+        note: dto.note || null,
+      },
+    });
+
+    // Emit event for push notification to requestee
+    this.eventEmitter.emit('payment.request.received', {
+      requestId: request.id,
+      requesterWallet,
+      requesterUsername: requester?.username,
+      requesteeAddress,
+      amount: dto.amount,
+      token: dto.token,
+      note: dto.note,
+    });
+
+    return this.formatRequest(request);
+  }
+
+  async getMyRequests(walletAddress: string) {
+    const requests = await this.prisma.paymentRequest.findMany({
+      where: {
+        recipientAddress: walletAddress,
+        requesterId: { not: null },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+    });
+
+    // Auto-expire stale ones
+    const now = new Date();
+    const results = [];
+    for (const r of requests) {
+      if (r.status === 'PENDING' && r.expiresAt < now) {
+        await this.prisma.paymentRequest.update({
+          where: { id: r.id },
+          data: { status: 'EXPIRED' },
+        });
+        results.push(this.formatRequest({ ...r, status: 'EXPIRED' }));
+      } else {
+        results.push(this.formatRequest(r));
+      }
+    }
+    return results;
+  }
+
+  async getRequestsForMe(walletAddress: string) {
+    const requests = await this.prisma.paymentRequest.findMany({
+      where: {
+        requesteeAddress: walletAddress,
+        status: { notIn: ['CANCELLED'] },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+    });
+
+    const now = new Date();
+    const results = [];
+    for (const r of requests) {
+      if (r.status === 'PENDING' && r.expiresAt < now) {
+        await this.prisma.paymentRequest.update({
+          where: { id: r.id },
+          data: { status: 'EXPIRED' },
+        });
+        results.push(this.formatRequest({ ...r, status: 'EXPIRED' }));
+      } else {
+        results.push(this.formatRequest(r));
+      }
+    }
+    return results;
+  }
+
+  async declineRequest(requestId: string, walletAddress: string) {
+    const request = await this.prisma.paymentRequest.findUnique({ where: { id: requestId } });
+    if (!request) throw new NotFoundException('Payment request not found');
+    if (request.requesteeAddress !== walletAddress) {
+      throw new BadRequestException('Only the requestee can decline this request');
+    }
+    if (request.status !== 'PENDING') {
+      throw new BadRequestException(`Cannot decline a ${request.status} request`);
+    }
+
+    await this.prisma.paymentRequest.update({
+      where: { id: requestId },
+      data: { status: 'DECLINED', declinedAt: new Date() },
+    });
+
+    // Emit event for push notification to requester
+    this.eventEmitter.emit('payment.request.declined', {
+      requestId,
+      requesterWallet: request.recipientAddress,
+      requesteeAddress: walletAddress,
+      amount: Number(request.amount) / 10 ** (TOKEN_DECIMALS[request.token] ?? 6),
+      token: request.token,
+    });
+
+    return { status: 'DECLINED' };
+  }
+
+  // ── Formatting ──────────────────────────────────────────────────────
+
   private formatRequest(request: {
     id: string;
     recipientAddress: string;
@@ -169,6 +337,11 @@ export class PaymentsService {
     paymentTx: string | null;
     expiresAt: Date;
     createdAt: Date;
+    requesterId?: string | null;
+    requesterUsername?: string | null;
+    requesteeAddress?: string | null;
+    note?: string | null;
+    declinedAt?: Date | null;
   }) {
     const decimals = TOKEN_DECIMALS[request.token] ?? 6;
     return {
@@ -182,6 +355,12 @@ export class PaymentsService {
       paymentTx: request.paymentTx,
       expiresAt: request.expiresAt.toISOString(),
       createdAt: request.createdAt.toISOString(),
+      // Phase 2 fields
+      requesterId: request.requesterId || null,
+      requesterUsername: request.requesterUsername || null,
+      requesteeAddress: request.requesteeAddress || null,
+      note: request.note || null,
+      declinedAt: request.declinedAt?.toISOString() || null,
     };
   }
 }

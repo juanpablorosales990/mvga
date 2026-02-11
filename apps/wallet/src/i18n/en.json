@@ -86,7 +86,10 @@
     "citizenNotFound": "Citizen number not found",
     "resolvedCitizen": "Citizen #{{number}}",
     "usernameTooShort": "Username must be at least 3 characters",
-    "invalidCitizen": "Invalid citizen number"
+    "invalidCitizen": "Invalid citizen number",
+    "note": "Note (optional)",
+    "notePlaceholder": "e.g. for rent, arepas...",
+    "payingRequest": "Paying a request — amount and recipient are pre-filled"
   },
   "receive": {
     "title": "Receive",
@@ -338,7 +341,9 @@
     "moneygram": "MoneyGram",
     "giftCards": "Gift Cards",
     "citizen": "Ciudadano Digital",
-    "scan": "Scan & Pay"
+    "scan": "Scan & Pay",
+    "requestMoney": "Request Money",
+    "requestsInbox": "Requests Inbox"
   },
   "grants": {
     "title": "Grants",
@@ -1351,5 +1356,34 @@
     "status_CANCELLED": "Cancelled",
     "status_REFUNDED": "Refunded",
     "status_EXPIRED": "Expired"
+  },
+  "request": {
+    "title": "Request Money",
+    "subtitle": "Ask someone to pay you via @username or citizen number",
+    "fromUser": "Request from",
+    "amount": "Amount",
+    "note": "Note (optional)",
+    "notePlaceholder": "e.g. for arepas",
+    "recipientRequired": "Enter a @username, #citizen, or address",
+    "invalidAmount": "Enter a valid amount",
+    "submit": "Send Request",
+    "success": "Request sent!",
+    "failed": "Failed to send request",
+    "viewInbox": "View Requests Inbox",
+    "inbox": "Requests",
+    "incoming": "Incoming",
+    "outgoing": "Outgoing",
+    "pay": "Pay",
+    "decline": "Decline",
+    "declineConfirm": "Are you sure you want to decline this request?",
+    "declined": "Request declined",
+    "declineFailed": "Failed to decline request",
+    "emptyIncoming": "No incoming requests",
+    "emptyOutgoing": "No outgoing requests",
+    "newRequest": "New Request",
+    "statusPending": "Pending",
+    "statusPaid": "Paid",
+    "statusDeclined": "Declined",
+    "statusExpired": "Expired"
   }
 }

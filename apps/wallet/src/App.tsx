@@ -49,6 +49,8 @@ const ScanPayPage = lazy(() => import('./pages/ScanPayPage'));
 const GiftCardsPage = lazy(() => import('./pages/GiftCardsPage'));
 const CitizenCardPage = lazy(() => import('./pages/CitizenCardPage'));
 const VesOnrampPage = lazy(() => import('./pages/VesOnrampPage'));
+const RequestPage = lazy(() => import('./pages/RequestPage'));
+const RequestsInboxPage = lazy(() => import('./pages/RequestsInboxPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 const WelcomeTour = lazy(() => import('./components/WelcomeTour'));
 
@@ -130,6 +132,8 @@ function AppShell() {
                 <Route path="/pay/:id" element={<PayPage />} />
                 <Route path="/topup" element={<TopUpPage />} />
                 <Route path="/contacts" element={<ContactsPage />} />
+                <Route path="/request" element={<RequestPage />} />
+                <Route path="/requests" element={<RequestsInboxPage />} />
                 <Route path="/price-alerts" element={<PriceAlertsPage />} />
                 <Route path="/batch-send" element={<BatchSendPage />} />
                 <Route path="/scheduled" element={<PendingScheduledPage />} />

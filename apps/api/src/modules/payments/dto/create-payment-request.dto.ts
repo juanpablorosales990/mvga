@@ -27,6 +27,29 @@ export class CreatePaymentRequestDto {
   memo?: string;
 }
 
+export class RequestFromUserDto {
+  @ApiProperty({ description: '@username, #citizen, or raw Solana address' })
+  @IsString()
+  @MinLength(2)
+  @MaxLength(100)
+  recipientIdentifier: string;
+
+  @ApiProperty({ enum: ['USDC', 'USDT', 'MVGA'], description: 'Token to request payment in' })
+  @IsIn(['USDC', 'USDT', 'MVGA'])
+  token: 'USDC' | 'USDT' | 'MVGA';
+
+  @ApiProperty({ description: 'Amount in human-readable units (e.g. 10.50)' })
+  @IsNumber()
+  @IsPositive()
+  amount: number;
+
+  @ApiProperty({ description: 'Optional note (e.g. "for arepas")', required: false })
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  note?: string;
+}
+
 export class VerifyPaymentDto {
   @ApiProperty({ description: 'On-chain transaction signature (base58, 64-88 chars)' })
   @IsString()

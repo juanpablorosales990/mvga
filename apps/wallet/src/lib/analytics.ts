@@ -30,6 +30,12 @@ export const AnalyticsEvents = {
   CITIZEN_LOOKUP: 'citizen_lookup',
   SEND_TO_USERNAME: 'send_to_username',
   CONTACTS_SYNCED: 'contacts_synced',
+  // Social payments (Phase 2)
+  REQUEST_SENT: 'request_sent',
+  REQUEST_PAID: 'request_paid',
+  REQUEST_DECLINED: 'request_declined',
+  REQUEST_PAGE_VIEWED: 'request_page_viewed',
+  INBOX_VIEWED: 'inbox_viewed',
 } as const;
 
 export type AnalyticsEvent = (typeof AnalyticsEvents)[keyof typeof AnalyticsEvents];

@@ -86,7 +86,10 @@
     "citizenNotFound": "Número de ciudadano no encontrado",
     "resolvedCitizen": "Ciudadano #{{number}}",
     "usernameTooShort": "El usuario debe tener al menos 3 caracteres",
-    "invalidCitizen": "Número de ciudadano inválido"
+    "invalidCitizen": "Número de ciudadano inválido",
+    "note": "Nota (opcional)",
+    "notePlaceholder": "ej. para las arepas...",
+    "payingRequest": "Pagando una solicitud — monto y destinatario pre-llenados"
   },
   "receive": {
     "title": "Recibir",
@@ -338,7 +341,9 @@
     "moneygram": "MoneyGram",
     "giftCards": "Tarjetas de Regalo",
     "citizen": "Ciudadano Digital",
-    "scan": "Escanear y Pagar"
+    "scan": "Escanear y Pagar",
+    "requestMoney": "Solicitar Dinero",
+    "requestsInbox": "Buzón de Solicitudes"
   },
   "grants": {
     "title": "Subvenciones",
@@ -1351,5 +1356,34 @@
     "status_CANCELLED": "Cancelada",
     "status_REFUNDED": "Reembolsada",
     "status_EXPIRED": "Expirada"
+  },
+  "request": {
+    "title": "Solicitar Dinero",
+    "subtitle": "Pide a alguien que te pague vía @usuario o número de ciudadano",
+    "fromUser": "Solicitar de",
+    "amount": "Monto",
+    "note": "Nota (opcional)",
+    "notePlaceholder": "ej. para las arepas",
+    "recipientRequired": "Ingresa un @usuario, #ciudadano o dirección",
+    "invalidAmount": "Ingresa un monto válido",
+    "submit": "Enviar Solicitud",
+    "success": "¡Solicitud enviada!",
+    "failed": "Error al enviar solicitud",
+    "viewInbox": "Ver Buzón de Solicitudes",
+    "inbox": "Solicitudes",
+    "incoming": "Recibidas",
+    "outgoing": "Enviadas",
+    "pay": "Pagar",
+    "decline": "Rechazar",
+    "declineConfirm": "¿Estás seguro de que quieres rechazar esta solicitud?",
+    "declined": "Solicitud rechazada",
+    "declineFailed": "Error al rechazar solicitud",
+    "emptyIncoming": "No hay solicitudes recibidas",
+    "emptyOutgoing": "No hay solicitudes enviadas",
+    "newRequest": "Nueva Solicitud",
+    "statusPending": "Pendiente",
+    "statusPaid": "Pagada",
+    "statusDeclined": "Rechazada",
+    "statusExpired": "Expirada"
   }
 }

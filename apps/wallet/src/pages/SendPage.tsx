@@ -18,6 +18,7 @@ import { useWalletStore } from '../stores/walletStore';
 import { parseSolanaPayUrl } from '../utils/solana-pay';
 import { showToast } from '../hooks/useToast';
 import { track, AnalyticsEvents } from '../lib/analytics';
+import { apiFetch } from '../lib/apiClient';
 
 const TOKEN_MINTS: Record<string, { mint: string; decimals: number }> = {
   USDC: { mint: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', decimals: 6 },
@@ -42,15 +43,21 @@ export default function SendPage() {
   const [resolvedUser, setResolvedUser] = useState<ResolvedUser | null>(null);
   const [amount, setAmount] = useState('');
   const [token, setToken] = useState('SOL');
+  const [note, setNote] = useState('');
   const sentViaUsername = useRef(false);
+  const requestId = searchParams.get('requestId');
 
-  // Pre-fill recipient from ?to= query param (e.g., from Contacts page)
+  // Pre-fill recipient from ?to= query param (e.g., from Contacts page or request inbox)
   useEffect(() => {
     const to = searchParams.get('to');
     if (to) {
       setRecipientInput(to);
       setRecipient(to);
     }
+    const amt = searchParams.get('amount');
+    if (amt) setAmount(amt);
+    const tok = searchParams.get('token');
+    if (tok) setToken(tok);
   }, [searchParams]);
 
   // Handle UserSearchInput resolution
@@ -294,10 +301,19 @@ export default function SendPage() {
         });
       }
 
+      // Verify request payment if this send came from a request inbox
+      if (requestId && txSignature) {
+        apiFetch(`/payments/request/${requestId}/verify`, {
+          method: 'POST',
+          body: JSON.stringify({ signature: txSignature }),
+        }).catch(() => {}); // Non-blocking
+      }
+
       setRecipientInput('');
       setRecipient('');
       setResolvedUser(null);
       setAmount('');
+      setNote('');
       invalidateBalances();
     } catch (err) {
       setError(err instanceof Error ? err.message : t('send.txFailed'));
@@ -425,6 +441,26 @@ export default function SendPage() {
             </p>
           )}
         </div>
+
+        {/* Note (optional) */}
+        <div>
+          <label className="block text-sm text-gray-400 mb-2">{t('send.note')}</label>
+          <input
+            type="text"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder={t('send.notePlaceholder')}
+            maxLength={100}
+            className="w-full bg-white/5 border border-white/10 px-4 py-3 text-sm focus:outline-none focus:border-gold-500"
+          />
+        </div>
+
+        {/* Request context banner */}
+        {requestId && (
+          <div className="bg-gold-500/10 border border-gold-500/20 px-4 py-2 text-gold-400 text-xs rounded">
+            {t('send.payingRequest')}
+          </div>
+        )}
 
         {/* Error Message */}
         {error && (

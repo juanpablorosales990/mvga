@@ -40,6 +40,9 @@ model User {
   // Social (Phase 1)
   contacts       Contact[]    @relation("UserContacts")
 
+  // Social (Phase 2) — Payment requests created by this user
+  sentRequests   PaymentRequest[] @relation("RequesterRequests")
+
   @@index([walletAddress])
 }
 
@@ -652,6 +655,7 @@ model NotificationPreference {
   staking       Boolean  @default(true)
   referrals     Boolean  @default(true)
   grants        Boolean  @default(true)
+  payments      Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }
@@ -738,22 +742,32 @@ enum CardAppStatus {
 // ============================================================================
 
 model PaymentRequest {
-  id               String               @id @default(uuid())
-  recipientAddress String
-  token            String               // USDC, USDT, MVGA
-  amount           BigInt               // In smallest units (6 or 9 decimals)
-  memo             String?
-  status           PaymentRequestStatus @default(PENDING)
-  paymentTx        String?              @unique  // On-chain tx that paid this
-  paypalOrderId    String?              @unique  // PayPal order ID if paid via PayPal
-  paymentMethod    String?              // 'solana' | 'paypal'
-  expiresAt        DateTime             // Default: 24h from creation
-  createdAt        DateTime             @default(now())
-  updatedAt        DateTime             @updatedAt
+  id                String               @id @default(uuid())
+  recipientAddress  String
+  token             String               // USDC, USDT, MVGA
+  amount            BigInt               // In smallest units (6 or 9 decimals)
+  memo              String?
+  status            PaymentRequestStatus @default(PENDING)
+  paymentTx         String?              @unique  // On-chain tx that paid this
+  paypalOrderId     String?              @unique  // PayPal order ID if paid via PayPal
+  paymentMethod     String?              // 'solana' | 'paypal'
+  expiresAt         DateTime             // Default: 24h from creation
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  // Phase 2: Social requests — who requested and from whom
+  requesterId       String?              // FK to User who created the request (gets paid)
+  requester         User?                @relation("RequesterRequests", fields: [requesterId], references: [id])
+  requesterUsername String?              // Denormalized for inbox display
+  requesteeAddress  String?              // Wallet address of who should pay
+  note              String?              // "for arepas" (off-chain note)
+  declinedAt        DateTime?
 
   @@index([recipientAddress])
   @@index([status])
   @@index([expiresAt])
+  @@index([requesteeAddress])
+  @@index([requesterId])
 }
 
 enum PaymentRequestStatus {
@@ -761,6 +775,7 @@ enum PaymentRequestStatus {
   PAID
   EXPIRED
   CANCELLED
+  DECLINED
 }
 
 // ============================================================================

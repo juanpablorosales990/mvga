@@ -78,6 +78,11 @@ describe('analytics', () => {
     expect(AnalyticsEvents.CITIZEN_LOOKUP).toBe('citizen_lookup');
     expect(AnalyticsEvents.SEND_TO_USERNAME).toBe('send_to_username');
     expect(AnalyticsEvents.CONTACTS_SYNCED).toBe('contacts_synced');
-    expect(Object.keys(AnalyticsEvents).length).toBe(27);
+    expect(AnalyticsEvents.REQUEST_SENT).toBe('request_sent');
+    expect(AnalyticsEvents.REQUEST_PAID).toBe('request_paid');
+    expect(AnalyticsEvents.REQUEST_DECLINED).toBe('request_declined');
+    expect(AnalyticsEvents.REQUEST_PAGE_VIEWED).toBe('request_page_viewed');
+    expect(AnalyticsEvents.INBOX_VIEWED).toBe('inbox_viewed');
+    expect(Object.keys(AnalyticsEvents).length).toBe(32);
   });
 });

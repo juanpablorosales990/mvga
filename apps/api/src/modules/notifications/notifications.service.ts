@@ -31,6 +31,16 @@ interface ReferralEvent {
   amount: number;
 }
 
+interface PaymentRequestEvent {
+  requestId: string;
+  requesterWallet: string;
+  requesterUsername?: string | null;
+  requesteeAddress: string;
+  amount: number;
+  token: string;
+  note?: string | null;
+}
+
 @Injectable()
 export class NotificationsService {
   private readonly logger = new Logger(NotificationsService.name);
@@ -94,7 +104,13 @@ export class NotificationsService {
 
   async updatePreferences(
     walletAddress: string,
-    prefs: { p2pTrades?: boolean; staking?: boolean; referrals?: boolean; grants?: boolean }
+    prefs: {
+      p2pTrades?: boolean;
+      staking?: boolean;
+      referrals?: boolean;
+      grants?: boolean;
+      payments?: boolean;
+    }
   ) {
     return this.prisma.notificationPreference.upsert({
       where: { walletAddress },
@@ -242,11 +258,63 @@ export class NotificationsService {
     });
   }
 
+  // ── Payment Request Events (Phase 2) ────────────────────────────────
+
+  @OnEvent('payment.request.received')
+  async onPaymentRequestReceived(event: PaymentRequestEvent) {
+    const from = event.requesterUsername
+      ? `@${event.requesterUsername}`
+      : event.requesterWallet.slice(0, 8);
+    const noteText = event.note ? ` — ${event.note}` : '';
+    await this.notifyIfEnabled(event.requesteeAddress, 'payments', {
+      title: 'Solicitud de pago',
+      body: `${from} te solicita $${event.amount.toFixed(2)} ${event.token}${noteText}`,
+      url: '/requests',
+      tag: `request-${event.requestId}`,
+    });
+  }
+
+  @OnEvent('payment.request.paid')
+  async onPaymentRequestPaid(event: PaymentRequestEvent) {
+    await this.notifyIfEnabled(event.requesterWallet, 'payments', {
+      title: 'Solicitud pagada',
+      body: `Tu solicitud de $${event.amount.toFixed(2)} ${event.token} fue pagada`,
+      url: '/requests',
+      tag: `request-${event.requestId}`,
+    });
+  }
+
+  @OnEvent('payment.request.declined')
+  async onPaymentRequestDeclined(event: PaymentRequestEvent) {
+    await this.notifyIfEnabled(event.requesterWallet, 'payments', {
+      title: 'Solicitud rechazada',
+      body: `Tu solicitud de $${event.amount.toFixed(2)} ${event.token} fue rechazada`,
+      url: '/requests',
+      tag: `request-${event.requestId}`,
+    });
+  }
+
+  @OnEvent('payment.received')
+  async onPaymentReceived(event: {
+    recipientAddress: string;
+    senderUsername?: string;
+    amount: number;
+    token: string;
+  }) {
+    const from = event.senderUsername ? `@${event.senderUsername}` : 'alguien';
+    await this.notifyIfEnabled(event.recipientAddress, 'payments', {
+      title: 'Pago recibido',
+      body: `Recibiste $${event.amount.toFixed(2)} ${event.token} de ${from}`,
+      url: '/',
+      tag: 'payment-received',
+    });
+  }
+
   // ── Helpers ─────────────────────────────────────────────────────────
 
   private async notifyIfEnabled(
     walletAddress: string,
-    category: 'p2pTrades' | 'staking' | 'referrals' | 'grants',
+    category: 'p2pTrades' | 'staking' | 'referrals' | 'grants' | 'payments',
     payload: PushPayload
   ) {
     try {
