@@ -747,7 +747,17 @@
     "referralSummary": "Referral Summary",
     "viewReferrals": "View Referrals",
     "recentActivity": "Recent Activity",
-    "connectPrompt": "Connect your wallet to view your portfolio"
+    "connectPrompt": "Connect your wallet to view your portfolio",
+    "savings": "Savings",
+    "earnings": "Total Earnings",
+    "savingsYield": "Savings Yield",
+    "stakingRewards": "Staking Rewards",
+    "referralBonuses": "Referral Bonuses",
+    "totalEarned": "Total Earned",
+    "savingsSummary": "Savings Summary",
+    "viewSavings": "View Savings",
+    "deposited": "Deposited",
+    "currentValue": "Current Value"
   },
   "banking": {
     "title": "Dollar Account",

@@ -747,7 +747,17 @@
     "referralSummary": "Resumen de Referidos",
     "viewReferrals": "Ver Referidos",
     "recentActivity": "Actividad Reciente",
-    "connectPrompt": "Conecta tu billetera para ver tu portafolio"
+    "connectPrompt": "Conecta tu billetera para ver tu portafolio",
+    "savings": "Ahorros",
+    "earnings": "Ganancias Totales",
+    "savingsYield": "Rendimiento de Ahorros",
+    "stakingRewards": "Recompensas de Staking",
+    "referralBonuses": "Bonos de Referidos",
+    "totalEarned": "Total Ganado",
+    "savingsSummary": "Resumen de Ahorros",
+    "viewSavings": "Ver Ahorros",
+    "deposited": "Depositado",
+    "currentValue": "Valor Actual"
   },
   "banking": {
     "title": "Cuenta en Dólares",

@@ -41,6 +41,17 @@ interface PaymentRequestEvent {
   note?: string | null;
 }
 
+interface VesOnrampEvent {
+  orderId: string;
+  buyerWallet: string;
+  lpWallet: string;
+  amountUsdc?: number;
+  amountVes?: number;
+  direction?: string;
+  reason?: string;
+  hasReceipt?: boolean;
+}
+
 @Injectable()
 export class NotificationsService {
   private readonly logger = new Logger(NotificationsService.name);
@@ -222,6 +233,65 @@ export class NotificationsService {
         url: '/p2p',
         tag: `p2p-${event.tradeId}`,
       }),
+    ]);
+  }
+
+  // ── VES Onramp Events ────────────────────────────────────────────────
+
+  @OnEvent('ves-onramp.order.created')
+  async onVesOrderCreated(event: VesOnrampEvent) {
+    await this.notifyIfEnabled(event.lpWallet, 'p2pTrades', {
+      title: 'Nueva orden VES',
+      body:
+        event.direction === 'ON_RAMP'
+          ? `Un comprador quiere comprar ${event.amountUsdc} USDC con bolívares`
+          : `Un vendedor quiere vender ${event.amountUsdc} USDC por bolívares`,
+      url: '/ves-onramp',
+      tag: `ves-${event.orderId}`,
+    });
+  }
+
+  @OnEvent('ves-onramp.escrow.locked')
+  async onVesEscrowLocked(event: VesOnrampEvent) {
+    await this.notifyIfEnabled(event.buyerWallet, 'p2pTrades', {
+      title: 'USDC en custodia',
+      body: `${event.amountUsdc} USDC bloqueados en custodia. Envía el pago en bolívares.`,
+      url: '/ves-onramp',
+      tag: `ves-${event.orderId}`,
+    });
+  }
+
+  @OnEvent('ves-onramp.payment.sent')
+  async onVesPaymentSent(event: VesOnrampEvent) {
+    await this.notifyIfEnabled(event.lpWallet, 'p2pTrades', {
+      title: 'Pago VES enviado',
+      body: `El comprador marcó el pago como enviado${event.hasReceipt ? ' (con comprobante)' : ''}. Verifica y libera.`,
+      url: '/ves-onramp',
+      tag: `ves-${event.orderId}`,
+    });
+  }
+
+  @OnEvent('ves-onramp.order.completed')
+  async onVesOrderCompleted(event: VesOnrampEvent) {
+    await this.notifyIfEnabled(event.buyerWallet, 'p2pTrades', {
+      title: 'Orden VES completada',
+      body: `Recibiste ${event.amountUsdc} USDC`,
+      url: '/ves-onramp',
+      tag: `ves-${event.orderId}`,
+    });
+  }
+
+  @OnEvent('ves-onramp.order.disputed')
+  async onVesOrderDisputed(event: VesOnrampEvent) {
+    const payload: PushPayload = {
+      title: 'Disputa VES abierta',
+      body: `Se abrió una disputa: ${event.reason ?? 'Sin razón especificada'}`,
+      url: '/ves-onramp',
+      tag: `ves-${event.orderId}`,
+    };
+    await Promise.all([
+      this.notifyIfEnabled(event.buyerWallet, 'p2pTrades', payload),
+      this.notifyIfEnabled(event.lpWallet, 'p2pTrades', payload),
     ]);
   }
 

@@ -237,4 +237,143 @@ describe('NotificationsService', () => {
       expect(payload.title).toBe('Bono de referido');
     });
   });
+
+  describe('VES onramp event handlers', () => {
+    beforeEach(() => {
+      prismaService.pushSubscription.findMany.mockResolvedValue([
+        { endpoint: 'https://push.example.com/1', p256dh: 'k', auth: 'a' },
+      ]);
+      (webpush.sendNotification as jest.Mock).mockResolvedValue({});
+    });
+
+    it('onVesOrderCreated ON_RAMP → sends push to LP wallet', async () => {
+      await service.onVesOrderCreated({
+        orderId: 'order-1',
+        buyerWallet: 'buyer-addr',
+        lpWallet: 'lp-addr',
+        amountUsdc: 50,
+        direction: 'ON_RAMP',
+      });
+
+      expect(prismaService.pushSubscription.findMany).toHaveBeenCalledWith({
+        where: { walletAddress: 'lp-addr' },
+      });
+      const payload = JSON.parse((webpush.sendNotification as jest.Mock).mock.calls[0][1]);
+      expect(payload.title).toBe('Nueva orden VES');
+      expect(payload.body).toContain('comprar 50 USDC');
+    });
+
+    it('onVesOrderCreated OFF_RAMP → correct message', async () => {
+      await service.onVesOrderCreated({
+        orderId: 'order-2',
+        buyerWallet: 'buyer-addr',
+        lpWallet: 'lp-addr',
+        amountUsdc: 100,
+        direction: 'OFF_RAMP',
+      });
+
+      const payload = JSON.parse((webpush.sendNotification as jest.Mock).mock.calls[0][1]);
+      expect(payload.body).toContain('vender 100 USDC');
+    });
+
+    it('onVesEscrowLocked → sends push to buyer wallet', async () => {
+      await service.onVesEscrowLocked({
+        orderId: 'order-1',
+        buyerWallet: 'buyer-addr',
+        lpWallet: 'lp-addr',
+        amountUsdc: 50,
+      });
+
+      expect(prismaService.pushSubscription.findMany).toHaveBeenCalledWith({
+        where: { walletAddress: 'buyer-addr' },
+      });
+      const payload = JSON.parse((webpush.sendNotification as jest.Mock).mock.calls[0][1]);
+      expect(payload.title).toBe('USDC en custodia');
+      expect(payload.body).toContain('50 USDC bloqueados');
+    });
+
+    it('onVesPaymentSent with receipt → includes receipt note', async () => {
+      await service.onVesPaymentSent({
+        orderId: 'order-1',
+        buyerWallet: 'buyer-addr',
+        lpWallet: 'lp-addr',
+        hasReceipt: true,
+      });
+
+      expect(prismaService.pushSubscription.findMany).toHaveBeenCalledWith({
+        where: { walletAddress: 'lp-addr' },
+      });
+      const payload = JSON.parse((webpush.sendNotification as jest.Mock).mock.calls[0][1]);
+      expect(payload.title).toBe('Pago VES enviado');
+      expect(payload.body).toContain('(con comprobante)');
+    });
+
+    it('onVesPaymentSent without receipt → no receipt note', async () => {
+      await service.onVesPaymentSent({
+        orderId: 'order-1',
+        buyerWallet: 'buyer-addr',
+        lpWallet: 'lp-addr',
+        hasReceipt: false,
+      });
+
+      const payload = JSON.parse((webpush.sendNotification as jest.Mock).mock.calls[0][1]);
+      expect(payload.body).not.toContain('comprobante');
+    });
+
+    it('onVesOrderCompleted → sends push to buyer with USDC amount', async () => {
+      await service.onVesOrderCompleted({
+        orderId: 'order-1',
+        buyerWallet: 'buyer-addr',
+        lpWallet: 'lp-addr',
+        amountUsdc: 75,
+      });
+
+      expect(prismaService.pushSubscription.findMany).toHaveBeenCalledWith({
+        where: { walletAddress: 'buyer-addr' },
+      });
+      const payload = JSON.parse((webpush.sendNotification as jest.Mock).mock.calls[0][1]);
+      expect(payload.title).toBe('Orden VES completada');
+      expect(payload.body).toBe('Recibiste 75 USDC');
+    });
+
+    it('onVesOrderDisputed → sends push to BOTH buyer and LP', async () => {
+      await service.onVesOrderDisputed({
+        orderId: 'order-1',
+        buyerWallet: 'buyer-addr',
+        lpWallet: 'lp-addr',
+        reason: 'Pago no recibido',
+      });
+
+      // findMany called twice (once for buyer, once for LP)
+      expect(prismaService.pushSubscription.findMany).toHaveBeenCalledWith({
+        where: { walletAddress: 'buyer-addr' },
+      });
+      expect(prismaService.pushSubscription.findMany).toHaveBeenCalledWith({
+        where: { walletAddress: 'lp-addr' },
+      });
+      expect(webpush.sendNotification).toHaveBeenCalledTimes(2);
+    });
+
+    it('p2pTrades preference disabled → no push sent', async () => {
+      prismaService.notificationPreference.findUnique.mockResolvedValue({
+        walletAddress: 'lp-addr',
+        p2pTrades: false,
+        staking: true,
+        referrals: true,
+        grants: true,
+        payments: true,
+        priceAlerts: true,
+      });
+
+      await service.onVesOrderCreated({
+        orderId: 'order-1',
+        buyerWallet: 'buyer-addr',
+        lpWallet: 'lp-addr',
+        amountUsdc: 50,
+        direction: 'ON_RAMP',
+      });
+
+      expect(webpush.sendNotification).not.toHaveBeenCalled();
+    });
+  });
 });

@@ -22,6 +22,12 @@ interface ReferralStats {
   totalEarned: number;
 }
 
+interface SavingsData {
+  totalDeposited: number;
+  totalCurrent: number;
+  positions: { token: string; depositedAmount: number; currentAmount: number; apy: number }[];
+}
+
 interface RecentTx {
   id: string;
   type: string;
@@ -30,7 +36,7 @@ interface RecentTx {
   createdAt: string;
 }
 
-const PIE_COLORS = ['#3b82f6', '#22c55e', '#ec4899'];
+const PIE_COLORS = ['#3b82f6', '#22c55e', '#f59e0b', '#ec4899'];
 
 export default function PortfolioPage() {
   const { t } = useTranslation();
@@ -42,6 +48,7 @@ export default function PortfolioPage() {
 
   const [staking, setStaking] = useState<StakingData | null>(null);
   const [referrals, setReferrals] = useState<ReferralStats | null>(null);
+  const [savings, setSavings] = useState<SavingsData | null>(null);
   const [recentTxs, setRecentTxs] = useState<RecentTx[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -69,6 +76,17 @@ export default function PortfolioPage() {
             .catch(() => null)
         : Promise.resolve(),
 
+      // Savings positions (authed)
+      isAuthenticated
+        ? fetch(`${API_URL}/savings/positions`, {
+            credentials: 'include',
+            signal: controller.signal,
+          })
+            .then((r) => r.json())
+            .then((data) => setSavings(data))
+            .catch(() => null)
+        : Promise.resolve(),
+
       // Recent transactions
       fetch(`${API_URL}/wallet/${addr}/transaction-log?limit=5`, { signal: controller.signal })
         .then((r) => r.json())
@@ -86,12 +104,20 @@ export default function PortfolioPage() {
   }, [connected, publicKey, isAuthenticated, t]);
 
   const stakedValueUsd = (staking?.totalStaked ?? 0) * prices.mvga;
+  const savingsValueUsd = savings?.totalCurrent ?? 0;
   const referralValueUsd = (referrals?.totalEarned ?? 0) * prices.mvga;
-  const totalPortfolio = totalUsdValue + stakedValueUsd + referralValueUsd;
+  const totalPortfolio = totalUsdValue + stakedValueUsd + savingsValueUsd + referralValueUsd;
+
+  // Earnings breakdown
+  const savingsYield = Math.max(0, (savings?.totalCurrent ?? 0) - (savings?.totalDeposited ?? 0));
+  const stakingRewardsUsd = (staking?.pendingRewards ?? 0) * prices.mvga;
+  const referralBonusesUsd = referralValueUsd;
+  const totalEarned = savingsYield + stakingRewardsUsd + referralBonusesUsd;
 
   const pieData = [
     { name: t('portfolio.walletBalances'), value: totalUsdValue },
     { name: t('portfolio.staked'), value: stakedValueUsd },
+    { name: t('portfolio.savings'), value: savingsValueUsd },
     { name: t('portfolio.referralEarnings'), value: referralValueUsd },
   ].filter((d) => d.value > 0);
 
@@ -192,6 +218,37 @@ export default function PortfolioPage() {
             </div>
           )}
 
+          {/* Earnings Breakdown */}
+          {totalEarned > 0 && (
+            <div className="card p-4 space-y-3">
+              <h2 className="font-semibold">{t('portfolio.earnings')}</h2>
+              <div className="space-y-2 text-sm">
+                {savingsYield > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-400">{t('portfolio.savingsYield')}</span>
+                    <span className="text-green-400">+{formatTotal(savingsYield)}</span>
+                  </div>
+                )}
+                {stakingRewardsUsd > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-400">{t('portfolio.stakingRewards')}</span>
+                    <span className="text-green-400">+{formatTotal(stakingRewardsUsd)}</span>
+                  </div>
+                )}
+                {referralBonusesUsd > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-400">{t('portfolio.referralBonuses')}</span>
+                    <span className="text-green-400">+{formatTotal(referralBonusesUsd)}</span>
+                  </div>
+                )}
+                <div className="border-t border-white/10 pt-2 flex items-center justify-between font-semibold">
+                  <span>{t('portfolio.totalEarned')}</span>
+                  <span className="text-green-400">+{formatTotal(totalEarned)}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Staking Summary */}
           {staking && staking.totalStaked > 0 && (
             <div className="card p-4 space-y-2">
@@ -239,6 +296,28 @@ export default function PortfolioPage() {
                 <div>
                   <p className="text-gray-400">{t('referral.totalEarned')}</p>
                   <p className="font-medium">{referrals.totalEarned.toLocaleString()} MVGA</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Savings Summary */}
+          {savings && savings.totalCurrent > 0 && (
+            <div className="card p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <h2 className="font-semibold">{t('portfolio.savingsSummary')}</h2>
+                <Link to="/banking" className="text-xs text-gold-400 hover:text-gold-300">
+                  {t('portfolio.viewSavings')}
+                </Link>
+              </div>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <p className="text-gray-400">{t('portfolio.deposited')}</p>
+                  <p className="font-medium">{formatTotal(savings.totalDeposited)}</p>
+                </div>
+                <div>
+                  <p className="text-gray-400">{t('portfolio.currentValue')}</p>
+                  <p className="font-medium text-green-400">{formatTotal(savings.totalCurrent)}</p>
                 </div>
               </div>
             </div>
