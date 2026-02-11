@@ -37,6 +37,9 @@ model User {
   lpVesOffers    VesOffer[]   @relation("LpVesOffers")
   buyerVesOrders VesOrder[]   @relation("BuyerVesOrders")
 
+  // Social (Phase 1)
+  contacts       Contact[]    @relation("UserContacts")
+
   @@index([walletAddress])
 }
 
@@ -1105,6 +1108,25 @@ enum VesOrderStatus {
   CANCELLED
   REFUNDED
   EXPIRED
+}
+
+// ============================================================================
+// Social (Contacts, Feed, Friends)
+// ============================================================================
+
+model Contact {
+  id             String   @id @default(uuid())
+  ownerId        String
+  owner          User     @relation("UserContacts", fields: [ownerId], references: [id], onDelete: Cascade)
+  contactAddress String
+  label          String
+  isFavorite     Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([ownerId, contactAddress])
+  @@index([ownerId])
+  @@index([contactAddress])
 }
 
 // ============================================================================

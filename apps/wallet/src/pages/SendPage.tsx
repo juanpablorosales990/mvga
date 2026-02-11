@@ -13,6 +13,7 @@ import FiatValue from '../components/FiatValue';
 import TransactionPreviewModal from '../components/TransactionPreviewModal';
 import AddressBookModal from '../components/AddressBookModal';
 import QRScannerModal from '../components/QRScannerModal';
+import UserSearchInput, { type ResolvedUser } from '../components/UserSearchInput';
 import { useWalletStore } from '../stores/walletStore';
 import { parseSolanaPayUrl } from '../utils/solana-pay';
 import { showToast } from '../hooks/useToast';
@@ -36,15 +37,27 @@ export default function SendPage() {
   const addAddress = useWalletStore((s) => s.addAddress);
 
   const [searchParams] = useSearchParams();
-  const [recipient, setRecipient] = useState('');
+  const [recipientInput, setRecipientInput] = useState('');
+  const [recipient, setRecipient] = useState(''); // resolved wallet address
+  const [resolvedUser, setResolvedUser] = useState<ResolvedUser | null>(null);
   const [amount, setAmount] = useState('');
   const [token, setToken] = useState('SOL');
+  const sentViaUsername = useRef(false);
 
   // Pre-fill recipient from ?to= query param (e.g., from Contacts page)
   useEffect(() => {
     const to = searchParams.get('to');
-    if (to) setRecipient(to);
+    if (to) {
+      setRecipientInput(to);
+      setRecipient(to);
+    }
   }, [searchParams]);
+
+  // Handle UserSearchInput resolution
+  const handleResolve = useCallback((user: ResolvedUser | null) => {
+    setResolvedUser(user);
+    setRecipient(user?.walletAddress || '');
+  }, []);
   const [sending, setSending] = useState(false);
   const sendingRef = useRef(false);
   const [txSignature, setTxSignature] = useState<string | null>(null);
@@ -65,6 +78,7 @@ export default function SendPage() {
       // Try Solana Pay URL first
       const parsed = parseSolanaPayUrl(data);
       if (parsed) {
+        setRecipientInput(parsed.address);
         setRecipient(parsed.address);
         if (parsed.amount) setAmount(String(parsed.amount));
         if (parsed.token && parsed.token in TOKEN_MINTS) setToken(parsed.token);
@@ -74,6 +88,7 @@ export default function SendPage() {
       // Try plain base58 address
       try {
         new PublicKey(data);
+        setRecipientInput(data);
         setRecipient(data);
         showToast('success', t('send.qrScanned'));
       } catch {
@@ -264,12 +279,24 @@ export default function SendPage() {
       }
 
       // Track recent recipient + onboarding
-      addRecentRecipient(recipient, contactMatch?.label);
+      const recipientLabel =
+        resolvedUser?.displayName || resolvedUser?.username || contactMatch?.label;
+      addRecentRecipient(recipient, recipientLabel || undefined);
       markFirstSend();
       lastSentRecipient.current = recipient;
+      sentViaUsername.current = !!resolvedUser?.username;
       track(AnalyticsEvents.SEND_COMPLETED, { token, amount: amountNum });
+      if (resolvedUser?.username) {
+        track(AnalyticsEvents.SEND_TO_USERNAME, {
+          username: resolvedUser.username,
+          token,
+          amount: amountNum,
+        });
+      }
 
+      setRecipientInput('');
       setRecipient('');
+      setResolvedUser(null);
       setAmount('');
       invalidateBalances();
     } catch (err) {
@@ -307,12 +334,12 @@ export default function SendPage() {
           </select>
         </div>
 
-        {/* Recipient */}
+        {/* Recipient — @username, #citizen, or Solana address */}
         <div>
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <label className="text-sm text-gray-400">{t('send.recipientAddress')}</label>
-              {searchParams.get('to') && recipient === searchParams.get('to') && (
+              {searchParams.get('to') && recipientInput === searchParams.get('to') && (
                 <span className="text-[10px] px-1.5 py-0.5 bg-gold-500/20 text-gold-400 rounded">
                   {t('send.fromContacts')}
                 </span>
@@ -335,15 +362,13 @@ export default function SendPage() {
               </button>
             </div>
           </div>
-          <input
-            type="text"
-            value={recipient}
-            onChange={(e) => setRecipient(e.target.value)}
-            placeholder={t('send.enterAddress')}
-            className="w-full bg-white/5 border border-white/10 px-4 py-3 focus:outline-none focus:border-gold-500"
+          <UserSearchInput
+            value={recipientInput}
+            onChange={setRecipientInput}
+            onResolve={handleResolve}
           />
-          {/* Contact name display */}
-          {contactMatch && (
+          {/* Contact name display (for raw address matches) */}
+          {contactMatch && !resolvedUser && (
             <p className="text-xs text-gold-400 mt-1">
               {t('send.sendingTo', { name: contactMatch.label })}
             </p>
@@ -351,7 +376,7 @@ export default function SendPage() {
         </div>
 
         {/* Recent Recipients */}
-        {recentRecipients.length > 0 && !recipient && (
+        {recentRecipients.length > 0 && !recipientInput && (
           <div>
             <label className="block text-xs text-gray-500 mb-2">{t('send.recentRecipients')}</label>
             <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
@@ -361,7 +386,10 @@ export default function SendPage() {
                 return (
                   <button
                     key={r.address}
-                    onClick={() => setRecipient(r.address)}
+                    onClick={() => {
+                      setRecipientInput(r.address);
+                      setRecipient(r.address);
+                    }}
                     className="flex-shrink-0 px-3 py-1.5 bg-white/5 border border-white/10 rounded-full text-xs text-gray-300 hover:bg-white/10 hover:border-white/20 transition"
                   >
                     {displayLabel || `${r.address.slice(0, 4)}...${r.address.slice(-4)}`}
@@ -488,7 +516,10 @@ export default function SendPage() {
       <AddressBookModal
         open={showAddressBook}
         onClose={() => setShowAddressBook(false)}
-        onSelect={(addr) => setRecipient(addr)}
+        onSelect={(addr) => {
+          setRecipientInput(addr);
+          setRecipient(addr);
+        }}
       />
 
       <QRScannerModal

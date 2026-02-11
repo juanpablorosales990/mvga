@@ -25,6 +25,11 @@ export const AnalyticsEvents = {
   VES_ONRAMP_COMPLETED: 'ves_onramp_completed',
   SUPPORT_CHAT_OPENED: 'support_chat_opened',
   SUPPORT_ESCALATED: 'support_escalated',
+  // Social payments (Phase 1)
+  USERNAME_LOOKUP: 'username_lookup',
+  CITIZEN_LOOKUP: 'citizen_lookup',
+  SEND_TO_USERNAME: 'send_to_username',
+  CONTACTS_SYNCED: 'contacts_synced',
 } as const;
 
 export type AnalyticsEvent = (typeof AnalyticsEvents)[keyof typeof AnalyticsEvents];

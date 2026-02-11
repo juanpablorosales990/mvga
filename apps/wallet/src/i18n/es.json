@@ -79,7 +79,14 @@
     "usdcLabel": "USDC - USD Coin",
     "mvgaLabel": "MVGA - Make Venezuela Great Again",
     "saveContact": "Guardar",
-    "contactSaved": "¡Contacto guardado!"
+    "contactSaved": "¡Contacto guardado!",
+    "enterUsernameOrAddress": "@usuario, #ciudadano, o dirección Solana",
+    "resolving": "Resolviendo...",
+    "usernameNotFound": "Usuario no encontrado",
+    "citizenNotFound": "Número de ciudadano no encontrado",
+    "resolvedCitizen": "Ciudadano #{{number}}",
+    "usernameTooShort": "El usuario debe tener al menos 3 caracteres",
+    "invalidCitizen": "Número de ciudadano inválido"
   },
   "receive": {
     "title": "Recibir",
@@ -953,7 +960,12 @@
     "invalidAddress": "Dirección de Solana inválida",
     "nameRequired": "El nombre del contacto es requerido",
     "copied": "¡Dirección copiada!",
-    "searchPlaceholder": "Buscar contactos..."
+    "searchPlaceholder": "Buscar contactos...",
+    "syncing": "Sincronizando...",
+    "syncFailed": "Error al sincronizar — usando contactos locales",
+    "favorite": "Favorito",
+    "unfavorite": "Quitar favorito",
+    "mvgaUser": "Usuario MVGA"
   },
   "priceAlerts": {
     "title": "Alertas de Precio",

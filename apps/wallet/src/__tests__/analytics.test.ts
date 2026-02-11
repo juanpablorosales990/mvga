@@ -74,6 +74,10 @@ describe('analytics', () => {
     expect(AnalyticsEvents.VES_ONRAMP_COMPLETED).toBe('ves_onramp_completed');
     expect(AnalyticsEvents.SUPPORT_CHAT_OPENED).toBe('support_chat_opened');
     expect(AnalyticsEvents.SUPPORT_ESCALATED).toBe('support_escalated');
-    expect(Object.keys(AnalyticsEvents).length).toBe(23);
+    expect(AnalyticsEvents.USERNAME_LOOKUP).toBe('username_lookup');
+    expect(AnalyticsEvents.CITIZEN_LOOKUP).toBe('citizen_lookup');
+    expect(AnalyticsEvents.SEND_TO_USERNAME).toBe('send_to_username');
+    expect(AnalyticsEvents.CONTACTS_SYNCED).toBe('contacts_synced');
+    expect(Object.keys(AnalyticsEvents).length).toBe(27);
   });
 });
