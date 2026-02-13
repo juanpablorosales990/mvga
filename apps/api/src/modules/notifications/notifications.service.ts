@@ -346,12 +346,31 @@ export class NotificationsService {
   }
 
   @OnEvent('payment.request.paid')
-  async onPaymentRequestPaid(event: PaymentRequestEvent) {
+  async onPaymentRequestPaid(event: PaymentRequestEvent & { storeOrderId?: string | null }) {
+    // Skip notification for merchant orders — handled by merchant.order.paid
+    if (event.storeOrderId) return;
+
     await this.notifyIfEnabled(event.requesterWallet, 'payments', {
       title: 'Solicitud pagada',
       body: `Tu solicitud de $${event.amount.toFixed(2)} ${event.token} fue pagada`,
       url: '/requests',
       tag: `request-${event.requestId}`,
+    });
+  }
+
+  @OnEvent('merchant.order.paid')
+  async onMerchantOrderPaid(event: {
+    merchantWallet: string;
+    storeName: string;
+    orderNumber: number;
+    amount: number;
+    token: string;
+  }) {
+    await this.sendToWallet(event.merchantWallet, {
+      title: 'Venta recibida!',
+      body: `${event.storeName}: Pedido #${event.orderNumber} — $${event.amount.toFixed(2)} ${event.token}`,
+      url: '/merchant/orders',
+      tag: `merchant-order-${event.orderNumber}`,
     });
   }
 

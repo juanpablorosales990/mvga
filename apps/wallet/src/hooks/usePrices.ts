@@ -6,7 +6,9 @@ interface Prices {
   usdc: number;
   usdt: number;
   mvga: number;
-  vesRate: number;
+  vesRate: number; // BCV official (backward compat)
+  vesBcvRate: number; // BCV official
+  vesParallelRate: number; // parallel market
 }
 
 const CACHE_TTL = 60_000; // 60 seconds
@@ -19,18 +21,35 @@ async function fetchPricesFromAPI(): Promise<Prices> {
     return cachedPrices;
   }
 
-  // Fetch crypto prices from our API
-  const prices: Prices = { sol: 0, usdc: 1, usdt: 1, mvga: 0, vesRate: 0 };
+  const prices: Prices = {
+    sol: 0,
+    usdc: 1,
+    usdt: 1,
+    mvga: 0,
+    vesRate: 0,
+    vesBcvRate: 0,
+    vesParallelRate: 0,
+  };
 
   try {
-    const res = await fetch(`${API_URL}/wallet/prices`);
+    const res = await fetch(`${API_URL}/price-alerts/rates`);
     if (res.ok) {
-      const data: { symbol: string; price: number }[] = await res.json();
-      for (const entry of data) {
-        const key = entry.symbol.toLowerCase() as keyof Prices;
-        if (key in prices && key !== 'vesRate') {
-          prices[key] = entry.price;
-        }
+      const data: { tokens: Record<string, number>; ves: { official: number; parallel: number } } =
+        await res.json();
+
+      // Map token prices
+      if (data.tokens) {
+        if (data.tokens.SOL) prices.sol = data.tokens.SOL;
+        if (data.tokens.USDC) prices.usdc = data.tokens.USDC;
+        if (data.tokens.USDT) prices.usdt = data.tokens.USDT;
+        if (data.tokens.MVGA) prices.mvga = data.tokens.MVGA;
+      }
+
+      // Map VES rates
+      if (data.ves) {
+        prices.vesBcvRate = data.ves.official || 0;
+        prices.vesParallelRate = data.ves.parallel || 0;
+        prices.vesRate = prices.vesBcvRate; // backward compat
       }
     }
   } catch {
@@ -38,21 +57,8 @@ async function fetchPricesFromAPI(): Promise<Prices> {
     prices.sol = 150;
   }
 
-  // Fetch VES/USD rate
-  try {
-    const vesRes = await fetch('https://open.er-api.com/v6/latest/USD');
-    if (vesRes.ok) {
-      const data = await vesRes.json();
-      if (data.rates?.VES) {
-        prices.vesRate = data.rates.VES;
-      }
-    }
-  } catch {
-    // Keep default VES rate
-  }
-
-  // Only cache if we have a valid VES rate
-  if (prices.vesRate > 0) {
+  // Cache if we got valid data
+  if (prices.sol > 0 || prices.vesBcvRate > 0) {
     cachedPrices = prices;
     cacheTimestamp = now;
   }
@@ -66,6 +72,8 @@ export function usePrices() {
     usdt: 1,
     mvga: 0,
     vesRate: 0,
+    vesBcvRate: 0,
+    vesParallelRate: 0,
   });
   const [loading, setLoading] = useState(true);
 

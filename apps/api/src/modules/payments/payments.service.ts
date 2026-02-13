@@ -131,17 +131,16 @@ export class PaymentsService {
       throw new BadRequestException('Payment request already processed');
     }
 
-    // Emit event for push notifications (if social request)
-    if (request.requesterId) {
-      this.eventEmitter.emit('payment.request.paid', {
-        requestId: request.id,
-        requesterWallet: request.recipientAddress,
-        requesteeAddress: request.requesteeAddress,
-        amount: Number(request.amount) / 10 ** (TOKEN_DECIMALS[request.token] ?? 6),
-        token: request.token,
-        note: request.note,
-      });
-    }
+    // Emit event for push notifications + merchant order tracking
+    this.eventEmitter.emit('payment.request.paid', {
+      requestId: request.id,
+      requesterWallet: request.recipientAddress,
+      requesteeAddress: request.requesteeAddress,
+      amount: Number(request.amount) / 10 ** (TOKEN_DECIMALS[request.token] ?? 6),
+      token: request.token,
+      note: request.note,
+      storeOrderId: (request as { storeOrderId?: string }).storeOrderId ?? null,
+    });
 
     // Update split payment progress if this is a split share
     await this.updateSplitProgress(id);

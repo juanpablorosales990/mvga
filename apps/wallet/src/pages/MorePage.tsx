@@ -7,6 +7,7 @@ export default function MorePage() {
   const menuItems = [
     { labelKey: 'more.citizen', path: '/citizen', icon: 'ID', color: 'bg-gold-500' },
     { labelKey: 'more.scan', path: '/scan', icon: 'QR', color: 'bg-amber-500' },
+    { labelKey: 'more.merchant', path: '/merchant', icon: '▣', color: 'bg-gold-500' },
     { labelKey: 'more.banking', path: '/banking', icon: '$', color: 'bg-violet-500' },
     { labelKey: 'more.stake', path: '/stake', icon: '%', color: 'bg-yellow-500' },
     { labelKey: 'more.send', path: '/send', icon: '↑', color: 'bg-blue-500' },
@@ -19,6 +20,7 @@ export default function MorePage() {
     { labelKey: 'more.topup', path: '/topup', icon: '+', color: 'bg-teal-500' },
     { labelKey: 'more.cashout', path: '/cashout', icon: '↗', color: 'bg-green-600' },
     { labelKey: 'more.vesOnramp', path: '/ves-onramp', icon: 'Bs', color: 'bg-yellow-600' },
+    { labelKey: 'more.remittance', path: '/remittance', icon: '→$', color: 'bg-green-700' },
     { labelKey: 'more.moneygram', path: '/moneygram', icon: 'MG', color: 'bg-orange-600' },
     { labelKey: 'more.giftCards', path: '/giftcards', icon: 'GC', color: 'bg-pink-600' },
     { labelKey: 'more.history', path: '/history', icon: '↺', color: 'bg-indigo-500' },

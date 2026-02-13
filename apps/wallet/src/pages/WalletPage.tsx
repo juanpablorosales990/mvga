@@ -45,7 +45,7 @@ export default function WalletPage() {
   const [balances, setBalances] = useState<TokenBalance[]>([]);
   const [totalValue, setTotalValue] = useState(0);
   const [loading, setLoading] = useState(false);
-  const { formatUsdValue } = usePrices();
+  const { prices, formatUsdValue } = usePrices();
   const preferredCurrency = useWalletStore((s) => s.preferredCurrency);
   const kycStatus = useWalletStore((s) => s.kycStatus);
   const storeSetBalances = useWalletStore((s) => s.setBalances);
@@ -203,6 +203,43 @@ export default function WalletPage() {
         </p>
       </div>
 
+      {/* VES Rate Card */}
+      {prices.vesBcvRate > 0 && (
+        <Link
+          to="/price-alerts"
+          className="card flex items-center justify-between px-4 py-3 border border-white/10 hover:border-gold-500/30 transition"
+        >
+          <div className="flex items-center gap-4">
+            <div className="text-center">
+              <p className="text-[10px] text-white/40 font-mono uppercase">
+                {t('wallet.bcvOfficial')}
+              </p>
+              <p className="text-sm font-bold font-mono">
+                Bs{' '}
+                {prices.vesBcvRate.toLocaleString('es-VE', {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </p>
+            </div>
+            <div className="w-px h-8 bg-white/10" />
+            <div className="text-center">
+              <p className="text-[10px] text-white/40 font-mono uppercase">
+                {t('wallet.parallel')}
+              </p>
+              <p className="text-sm font-bold font-mono">
+                Bs{' '}
+                {prices.vesParallelRate.toLocaleString('es-VE', {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </p>
+            </div>
+          </div>
+          <span className="text-[10px] text-gold-500 font-mono">{t('wallet.viewRates')} →</span>
+        </Link>
+      )}
+
       {/* Primary actions (Meru-style, MVGA-brutalist) */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3" data-wizard-target="actions-grid">
         <Link
@@ -304,6 +341,36 @@ export default function WalletPage() {
           <p className="text-xs text-white/40">{t('wallet.inviteDesc')}</p>
         </div>
         <span className="text-gold-500 text-sm font-mono flex-shrink-0">→</span>
+      </Link>
+
+      {/* Merchant Banner */}
+      <Link
+        to="/merchant"
+        className="card flex items-center gap-3 border border-blue-500/20 bg-blue-500/5 hover:border-blue-500/40 transition"
+      >
+        <div className="w-10 h-10 bg-blue-500/20 flex items-center justify-center flex-shrink-0 text-lg">
+          🏪
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-bold">{t('wallet.merchantBanner')}</p>
+          <p className="text-xs text-white/40">{t('wallet.startSelling')}</p>
+        </div>
+        <span className="text-blue-400 text-sm font-mono flex-shrink-0">→</span>
+      </Link>
+
+      {/* Remittance Banner */}
+      <Link
+        to="/remittance"
+        className="card flex items-center gap-3 border border-green-500/20 bg-green-500/5 hover:border-green-500/40 transition"
+      >
+        <div className="w-10 h-10 bg-green-500/20 flex items-center justify-center flex-shrink-0 text-lg font-bold text-green-400">
+          $
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-bold">{t('wallet.sendToVzla')}</p>
+          <p className="text-xs text-white/40">{t('wallet.sendToVzlaDesc')}</p>
+        </div>
+        <span className="text-green-400 text-sm font-mono flex-shrink-0">→</span>
       </Link>
 
       {/* Charts Link */}

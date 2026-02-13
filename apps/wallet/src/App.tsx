@@ -50,6 +50,15 @@ const ScanPayPage = lazy(() => import('./pages/ScanPayPage'));
 const GiftCardsPage = lazy(() => import('./pages/GiftCardsPage'));
 const CitizenCardPage = lazy(() => import('./pages/CitizenCardPage'));
 const VesOnrampPage = lazy(() => import('./pages/VesOnrampPage'));
+const RemittancePage = lazy(() => import('./pages/RemittancePage'));
+const MerchantSetupPage = lazy(() => import('./pages/MerchantSetupPage'));
+const MerchantDashboardPage = lazy(() => import('./pages/MerchantDashboardPage'));
+const MerchantProductsPage = lazy(() => import('./pages/MerchantProductsPage'));
+const MerchantOrdersPage = lazy(() => import('./pages/MerchantOrdersPage'));
+const MerchantCheckoutPage = lazy(() => import('./pages/MerchantCheckoutPage'));
+const MerchantQRPage = lazy(() => import('./pages/MerchantQRPage'));
+const MerchantInvoicesPage = lazy(() => import('./pages/MerchantInvoicesPage'));
+const StorefrontPage = lazy(() => import('./pages/StorefrontPage'));
 const RequestPage = lazy(() => import('./pages/RequestPage'));
 const RequestsInboxPage = lazy(() => import('./pages/RequestsInboxPage'));
 const SplitPage = lazy(() => import('./pages/SplitPage'));
@@ -153,6 +162,15 @@ function AppShell() {
                 <Route path="/giftcards" element={<GiftCardsPage />} />
                 <Route path="/citizen" element={<CitizenCardPage />} />
                 <Route path="/ves-onramp" element={<VesOnrampPage />} />
+                <Route path="/remittance" element={<RemittancePage />} />
+                <Route path="/merchant/setup" element={<MerchantSetupPage />} />
+                <Route path="/merchant/products" element={<MerchantProductsPage />} />
+                <Route path="/merchant/orders" element={<MerchantOrdersPage />} />
+                <Route path="/merchant/checkout" element={<MerchantCheckoutPage />} />
+                <Route path="/merchant/qr" element={<MerchantQRPage />} />
+                <Route path="/merchant/invoices" element={<MerchantInvoicesPage />} />
+                <Route path="/merchant" element={<MerchantDashboardPage />} />
+                <Route path="/s/:slug" element={<StorefrontPage />} />
                 <Route path="/spending-limits" element={<SpendingLimitsPage />} />
                 <Route path="*" element={<NotFoundPage />} />
               </Routes>

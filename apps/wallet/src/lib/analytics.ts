@@ -54,6 +54,18 @@ export const AnalyticsEvents = {
   // Payment links
   PAYMENT_LINK_CREATED: 'payment_link_created',
   PAYMENT_LINK_CANCELLED: 'payment_link_cancelled',
+  // Remittance
+  REMITTANCE_STARTED: 'remittance_started',
+  REMITTANCE_METHOD_SELECTED: 'remittance_method_selected',
+  // Merchant
+  MERCHANT_STORE_CREATED: 'merchant_store_created',
+  MERCHANT_PRODUCT_ADDED: 'merchant_product_added',
+  MERCHANT_CHECKOUT_CREATED: 'merchant_checkout_created',
+  MERCHANT_ORDER_PAID: 'merchant_order_paid',
+  MERCHANT_QR_SHARED: 'merchant_qr_shared',
+  MERCHANT_INVOICE_CREATED: 'merchant_invoice_created',
+  MERCHANT_INVOICE_SENT: 'merchant_invoice_sent',
+  MERCHANT_STOREFRONT_VIEWED: 'merchant_storefront_viewed',
 } as const;
 
 export type AnalyticsEvent = (typeof AnalyticsEvents)[keyof typeof AnalyticsEvents];

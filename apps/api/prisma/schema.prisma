@@ -46,6 +46,9 @@ model User {
   // Social (Phase 3) — Split payments created by this user
   createdSplits  SplitPayment[]   @relation("CreatorSplits")
 
+  // Merchant
+  store          Store?
+
   @@index([walletAddress])
 }
 
@@ -771,12 +774,16 @@ model PaymentRequest {
   splitPaymentId    String?
   splitPayment      SplitPayment?        @relation("SplitRequests", fields: [splitPaymentId], references: [id])
 
+  // Merchant: links payment request to a store order
+  storeOrderId      String?
+
   @@index([recipientAddress])
   @@index([status])
   @@index([expiresAt])
   @@index([requesteeAddress])
   @@index([requesterId])
   @@index([splitPaymentId])
+  @@index([storeOrderId])
 }
 
 enum PaymentRequestStatus {
@@ -1266,4 +1273,122 @@ enum AlertStatus {
   ACTIVE
   TRIGGERED
   DISABLED
+}
+
+// ============================================================================
+// Merchant / Business Mode
+// ============================================================================
+
+model Store {
+  id              String          @id @default(uuid())
+  ownerId         String          @unique
+  owner           User            @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerAddress    String
+  name            String
+  slug            String          @unique
+  description     String?         @db.Text
+  category        StoreCategory   @default(OTHER)
+  logoBase64      String?         @db.Text
+  acceptedTokens  String[]        @default(["USDC"])
+  isActive        Boolean         @default(true)
+  totalOrders     Int             @default(0)
+  totalRevenue    BigInt          @default(0)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  products        StoreProduct[]
+  orders          StoreOrder[]
+  invoices        StoreInvoice[]
+
+  @@index([slug])
+  @@index([ownerId])
+  @@index([ownerAddress])
+}
+
+model StoreProduct {
+  id              String    @id @default(uuid())
+  storeId         String
+  store           Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  name            String
+  description     String?   @db.Text
+  priceUsd        Float
+  imageBase64     String?   @db.Text
+  isActive        Boolean   @default(true)
+  sortOrder       Int       @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([storeId, isActive])
+  @@index([storeId, sortOrder])
+}
+
+model StoreOrder {
+  id                String            @id @default(uuid())
+  storeId           String
+  store             Store             @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  orderNumber       Int
+  paymentRequestId  String?           @unique
+  buyerAddress      String?
+  items             Json?
+  totalAmount       BigInt
+  token             String
+  status            StoreOrderStatus  @default(PENDING)
+  paidAt            DateTime?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  @@index([storeId, status])
+  @@index([storeId, createdAt])
+  @@index([paymentRequestId])
+}
+
+model StoreInvoice {
+  id                String              @id @default(uuid())
+  storeId           String
+  store             Store               @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  invoiceNumber     String
+  customerName      String?
+  customerEmail     String?
+  customerAddress   String?
+  items             Json
+  totalAmount       Float
+  token             String              @default("USDC")
+  memo              String?
+  status            StoreInvoiceStatus  @default(DRAFT)
+  dueDate           DateTime?
+  paymentRequestId  String?             @unique
+  paymentUrl        String?
+  sentAt            DateTime?
+  paidAt            DateTime?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@index([storeId, status])
+  @@index([storeId, createdAt])
+  @@index([paymentRequestId])
+}
+
+enum StoreCategory {
+  FOOD
+  RETAIL
+  SERVICES
+  DIGITAL
+  FREELANCE
+  OTHER
+}
+
+enum StoreOrderStatus {
+  PENDING
+  PAID
+  COMPLETED
+  CANCELLED
+  REFUNDED
+}
+
+enum StoreInvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  OVERDUE
+  CANCELLED
 }
