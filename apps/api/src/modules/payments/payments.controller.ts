@@ -35,6 +35,22 @@ export class PaymentsController {
     return this.paymentsService.verifyPayment(id, dto.signature);
   }
 
+  @Get('my-links')
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  async getMyPaymentLinks(@CurrentUser('wallet') wallet: string) {
+    return this.paymentsService.getMyPaymentLinks(wallet);
+  }
+
+  @Patch('request/:id/cancel')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  async cancelRequest(@Param('id') id: string, @CurrentUser('wallet') wallet: string) {
+    return this.paymentsService.cancelRequest(id, wallet);
+  }
+
   // ── Social Requests (Phase 2) ────────────────────────────────────
 
   @Post('request-from-user')

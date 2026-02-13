@@ -291,6 +291,21 @@ export default function WalletPage() {
         ))}
       </div>
 
+      {/* Referral Invite Banner */}
+      <Link
+        to="/referral"
+        className="card flex items-center gap-3 border border-gold-500/20 bg-gold-500/5 hover:border-gold-500/40 transition"
+      >
+        <div className="w-10 h-10 bg-gold-500/20 flex items-center justify-center flex-shrink-0 text-xl">
+          ★
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-bold">{t('wallet.inviteTitle')}</p>
+          <p className="text-xs text-white/40">{t('wallet.inviteDesc')}</p>
+        </div>
+        <span className="text-gold-500 text-sm font-mono flex-shrink-0">→</span>
+      </Link>
+
       {/* Charts Link */}
       <Link
         to="/charts"

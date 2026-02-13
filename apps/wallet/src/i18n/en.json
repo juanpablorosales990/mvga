@@ -22,7 +22,8 @@
     "close": "Close",
     "pageNotFound": "Page not found",
     "goHome": "Go Home",
-    "remove": "Remove"
+    "remove": "Remove",
+    "copied": "Copied!"
   },
   "error": {
     "title": "Something went wrong",
@@ -42,7 +43,9 @@
     "viewAll": "View All",
     "deposit": "Deposit",
     "charge": "Get Paid",
-    "share": "Share"
+    "share": "Share",
+    "inviteTitle": "Invite friends, earn MVGA",
+    "inviteDesc": "Get 100 MVGA for each friend who joins"
   },
   "send": {
     "title": "Send",
@@ -346,7 +349,8 @@
     "scan": "Scan & Pay",
     "requestMoney": "Request Money",
     "requestsInbox": "Requests Inbox",
-    "splitPayment": "Split Payment"
+    "splitPayment": "Split Payment",
+    "myLinks": "My Links"
   },
   "grants": {
     "title": "Grants",
@@ -949,7 +953,28 @@
     "createPaymentLink": "Create Payment Link",
     "paymentLinkCreated": "Payment link created!",
     "noAmount": "Enter an amount to generate a payment request",
-    "connectPrompt": "Connect your wallet to create payment requests"
+    "connectPrompt": "Connect your wallet to create payment requests",
+    "createAnother": "Create Another",
+    "viewAllLinks": "My Links →"
+  },
+  "myLinks": {
+    "title": "My Payment Links",
+    "createNew": "New Link",
+    "empty": "No payment links yet",
+    "createFirst": "Create Your First Link",
+    "filterAll": "All",
+    "filterActive": "Active",
+    "filterPaid": "Paid",
+    "filterExpired": "Expired",
+    "statusActive": "Active",
+    "statusPaid": "Paid",
+    "statusExpired": "Expired",
+    "statusCancelled": "Cancelled",
+    "copy": "Copy Link",
+    "share": "Share",
+    "cancel": "Cancel Link",
+    "cancelConfirm": "Cancel this payment link?",
+    "shareText": "Pay me {{amount}} {{token}} via MVGA Wallet"
   },
   "pay": {
     "title": "Payment Request",

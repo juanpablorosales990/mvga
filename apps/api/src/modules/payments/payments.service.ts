@@ -248,6 +248,51 @@ export class PaymentsService {
     return this.formatRequest(request);
   }
 
+  async getMyPaymentLinks(walletAddress: string) {
+    const requests = await this.prisma.paymentRequest.findMany({
+      where: {
+        recipientAddress: walletAddress,
+        requesterId: null,
+        splitPaymentId: null,
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+    });
+
+    const now = new Date();
+    const results = [];
+    for (const r of requests) {
+      if (r.status === 'PENDING' && r.expiresAt < now) {
+        await this.prisma.paymentRequest.update({
+          where: { id: r.id },
+          data: { status: 'EXPIRED' },
+        });
+        results.push(this.formatRequest({ ...r, status: 'EXPIRED' }));
+      } else {
+        results.push(this.formatRequest(r));
+      }
+    }
+    return results;
+  }
+
+  async cancelRequest(requestId: string, walletAddress: string) {
+    const request = await this.prisma.paymentRequest.findUnique({ where: { id: requestId } });
+    if (!request) throw new NotFoundException('Payment request not found');
+    if (request.recipientAddress !== walletAddress) {
+      throw new BadRequestException('Only the creator can cancel this request');
+    }
+    if (request.status !== 'PENDING') {
+      throw new BadRequestException(`Cannot cancel a ${request.status} request`);
+    }
+
+    await this.prisma.paymentRequest.update({
+      where: { id: requestId },
+      data: { status: 'CANCELLED' },
+    });
+
+    return { status: 'CANCELLED' };
+  }
+
   async getMyRequests(walletAddress: string) {
     const requests = await this.prisma.paymentRequest.findMany({
       where: {

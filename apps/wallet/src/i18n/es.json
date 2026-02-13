@@ -22,7 +22,8 @@
     "close": "Cerrar",
     "pageNotFound": "Página no encontrada",
     "goHome": "Ir al Inicio",
-    "remove": "Eliminar"
+    "remove": "Eliminar",
+    "copied": "¡Copiado!"
   },
   "error": {
     "title": "Algo salió mal",
@@ -42,7 +43,9 @@
     "viewAll": "Ver Todo",
     "deposit": "Depositar",
     "charge": "Cobrar",
-    "share": "Compartir"
+    "share": "Compartir",
+    "inviteTitle": "Invita amigos, gana MVGA",
+    "inviteDesc": "Recibe 100 MVGA por cada amigo que se una"
   },
   "send": {
     "title": "Enviar",
@@ -346,7 +349,8 @@
     "scan": "Escanear y Pagar",
     "requestMoney": "Solicitar Dinero",
     "requestsInbox": "Buzón de Solicitudes",
-    "splitPayment": "Dividir Pago"
+    "splitPayment": "Dividir Pago",
+    "myLinks": "Mis Enlaces"
   },
   "grants": {
     "title": "Subvenciones",
@@ -949,7 +953,28 @@
     "createPaymentLink": "Crear Enlace de Pago",
     "paymentLinkCreated": "¡Enlace de pago creado!",
     "noAmount": "Ingresa un monto para generar solicitud de pago",
-    "connectPrompt": "Conecta tu billetera para crear solicitudes de pago"
+    "connectPrompt": "Conecta tu billetera para crear solicitudes de pago",
+    "createAnother": "Crear Otro",
+    "viewAllLinks": "Mis Enlaces →"
+  },
+  "myLinks": {
+    "title": "Mis Enlaces de Pago",
+    "createNew": "Nuevo Enlace",
+    "empty": "No hay enlaces de pago aún",
+    "createFirst": "Crea Tu Primer Enlace",
+    "filterAll": "Todos",
+    "filterActive": "Activos",
+    "filterPaid": "Pagados",
+    "filterExpired": "Expirados",
+    "statusActive": "Activo",
+    "statusPaid": "Pagado",
+    "statusExpired": "Expirado",
+    "statusCancelled": "Cancelado",
+    "copy": "Copiar Enlace",
+    "share": "Compartir",
+    "cancel": "Cancelar Enlace",
+    "cancelConfirm": "¿Cancelar este enlace de pago?",
+    "shareText": "Págame {{amount}} {{token}} por MVGA Wallet"
   },
   "pay": {
     "title": "Solicitud de Pago",

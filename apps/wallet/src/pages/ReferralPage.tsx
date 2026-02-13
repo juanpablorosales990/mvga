@@ -128,6 +128,36 @@ export default function ReferralPage() {
                 </button>
               )}
             </div>
+            {referralLink && (
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    const text = t('referral.shareText');
+                    window.open(
+                      `https://wa.me/?text=${encodeURIComponent(`${text}\n${referralLink}`)}`,
+                      '_blank'
+                    );
+                    track(AnalyticsEvents.REFERRAL_SHARED);
+                  }}
+                  className="flex-1 bg-green-600/20 text-green-400 py-2 text-xs font-medium hover:bg-green-600/30 transition"
+                >
+                  WhatsApp
+                </button>
+                <button
+                  onClick={() => {
+                    const text = t('referral.shareText');
+                    window.open(
+                      `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent(text)}`,
+                      '_blank'
+                    );
+                    track(AnalyticsEvents.REFERRAL_SHARED);
+                  }}
+                  className="flex-1 bg-blue-500/20 text-blue-400 py-2 text-xs font-medium hover:bg-blue-500/30 transition"
+                >
+                  Telegram
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Stats */}

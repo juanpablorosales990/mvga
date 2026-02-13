@@ -51,6 +51,9 @@ export const AnalyticsEvents = {
   WIZARD_SKIPPED: 'wizard_skipped',
   // Cross-chain bridge
   BRIDGE_TRON_OPENED: 'bridge_tron_opened',
+  // Payment links
+  PAYMENT_LINK_CREATED: 'payment_link_created',
+  PAYMENT_LINK_CANCELLED: 'payment_link_cancelled',
 } as const;
 
 export type AnalyticsEvent = (typeof AnalyticsEvents)[keyof typeof AnalyticsEvents];
