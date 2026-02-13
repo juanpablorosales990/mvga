@@ -28,6 +28,18 @@ const mockPrisma = {
     create: jest.fn(),
     update: jest.fn(),
   },
+  storeEmployee: {
+    findFirst: jest.fn(),
+    findUnique: jest.fn(),
+    findMany: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    count: jest.fn(),
+  },
+  user: {
+    findFirst: jest.fn(),
+    findUnique: jest.fn(),
+  },
   paymentRequest: {
     update: jest.fn(),
   },
@@ -131,8 +143,9 @@ describe('MerchantService', () => {
   });
 
   describe('getMyStore', () => {
-    it('returns null when no store exists', async () => {
+    it('returns null when no store exists and not employed', async () => {
       mockPrisma.store.findUnique.mockResolvedValue(null);
+      mockPrisma.storeEmployee.findFirst.mockResolvedValue(null);
       const result = await service.getMyStore('user-1');
       expect(result).toBeNull();
     });
@@ -401,6 +414,135 @@ describe('MerchantService', () => {
     it('throws for non-existent slug', async () => {
       mockPrisma.store.findUnique.mockResolvedValue(null);
       await expect(service.getPublicStore('nope')).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('inviteEmployee', () => {
+    const storeData = { id: 'store-1', ownerId: 'user-1', ownerAddress: 'w1', name: 'Shop' };
+
+    it('invites a user by username', async () => {
+      mockPrisma.store.findUnique.mockResolvedValue(storeData);
+      mockPrisma.user.findFirst.mockResolvedValue({
+        id: 'user-2',
+        walletAddress: 'w2',
+        username: 'emp1',
+        displayName: 'Employee',
+      });
+      mockPrisma.storeEmployee.count.mockResolvedValue(0);
+      mockPrisma.storeEmployee.findUnique.mockResolvedValue(null);
+      mockPrisma.storeEmployee.create.mockResolvedValue({
+        id: 'se-1',
+        role: 'CASHIER',
+        nickname: null,
+        status: 'PENDING',
+        invitedAt: new Date(),
+        acceptedAt: null,
+        user: { id: 'user-2', walletAddress: 'w2', username: 'emp1', displayName: 'Employee' },
+      });
+
+      const result = await service.inviteEmployee('user-1', {
+        identifier: 'emp1',
+        role: 'CASHIER',
+      });
+
+      expect(result.role).toBe('CASHIER');
+      expect(result.status).toBe('PENDING');
+      expect(mockEventEmitter.emit).toHaveBeenCalledWith(
+        'merchant.employee.invited',
+        expect.objectContaining({ employeeWallet: 'w2', storeName: 'Shop' })
+      );
+    });
+
+    it('rejects self-invitation', async () => {
+      mockPrisma.store.findUnique.mockResolvedValue(storeData);
+      mockPrisma.user.findFirst.mockResolvedValue({ id: 'user-1', walletAddress: 'w1' });
+
+      await expect(
+        service.inviteEmployee('user-1', { identifier: 'self', role: 'CASHIER' })
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('rejects when max employees reached', async () => {
+      mockPrisma.store.findUnique.mockResolvedValue(storeData);
+      mockPrisma.user.findFirst.mockResolvedValue({ id: 'user-2', walletAddress: 'w2' });
+      mockPrisma.storeEmployee.count.mockResolvedValue(20);
+
+      await expect(
+        service.inviteEmployee('user-1', { identifier: 'emp', role: 'CASHIER' })
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('acceptInvitation', () => {
+    it('accepts a pending invitation', async () => {
+      mockPrisma.storeEmployee.findUnique.mockResolvedValue({
+        id: 'se-1',
+        userId: 'user-2',
+        status: 'PENDING',
+        store: { name: 'Shop', ownerAddress: 'w1' },
+      });
+      mockPrisma.storeEmployee.update.mockResolvedValue({
+        id: 'se-1',
+        role: 'CASHIER',
+        nickname: null,
+        status: 'ACTIVE',
+        invitedAt: new Date(),
+        acceptedAt: new Date(),
+        user: { id: 'user-2', walletAddress: 'w2', username: 'emp1', displayName: 'Employee' },
+      });
+
+      const result = await service.acceptInvitation('user-2', 'se-1');
+
+      expect(result.status).toBe('ACTIVE');
+      expect(mockEventEmitter.emit).toHaveBeenCalledWith(
+        'merchant.employee.accepted',
+        expect.objectContaining({ ownerWallet: 'w1', storeName: 'Shop' })
+      );
+    });
+
+    it('rejects if not the invited user', async () => {
+      mockPrisma.storeEmployee.findUnique.mockResolvedValue({
+        id: 'se-1',
+        userId: 'user-2',
+        status: 'PENDING',
+        store: { name: 'Shop', ownerAddress: 'w1' },
+      });
+
+      await expect(service.acceptInvitation('user-3', 'se-1')).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('resolveStoreAccess', () => {
+    it('returns owner access', async () => {
+      mockPrisma.store.findUnique.mockResolvedValue({
+        id: 'store-1',
+        ownerId: 'user-1',
+        ownerAddress: 'w1',
+      });
+
+      const access = await service.resolveStoreAccess('user-1');
+      expect(access?.isOwner).toBe(true);
+      expect(access?.role).toBe('OWNER');
+    });
+
+    it('returns employee access', async () => {
+      mockPrisma.store.findUnique.mockResolvedValue(null);
+      mockPrisma.storeEmployee.findFirst.mockResolvedValue({
+        role: 'CASHIER',
+        store: { id: 'store-1', ownerId: 'user-1', ownerAddress: 'w1' },
+      });
+
+      const access = await service.resolveStoreAccess('user-2');
+      expect(access?.isOwner).toBe(false);
+      expect(access?.role).toBe('CASHIER');
+    });
+
+    it('returns null when no access', async () => {
+      mockPrisma.store.findUnique.mockResolvedValue(null);
+      mockPrisma.storeEmployee.findFirst.mockResolvedValue(null);
+
+      const access = await service.resolveStoreAccess('user-3');
+      expect(access).toBeNull();
     });
   });
 });

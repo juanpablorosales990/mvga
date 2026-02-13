@@ -374,6 +374,30 @@ export class NotificationsService {
     });
   }
 
+  @OnEvent('merchant.employee.invited')
+  async onEmployeeInvited(event: { employeeWallet: string; storeName: string; role: string }) {
+    await this.sendToWallet(event.employeeWallet, {
+      title: 'Invitación de tienda',
+      body: `${event.storeName} te invitó como ${event.role.toLowerCase()}`,
+      url: '/merchant',
+      tag: `merchant-invite-${Date.now()}`,
+    });
+  }
+
+  @OnEvent('merchant.employee.accepted')
+  async onEmployeeAccepted(event: {
+    ownerWallet: string;
+    storeName: string;
+    employeeName: string;
+  }) {
+    await this.sendToWallet(event.ownerWallet, {
+      title: 'Empleado aceptó invitación',
+      body: `${event.employeeName} se unió a ${event.storeName}`,
+      url: '/merchant/employees',
+      tag: `merchant-employee-accepted-${Date.now()}`,
+    });
+  }
+
   @OnEvent('payment.request.declined')
   async onPaymentRequestDeclined(event: PaymentRequestEvent) {
     await this.notifyIfEnabled(event.requesterWallet, 'payments', {

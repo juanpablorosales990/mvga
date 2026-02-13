@@ -47,7 +47,8 @@ model User {
   createdSplits  SplitPayment[]   @relation("CreatorSplits")
 
   // Merchant
-  store          Store?
+  store              Store?
+  storeEmployments   StoreEmployee[]
 
   @@index([walletAddress])
 }
@@ -1299,6 +1300,7 @@ model Store {
   products        StoreProduct[]
   orders          StoreOrder[]
   invoices        StoreInvoice[]
+  employees       StoreEmployee[]
 
   @@index([slug])
   @@index([ownerId])
@@ -1329,6 +1331,7 @@ model StoreOrder {
   orderNumber       Int
   paymentRequestId  String?           @unique
   buyerAddress      String?
+  createdByUserId   String?           // Employee who created this order (null = owner)
   items             Json?
   totalAmount       BigInt
   token             String
@@ -1391,4 +1394,36 @@ enum StoreInvoiceStatus {
   PAID
   OVERDUE
   CANCELLED
+}
+
+// Employee / Team Access
+model StoreEmployee {
+  id              String            @id @default(uuid())
+  storeId         String
+  store           Store             @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role            StoreEmployeeRole @default(CASHIER)
+  nickname        String?           // Display name within the store context
+  status          StoreEmployeeStatus @default(PENDING)
+  invitedAt       DateTime          @default(now())
+  acceptedAt      DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@unique([storeId, userId])
+  @@index([storeId, status])
+  @@index([userId, status])
+}
+
+enum StoreEmployeeRole {
+  MANAGER   // Can do everything except delete store or manage other managers
+  CASHIER   // Can create checkouts/orders only (POS access)
+  VIEWER    // Read-only dashboard + order history
+}
+
+enum StoreEmployeeStatus {
+  PENDING   // Invitation sent, not yet accepted
+  ACTIVE    // Accepted and active
+  REVOKED   // Owner removed the employee
 }

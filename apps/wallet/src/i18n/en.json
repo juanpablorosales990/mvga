@@ -1642,6 +1642,7 @@
       "products": "Products",
       "orders": "Orders",
       "invoices": "Invoices",
+      "team": "Team",
       "recentOrders": "Recent Orders",
       "noRecentOrders": "No orders yet",
       "storeSettings": "Store Settings",
@@ -1772,6 +1773,46 @@
       "DIGITAL": "Digital Products",
       "FREELANCE": "Freelance",
       "OTHER": "Other"
+    },
+    "employees": {
+      "title": "Team",
+      "invite": "Invite",
+      "inviteTitle": "Invite Employee",
+      "identifier": "Username or wallet address",
+      "identifierPlaceholder": "e.g. @juan or 5xH3k...",
+      "role": "Role",
+      "nickname": "Nickname (optional)",
+      "nicknamePlaceholder": "Display name in store",
+      "sending": "Sending...",
+      "sendInvite": "Send Invitation",
+      "empty": "No employees yet",
+      "emptyDesc": "Invite team members to help manage your store",
+      "invited": "Invitation sent!",
+      "updated": "Employee updated",
+      "removed": "Employee removed",
+      "failed": "Action failed",
+      "removeConfirm": "Remove this employee?",
+      "roleMgr": "Manager",
+      "roleCashier": "Cashier",
+      "roleViewer": "Viewer",
+      "statusPending": "Pending",
+      "statusActive": "Active",
+      "edit": "Edit",
+      "remove": "Remove"
+    },
+    "invitations": {
+      "title": "Store Invitations",
+      "empty": "No pending invitations",
+      "accept": "Accept",
+      "decline": "Decline",
+      "accepted": "Invitation accepted!",
+      "declined": "Invitation declined",
+      "roleLabel": "Role: {{role}}",
+      "failed": "Action failed"
+    },
+    "employeeView": {
+      "workingAt": "Working at",
+      "roleLabel": "Your role: {{role}}"
     }
   }
 }

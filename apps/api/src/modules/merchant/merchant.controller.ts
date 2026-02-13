@@ -18,6 +18,8 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { CreateCheckoutDto } from './dto/create-checkout.dto';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
+import { InviteEmployeeDto } from './dto/invite-employee.dto';
+import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import { AuthGuard } from '../auth/auth.guard';
 import { CurrentUser } from '../auth/auth.decorator';
 
@@ -166,6 +168,77 @@ export class MerchantController {
   @ApiOperation({ summary: 'List invoices' })
   async listInvoices(@CurrentUser('id') userId: string) {
     return this.merchantService.listInvoices(userId);
+  }
+
+  // ── Employees ─────────────────────────────────────────────
+
+  @Post('employees')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @ApiOperation({ summary: 'Invite an employee' })
+  async inviteEmployee(@Body() dto: InviteEmployeeDto, @CurrentUser('id') userId: string) {
+    return this.merchantService.inviteEmployee(userId, dto);
+  }
+
+  @Get('employees')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'List employees' })
+  async listEmployees(@CurrentUser('id') userId: string) {
+    return this.merchantService.listEmployees(userId);
+  }
+
+  @Patch('employees/:id')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update employee role/nickname' })
+  async updateEmployee(
+    @Param('id') id: string,
+    @Body() dto: UpdateEmployeeDto,
+    @CurrentUser('id') userId: string
+  ) {
+    return this.merchantService.updateEmployee(userId, id, dto);
+  }
+
+  @Delete('employees/:id')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Remove an employee' })
+  async removeEmployee(@Param('id') id: string, @CurrentUser('id') userId: string) {
+    return this.merchantService.removeEmployee(userId, id);
+  }
+
+  @Patch('employees/:id/accept')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Accept employee invitation' })
+  async acceptInvitation(@Param('id') id: string, @CurrentUser('id') userId: string) {
+    return this.merchantService.acceptInvitation(userId, id);
+  }
+
+  @Patch('employees/:id/decline')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Decline employee invitation' })
+  async declineInvitation(@Param('id') id: string, @CurrentUser('id') userId: string) {
+    return this.merchantService.declineInvitation(userId, id);
+  }
+
+  @Get('invitations')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get my pending invitations' })
+  async getMyInvitations(@CurrentUser('id') userId: string) {
+    return this.merchantService.getMyInvitations(userId);
+  }
+
+  @Get('employment')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get my active employment (employee view)' })
+  async getMyEmployment(@CurrentUser('id') userId: string) {
+    return this.merchantService.getMyEmployment(userId);
   }
 
   // ── Public Storefront ──────────────────────────────────────

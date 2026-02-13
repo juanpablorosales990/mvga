@@ -66,6 +66,8 @@ export const AnalyticsEvents = {
   MERCHANT_INVOICE_CREATED: 'merchant_invoice_created',
   MERCHANT_INVOICE_SENT: 'merchant_invoice_sent',
   MERCHANT_STOREFRONT_VIEWED: 'merchant_storefront_viewed',
+  MERCHANT_EMPLOYEE_INVITED: 'merchant_employee_invited',
+  MERCHANT_EMPLOYEE_ACCEPTED: 'merchant_employee_accepted',
 } as const;
 
 export type AnalyticsEvent = (typeof AnalyticsEvents)[keyof typeof AnalyticsEvents];

@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useSelfCustodyWallet } from '../contexts/WalletContext';
 import { apiFetch } from '../lib/apiClient';
+import { showToast } from '../hooks/useToast';
+import { track, AnalyticsEvents } from '../lib/analytics';
 
 interface Store {
   id: string;
@@ -16,6 +18,7 @@ interface Store {
   totalOrders: number;
   totalRevenue: number;
   url: string;
+  myRole?: string; // 'OWNER' | 'MANAGER' | 'CASHIER' | 'VIEWER'
 }
 
 interface Dashboard {
@@ -33,30 +36,77 @@ interface Dashboard {
   }[];
 }
 
+interface Invitation {
+  id: string;
+  role: string;
+  nickname: string | null;
+  invitedAt: string;
+  store: {
+    name: string;
+    slug: string;
+    category: string;
+    logoBase64: string | null;
+  };
+}
+
 export default function MerchantDashboardPage() {
   const { t } = useTranslation();
   const { connected } = useSelfCustodyWallet();
   const [store, setStore] = useState<Store | null>(null);
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
+  const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const loadData = async () => {
+    try {
+      const [s, inv] = await Promise.all([
+        apiFetch<Store | null>('/merchant/store'),
+        apiFetch<Invitation[]>('/merchant/invitations').catch(() => []),
+      ]);
+      setStore(s);
+      setInvitations(inv);
+      if (s) {
+        const d = await apiFetch<Dashboard>('/merchant/dashboard');
+        setDashboard(d);
+      }
+    } catch {
+      // No store or failed to load
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (!connected) return;
-    (async () => {
-      try {
-        const s = await apiFetch<Store | null>('/merchant/store');
-        setStore(s);
-        if (s) {
-          const d = await apiFetch<Dashboard>('/merchant/dashboard');
-          setDashboard(d);
-        }
-      } catch {
-        // No store or failed to load
-      } finally {
-        setLoading(false);
-      }
-    })();
+    loadData();
   }, [connected]);
+
+  const handleAcceptInvite = async (id: string) => {
+    try {
+      await apiFetch(`/merchant/employees/${id}/accept`, { method: 'PATCH' });
+      track(AnalyticsEvents.MERCHANT_EMPLOYEE_ACCEPTED);
+      showToast('success', t('merchant.invitations.accepted'));
+      loadData();
+    } catch {
+      showToast('error', t('merchant.invitations.failed'));
+    }
+  };
+
+  const handleDeclineInvite = async (id: string) => {
+    try {
+      await apiFetch(`/merchant/employees/${id}/decline`, { method: 'PATCH' });
+      showToast('success', t('merchant.invitations.declined'));
+      loadData();
+    } catch {
+      showToast('error', t('merchant.invitations.failed'));
+    }
+  };
+
+  const isOwner = store?.myRole === 'OWNER' || !store?.myRole;
+  const canManageTeam = isOwner;
+  const canManageProducts = isOwner || store?.myRole === 'MANAGER';
+  const canCreateSales = isOwner || store?.myRole === 'MANAGER' || store?.myRole === 'CASHIER';
+  const canManageInvoices = isOwner || store?.myRole === 'MANAGER';
 
   if (!connected) {
     return (
@@ -76,27 +126,87 @@ export default function MerchantDashboardPage() {
 
   if (!store) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-6 space-y-4">
-        <div className="text-5xl">🏪</div>
-        <h2 className="text-xl font-bold">{t('merchant.dashboard.noStore')}</h2>
-        <p className="text-gray-500">{t('merchant.dashboard.noStoreDesc')}</p>
-        <Link
-          to="/merchant/setup"
-          className="px-6 py-3 rounded-xl font-semibold text-white bg-blue-600 hover:bg-blue-700"
-        >
-          {t('merchant.dashboard.createStore')}
-        </Link>
+      <div className="max-w-lg mx-auto p-4 space-y-6">
+        {/* Pending Invitations */}
+        {invitations.length > 0 && (
+          <div className="space-y-3">
+            <h2 className="text-lg font-bold">{t('merchant.invitations.title')}</h2>
+            {invitations.map((inv) => (
+              <div
+                key={inv.id}
+                className="p-4 rounded-xl border bg-white dark:bg-gray-800 dark:border-gray-700 space-y-3"
+              >
+                <div className="flex items-center gap-3">
+                  {inv.store.logoBase64 ? (
+                    <img
+                      src={inv.store.logoBase64}
+                      alt=""
+                      className="w-10 h-10 rounded-lg object-cover"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                      🏪
+                    </div>
+                  )}
+                  <div>
+                    <p className="font-semibold">{inv.store.name}</p>
+                    <p className="text-xs text-gray-500">
+                      {t('merchant.invitations.roleLabel', { role: inv.role })}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleAcceptInvite(inv.id)}
+                    className="flex-1 py-2 rounded-lg bg-blue-600 text-white font-medium text-sm"
+                  >
+                    {t('merchant.invitations.accept')}
+                  </button>
+                  <button
+                    onClick={() => handleDeclineInvite(inv.id)}
+                    className="flex-1 py-2 rounded-lg border dark:border-gray-700 text-sm"
+                  >
+                    {t('merchant.invitations.decline')}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="flex flex-col items-center justify-center min-h-[40vh] text-center space-y-4">
+          <div className="text-5xl">🏪</div>
+          <h2 className="text-xl font-bold">{t('merchant.dashboard.noStore')}</h2>
+          <p className="text-gray-500">{t('merchant.dashboard.noStoreDesc')}</p>
+          <Link
+            to="/merchant/setup"
+            className="px-6 py-3 rounded-xl font-semibold text-white bg-blue-600 hover:bg-blue-700"
+          >
+            {t('merchant.dashboard.createStore')}
+          </Link>
+        </div>
       </div>
     );
   }
 
   const quickActions = [
-    { label: t('merchant.dashboard.newSale'), path: '/merchant/checkout', icon: '💰' },
+    ...(canCreateSales
+      ? [{ label: t('merchant.dashboard.newSale'), path: '/merchant/checkout', icon: '💰' }]
+      : []),
     { label: t('merchant.dashboard.qrCode'), path: '/merchant/qr', icon: '📱' },
-    { label: t('merchant.dashboard.shareStore'), path: '/merchant/qr', icon: '🔗' },
-    { label: t('merchant.dashboard.products'), path: '/merchant/products', icon: '📦' },
+    ...(isOwner
+      ? [{ label: t('merchant.dashboard.shareStore'), path: '/merchant/qr', icon: '🔗' }]
+      : []),
+    ...(canManageProducts
+      ? [{ label: t('merchant.dashboard.products'), path: '/merchant/products', icon: '📦' }]
+      : []),
     { label: t('merchant.dashboard.orders'), path: '/merchant/orders', icon: '📋' },
-    { label: t('merchant.dashboard.invoices'), path: '/merchant/invoices', icon: '🧾' },
+    ...(canManageInvoices
+      ? [{ label: t('merchant.dashboard.invoices'), path: '/merchant/invoices', icon: '🧾' }]
+      : []),
+    ...(canManageTeam
+      ? [{ label: t('merchant.dashboard.team'), path: '/merchant/employees', icon: '👥' }]
+      : []),
   ];
 
   const statusColor: Record<string, string> = {
@@ -120,16 +230,25 @@ export default function MerchantDashboardPage() {
           )}
           <div>
             <h1 className="text-lg font-bold">{store.name}</h1>
-            <span
-              className={`text-xs px-2 py-0.5 rounded-full ${store.isActive ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-200 text-gray-600'}`}
-            >
-              {store.isActive ? t('merchant.dashboard.active') : t('merchant.dashboard.inactive')}
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span
+                className={`text-xs px-2 py-0.5 rounded-full ${store.isActive ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-200 text-gray-600'}`}
+              >
+                {store.isActive ? t('merchant.dashboard.active') : t('merchant.dashboard.inactive')}
+              </span>
+              {!isOwner && store.myRole && (
+                <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                  {t('merchant.employeeView.roleLabel', { role: store.myRole })}
+                </span>
+              )}
+            </div>
           </div>
         </div>
-        <Link to="/merchant/setup" className="text-sm text-blue-600">
-          {t('merchant.dashboard.storeSettings')}
-        </Link>
+        {isOwner && (
+          <Link to="/merchant/setup" className="text-sm text-blue-600">
+            {t('merchant.dashboard.storeSettings')}
+          </Link>
+        )}
       </div>
 
       {/* Stats */}

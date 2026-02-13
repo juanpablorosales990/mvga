@@ -2,6 +2,7 @@ import {
   Injectable,
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   NotFoundException,
   Logger,
 } from '@nestjs/common';
@@ -12,7 +13,11 @@ import { PaymentsService } from '../payments/payments.service';
 
 const VALID_TOKENS = ['USDC', 'USDT', 'MVGA'];
 const MAX_PRODUCTS = 100;
+const MAX_EMPLOYEES = 20;
 const TOKEN_DECIMALS: Record<string, number> = { USDC: 6, USDT: 6, MVGA: 9 };
+
+// Role hierarchy: OWNER > MANAGER > CASHIER > VIEWER
+const ROLE_LEVEL: Record<string, number> = { VIEWER: 1, CASHIER: 2, MANAGER: 3, OWNER: 4 };
 
 @Injectable()
 export class MerchantService {
@@ -68,9 +73,20 @@ export class MerchantService {
   }
 
   async getMyStore(userId: string) {
-    const store = await this.prisma.store.findUnique({ where: { ownerId: userId } });
-    if (!store) return null;
-    return this.formatStore(store);
+    // Check owned store first
+    const ownedStore = await this.prisma.store.findUnique({ where: { ownerId: userId } });
+    if (ownedStore) return { ...this.formatStore(ownedStore), myRole: 'OWNER' as const };
+
+    // Check employment
+    const employment = await this.prisma.storeEmployee.findFirst({
+      where: { userId, status: 'ACTIVE' },
+      include: { store: true },
+    });
+    if (employment) {
+      return { ...this.formatStore(employment.store), myRole: employment.role };
+    }
+
+    return null;
   }
 
   async updateStore(
@@ -224,7 +240,8 @@ export class MerchantService {
   }
 
   async listProducts(userId: string) {
-    const store = await this.prisma.store.findUnique({ where: { ownerId: userId } });
+    const access = await this.resolveStoreAccess(userId);
+    const store = access?.store;
     if (!store) return [];
 
     return this.prisma.storeProduct.findMany({
@@ -240,8 +257,9 @@ export class MerchantService {
     walletAddress: string,
     dto: { amount?: number; token: string; items?: { productId: string; quantity: number }[] }
   ) {
-    const store = await this.prisma.store.findUnique({ where: { ownerId: userId } });
-    if (!store) throw new NotFoundException('Store not found');
+    const access = await this.resolveStoreAccess(userId, 'CASHIER');
+    if (!access) throw new NotFoundException('Store not found');
+    const { store, isOwner } = access;
 
     if (!store.acceptedTokens.includes(dto.token)) {
       throw new BadRequestException(`Token ${dto.token} not accepted by this store`);
@@ -277,9 +295,9 @@ export class MerchantService {
     });
     const orderNumber = (lastOrder?.orderNumber ?? 0) + 1;
 
-    // Create payment request
+    // Payment always goes to the store owner's wallet
     const pr = await this.paymentsService.createRequest(
-      walletAddress,
+      store.ownerAddress,
       dto.token,
       totalUsd,
       `Order #${orderNumber}`
@@ -288,12 +306,13 @@ export class MerchantService {
     const decimals = TOKEN_DECIMALS[dto.token] ?? 6;
     const totalSmallest = BigInt(Math.round(totalUsd * 10 ** decimals));
 
-    // Create store order
+    // Create store order with audit trail
     const order = await this.prisma.storeOrder.create({
       data: {
         storeId: store.id,
         orderNumber,
         paymentRequestId: pr.id,
+        createdByUserId: isOwner ? null : userId,
         items: itemsJson,
         totalAmount: totalSmallest,
         token: dto.token,
@@ -382,7 +401,8 @@ export class MerchantService {
   }
 
   async getOrders(userId: string, status?: string) {
-    const store = await this.prisma.store.findUnique({ where: { ownerId: userId } });
+    const access = await this.resolveStoreAccess(userId);
+    const store = access?.store;
     if (!store) return [];
 
     return this.prisma.storeOrder.findMany({
@@ -398,7 +418,8 @@ export class MerchantService {
   // ── Dashboard ──────────────────────────────────────────────
 
   async getDashboard(userId: string) {
-    const store = await this.prisma.store.findUnique({ where: { ownerId: userId } });
+    const access = await this.resolveStoreAccess(userId);
+    const store = access?.store;
     if (!store) return null;
 
     const now = new Date();
@@ -461,8 +482,9 @@ export class MerchantService {
       dueDate?: string;
     }
   ) {
-    const store = await this.prisma.store.findUnique({ where: { ownerId: userId } });
-    if (!store) throw new NotFoundException('Create a store first');
+    const access = await this.resolveStoreAccess(userId, 'MANAGER');
+    if (!access) throw new NotFoundException('Create a store first');
+    const { store } = access;
 
     const total = dto.items.reduce((sum, i) => sum + i.quantity * i.unitPrice, 0);
     const itemsJson = dto.items.map((i) => ({
@@ -507,8 +529,9 @@ export class MerchantService {
   }
 
   async sendInvoice(userId: string, invoiceId: string) {
-    const store = await this.prisma.store.findUnique({ where: { ownerId: userId } });
-    if (!store) throw new NotFoundException('Store not found');
+    const access = await this.resolveStoreAccess(userId, 'MANAGER');
+    if (!access) throw new NotFoundException('Store not found');
+    const { store } = access;
 
     const invoice = await this.prisma.storeInvoice.findUnique({ where: { id: invoiceId } });
     if (!invoice || invoice.storeId !== store.id) throw new NotFoundException('Invoice not found');
@@ -536,8 +559,9 @@ export class MerchantService {
   }
 
   async cancelInvoice(userId: string, invoiceId: string) {
-    const store = await this.prisma.store.findUnique({ where: { ownerId: userId } });
-    if (!store) throw new NotFoundException('Store not found');
+    const access = await this.resolveStoreAccess(userId, 'MANAGER');
+    if (!access) throw new NotFoundException('Store not found');
+    const { store } = access;
 
     const invoice = await this.prisma.storeInvoice.findUnique({ where: { id: invoiceId } });
     if (!invoice || invoice.storeId !== store.id) throw new NotFoundException('Invoice not found');
@@ -554,7 +578,8 @@ export class MerchantService {
   }
 
   async listInvoices(userId: string) {
-    const store = await this.prisma.store.findUnique({ where: { ownerId: userId } });
+    const access = await this.resolveStoreAccess(userId, 'MANAGER');
+    const store = access?.store;
     if (!store) return [];
 
     return this.prisma.storeInvoice.findMany({
@@ -618,6 +643,290 @@ export class MerchantService {
     });
 
     this.logger.log(`Order #${order.orderNumber} paid for store ${order.store.slug}`);
+  }
+
+  // ── Store Access (Owner OR Employee) ──────────────────────
+
+  /**
+   * Resolves store access for a user. Returns the store + user's effective role.
+   * Used by methods that should work for both owners and employees.
+   */
+  async resolveStoreAccess(userId: string, minRole: string = 'VIEWER') {
+    // 1. Check if owner
+    const ownedStore = await this.prisma.store.findUnique({ where: { ownerId: userId } });
+    if (ownedStore) {
+      return { store: ownedStore, isOwner: true, role: 'OWNER' as const };
+    }
+
+    // 2. Check if active employee
+    const employment = await this.prisma.storeEmployee.findFirst({
+      where: { userId, status: 'ACTIVE' },
+      include: { store: true },
+    });
+
+    if (!employment) return null;
+
+    // Check minimum role level
+    if ((ROLE_LEVEL[employment.role] ?? 0) < (ROLE_LEVEL[minRole] ?? 0)) {
+      throw new ForbiddenException('Insufficient permissions for this action');
+    }
+
+    return { store: employment.store, isOwner: false, role: employment.role };
+  }
+
+  // ── Employee Management ──────────────────────────────────
+
+  async inviteEmployee(
+    userId: string,
+    dto: { identifier: string; role: string; nickname?: string }
+  ) {
+    const store = await this.prisma.store.findUnique({ where: { ownerId: userId } });
+    if (!store) throw new NotFoundException('Create a store first');
+
+    // Find user by username or wallet address
+    const targetUser = await this.prisma.user.findFirst({
+      where: {
+        OR: [{ username: dto.identifier }, { walletAddress: dto.identifier }],
+      },
+    });
+
+    if (!targetUser) throw new NotFoundException('User not found');
+    if (targetUser.id === userId) throw new BadRequestException('Cannot invite yourself');
+
+    // Check max employees
+    const count = await this.prisma.storeEmployee.count({
+      where: { storeId: store.id, status: { in: ['PENDING', 'ACTIVE'] } },
+    });
+    if (count >= MAX_EMPLOYEES) {
+      throw new BadRequestException(`Maximum ${MAX_EMPLOYEES} employees allowed`);
+    }
+
+    // Check if already invited/active
+    const existing = await this.prisma.storeEmployee.findUnique({
+      where: { storeId_userId: { storeId: store.id, userId: targetUser.id } },
+    });
+
+    if (existing) {
+      if (existing.status === 'ACTIVE' || existing.status === 'PENDING') {
+        throw new ConflictException('User is already invited or active');
+      }
+      // Re-invite a previously revoked employee
+      const updated = await this.prisma.storeEmployee.update({
+        where: { id: existing.id },
+        data: {
+          role: dto.role as never,
+          nickname: dto.nickname || existing.nickname,
+          status: 'PENDING',
+          invitedAt: new Date(),
+          acceptedAt: null,
+        },
+        include: {
+          user: { select: { id: true, walletAddress: true, username: true, displayName: true } },
+        },
+      });
+      return this.formatEmployee(updated);
+    }
+
+    const employee = await this.prisma.storeEmployee.create({
+      data: {
+        storeId: store.id,
+        userId: targetUser.id,
+        role: dto.role as never,
+        nickname: dto.nickname || null,
+      },
+      include: {
+        user: { select: { id: true, walletAddress: true, username: true, displayName: true } },
+      },
+    });
+
+    // Emit event for push notification
+    this.eventEmitter.emit('merchant.employee.invited', {
+      employeeWallet: targetUser.walletAddress,
+      storeName: store.name,
+      role: dto.role,
+    });
+
+    return this.formatEmployee(employee);
+  }
+
+  async acceptInvitation(userId: string, employeeId: string) {
+    const employee = await this.prisma.storeEmployee.findUnique({
+      where: { id: employeeId },
+      include: { store: { select: { name: true, ownerAddress: true } } },
+    });
+
+    if (!employee || employee.userId !== userId) {
+      throw new NotFoundException('Invitation not found');
+    }
+    if (employee.status !== 'PENDING') {
+      throw new BadRequestException('Invitation is no longer pending');
+    }
+
+    const updated = await this.prisma.storeEmployee.update({
+      where: { id: employeeId },
+      data: { status: 'ACTIVE', acceptedAt: new Date() },
+      include: {
+        user: { select: { id: true, walletAddress: true, username: true, displayName: true } },
+      },
+    });
+
+    // Notify store owner
+    this.eventEmitter.emit('merchant.employee.accepted', {
+      ownerWallet: employee.store.ownerAddress,
+      storeName: employee.store.name,
+      employeeName: updated.user.displayName || updated.user.username || 'Employee',
+    });
+
+    return this.formatEmployee(updated);
+  }
+
+  async declineInvitation(userId: string, employeeId: string) {
+    const employee = await this.prisma.storeEmployee.findUnique({ where: { id: employeeId } });
+
+    if (!employee || employee.userId !== userId) {
+      throw new NotFoundException('Invitation not found');
+    }
+    if (employee.status !== 'PENDING') {
+      throw new BadRequestException('Invitation is no longer pending');
+    }
+
+    await this.prisma.storeEmployee.update({
+      where: { id: employeeId },
+      data: { status: 'REVOKED' },
+    });
+
+    return { status: 'declined' };
+  }
+
+  async updateEmployee(
+    userId: string,
+    employeeId: string,
+    dto: { role?: string; nickname?: string }
+  ) {
+    const store = await this.prisma.store.findUnique({ where: { ownerId: userId } });
+    if (!store) throw new NotFoundException('Store not found');
+
+    const employee = await this.prisma.storeEmployee.findUnique({ where: { id: employeeId } });
+    if (!employee || employee.storeId !== store.id) {
+      throw new NotFoundException('Employee not found');
+    }
+
+    const updated = await this.prisma.storeEmployee.update({
+      where: { id: employeeId },
+      data: {
+        ...(dto.role !== undefined && { role: dto.role as never }),
+        ...(dto.nickname !== undefined && { nickname: dto.nickname }),
+      },
+      include: {
+        user: { select: { id: true, walletAddress: true, username: true, displayName: true } },
+      },
+    });
+
+    return this.formatEmployee(updated);
+  }
+
+  async removeEmployee(userId: string, employeeId: string) {
+    const store = await this.prisma.store.findUnique({ where: { ownerId: userId } });
+    if (!store) throw new NotFoundException('Store not found');
+
+    const employee = await this.prisma.storeEmployee.findUnique({ where: { id: employeeId } });
+    if (!employee || employee.storeId !== store.id) {
+      throw new NotFoundException('Employee not found');
+    }
+
+    await this.prisma.storeEmployee.update({
+      where: { id: employeeId },
+      data: { status: 'REVOKED' },
+    });
+
+    return { status: 'removed' };
+  }
+
+  async listEmployees(userId: string) {
+    const store = await this.prisma.store.findUnique({ where: { ownerId: userId } });
+    if (!store) return [];
+
+    const employees = await this.prisma.storeEmployee.findMany({
+      where: { storeId: store.id, status: { in: ['PENDING', 'ACTIVE'] } },
+      include: {
+        user: { select: { id: true, walletAddress: true, username: true, displayName: true } },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    return employees.map((e) => this.formatEmployee(e));
+  }
+
+  async getMyInvitations(userId: string) {
+    const invitations = await this.prisma.storeEmployee.findMany({
+      where: { userId, status: 'PENDING' },
+      include: {
+        store: { select: { name: true, slug: true, category: true, logoBase64: true } },
+      },
+      orderBy: { invitedAt: 'desc' },
+    });
+
+    return invitations.map((inv) => ({
+      id: inv.id,
+      role: inv.role,
+      nickname: inv.nickname,
+      invitedAt: inv.invitedAt,
+      store: {
+        name: inv.store.name,
+        slug: inv.store.slug,
+        category: inv.store.category,
+        logoBase64: inv.store.logoBase64,
+      },
+    }));
+  }
+
+  async getMyEmployment(userId: string) {
+    // Get active employment (for employee dashboard access)
+    const employment = await this.prisma.storeEmployee.findFirst({
+      where: { userId, status: 'ACTIVE' },
+      include: {
+        store: true,
+      },
+    });
+
+    if (!employment) return null;
+
+    return {
+      employeeId: employment.id,
+      role: employment.role,
+      nickname: employment.nickname,
+      store: this.formatStore(employment.store),
+    };
+  }
+
+  private formatEmployee(employee: {
+    id: string;
+    role: string;
+    nickname: string | null;
+    status: string;
+    invitedAt: Date;
+    acceptedAt: Date | null;
+    user: {
+      id: string;
+      walletAddress: string;
+      username: string | null;
+      displayName: string | null;
+    };
+  }) {
+    return {
+      id: employee.id,
+      role: employee.role,
+      nickname: employee.nickname,
+      status: employee.status,
+      invitedAt: employee.invitedAt,
+      acceptedAt: employee.acceptedAt,
+      user: {
+        id: employee.user.id,
+        username: employee.user.username,
+        displayName: employee.user.displayName,
+        walletAddress: employee.user.walletAddress,
+      },
+    };
   }
 
   // ── Helpers ────────────────────────────────────────────────

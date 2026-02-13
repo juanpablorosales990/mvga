@@ -58,6 +58,7 @@ const MerchantOrdersPage = lazy(() => import('./pages/MerchantOrdersPage'));
 const MerchantCheckoutPage = lazy(() => import('./pages/MerchantCheckoutPage'));
 const MerchantQRPage = lazy(() => import('./pages/MerchantQRPage'));
 const MerchantInvoicesPage = lazy(() => import('./pages/MerchantInvoicesPage'));
+const MerchantEmployeesPage = lazy(() => import('./pages/MerchantEmployeesPage'));
 const StorefrontPage = lazy(() => import('./pages/StorefrontPage'));
 const RequestPage = lazy(() => import('./pages/RequestPage'));
 const RequestsInboxPage = lazy(() => import('./pages/RequestsInboxPage'));
@@ -169,6 +170,7 @@ function AppShell() {
                 <Route path="/merchant/checkout" element={<MerchantCheckoutPage />} />
                 <Route path="/merchant/qr" element={<MerchantQRPage />} />
                 <Route path="/merchant/invoices" element={<MerchantInvoicesPage />} />
+                <Route path="/merchant/employees" element={<MerchantEmployeesPage />} />
                 <Route path="/merchant" element={<MerchantDashboardPage />} />
                 <Route path="/s/:slug" element={<StorefrontPage />} />
                 <Route path="/spending-limits" element={<SpendingLimitsPage />} />

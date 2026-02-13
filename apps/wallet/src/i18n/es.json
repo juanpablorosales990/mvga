@@ -1642,6 +1642,7 @@
       "products": "Productos",
       "orders": "Pedidos",
       "invoices": "Facturas",
+      "team": "Equipo",
       "recentOrders": "Pedidos Recientes",
       "noRecentOrders": "Sin pedidos aún",
       "storeSettings": "Configuración",
@@ -1772,6 +1773,46 @@
       "DIGITAL": "Productos Digitales",
       "FREELANCE": "Freelance",
       "OTHER": "Otro"
+    },
+    "employees": {
+      "title": "Equipo",
+      "invite": "Invitar",
+      "inviteTitle": "Invitar Empleado",
+      "identifier": "Usuario o dirección de wallet",
+      "identifierPlaceholder": "ej. @juan o 5xH3k...",
+      "role": "Rol",
+      "nickname": "Apodo (opcional)",
+      "nicknamePlaceholder": "Nombre visible en la tienda",
+      "sending": "Enviando...",
+      "sendInvite": "Enviar Invitación",
+      "empty": "Sin empleados aún",
+      "emptyDesc": "Invita miembros del equipo para ayudar a gestionar tu tienda",
+      "invited": "¡Invitación enviada!",
+      "updated": "Empleado actualizado",
+      "removed": "Empleado removido",
+      "failed": "Acción fallida",
+      "removeConfirm": "¿Remover este empleado?",
+      "roleMgr": "Gerente",
+      "roleCashier": "Cajero",
+      "roleViewer": "Visor",
+      "statusPending": "Pendiente",
+      "statusActive": "Activo",
+      "edit": "Editar",
+      "remove": "Remover"
+    },
+    "invitations": {
+      "title": "Invitaciones de Tienda",
+      "empty": "Sin invitaciones pendientes",
+      "accept": "Aceptar",
+      "decline": "Rechazar",
+      "accepted": "¡Invitación aceptada!",
+      "declined": "Invitación rechazada",
+      "roleLabel": "Rol: {{role}}",
+      "failed": "Acción fallida"
+    },
+    "employeeView": {
+      "workingAt": "Trabajando en",
+      "roleLabel": "Tu rol: {{role}}"
     }
   }
 }
