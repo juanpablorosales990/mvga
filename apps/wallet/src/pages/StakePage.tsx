@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { useConnection } from '@solana/wallet-adapter-react';
 import { useSelfCustodyWallet } from '../contexts/WalletContext';
 import { PublicKey, Transaction } from '@solana/web3.js';
@@ -363,7 +364,19 @@ export default function StakePage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">{t('stake.title')}</h1>
+      <div className="flex items-center gap-3">
+        <Link to="/" className="text-gray-400 hover:text-white" aria-label={t('common.back')}>
+          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 19l-7-7 7-7"
+            />
+          </svg>
+        </Link>
+        <h1 className="text-2xl font-bold">{t('stake.title')}</h1>
+      </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 gap-3">
@@ -556,9 +569,11 @@ export default function StakePage() {
       </div>
 
       {/* Active Stakes */}
-      {position.stakes.length > 0 && (
-        <div>
-          <h2 className="text-lg font-semibold mb-3">{t('stake.activeStakes')}</h2>
+      <div>
+        <h2 className="text-lg font-semibold mb-3">{t('stake.activeStakes')}</h2>
+        {position.stakes.length === 0 ? (
+          <p className="text-sm text-gray-500 text-center py-6">{t('stake.noActiveStakes')}</p>
+        ) : (
           <div className="space-y-3">
             {position.stakes.map((stake) => (
               <div key={stake.id} className="card">
@@ -606,8 +621,8 @@ export default function StakePage() {
               </div>
             ))}
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Tiers */}
       <div>

@@ -2,11 +2,14 @@ import {
   IsString,
   IsOptional,
   IsArray,
+  IsIn,
   ValidateNested,
   IsNumber,
   Min,
+  Max,
   MaxLength,
   IsDateString,
+  ArrayMaxSize,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
@@ -25,6 +28,7 @@ class InvoiceItem {
   @ApiProperty()
   @IsNumber()
   @Min(0.01)
+  @Max(1000000, { message: 'Unit price must be under $1,000,000' })
   unitPrice: number;
 }
 
@@ -48,12 +52,13 @@ export class CreateInvoiceDto {
 
   @ApiProperty({ type: [InvoiceItem] })
   @IsArray()
+  @ArrayMaxSize(50, { message: 'Maximum 50 items per invoice' })
   @ValidateNested({ each: true })
   @Type(() => InvoiceItem)
   items: InvoiceItem[];
 
   @ApiProperty({ default: 'USDC' })
-  @IsString()
+  @IsIn(['USDC', 'USDT', 'MVGA', 'SOL'])
   token: string;
 
   @ApiProperty({ required: false })

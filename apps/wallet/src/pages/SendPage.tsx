@@ -342,7 +342,19 @@ export default function SendPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">{t('send.title')}</h1>
+      <div className="flex items-center gap-3">
+        <Link to="/" className="text-gray-400 hover:text-white" aria-label={t('common.back')}>
+          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 19l-7-7 7-7"
+            />
+          </svg>
+        </Link>
+        <h1 className="text-2xl font-bold">{t('send.title')}</h1>
+      </div>
 
       <div className="card space-y-4">
         {/* Token Selector */}

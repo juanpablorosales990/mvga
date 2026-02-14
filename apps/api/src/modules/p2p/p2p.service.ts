@@ -286,14 +286,13 @@ export class P2PService {
     return this.formatTrade(trade);
   }
 
-  async getTrade(id: string, walletAddress?: string) {
+  async getTrade(id: string, walletAddress: string) {
     const trade = await this.prisma.p2PTrade.findUnique({
       where: { id },
       include: { buyer: true, seller: true, offer: true },
     });
     if (!trade) throw new NotFoundException('Trade not found');
     if (
-      walletAddress &&
       trade.buyer.walletAddress !== walletAddress &&
       trade.seller.walletAddress !== walletAddress
     ) {

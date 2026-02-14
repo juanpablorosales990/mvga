@@ -84,7 +84,19 @@ export default function DepositPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-bold uppercase tracking-tight">{t('deposit.title')}</h1>
+        <div className="flex items-center gap-3">
+          <Link to="/" className="text-gray-400 hover:text-white" aria-label={t('common.back')}>
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
+            </svg>
+          </Link>
+          <h1 className="text-lg font-bold uppercase tracking-tight">{t('deposit.title')}</h1>
+        </div>
         <Link to="/receive" className="text-xs text-gold-500 font-mono uppercase">
           {t('deposit.receiveCrypto')} &rarr;
         </Link>
@@ -202,7 +214,7 @@ export default function DepositPage() {
                 step="0.01"
                 value={paypalAmount}
                 onChange={(e) => setPaypalAmount(e.target.value)}
-                placeholder="Custom amount ($1+)"
+                placeholder={t('deposit.paypalCustomAmount')}
                 className="w-full mt-2 px-3 py-2 bg-black/50 border border-white/10 text-white text-sm placeholder:text-white/20"
               />
             </div>

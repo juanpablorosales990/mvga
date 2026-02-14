@@ -3,10 +3,12 @@ import {
   IsOptional,
   IsArray,
   IsEnum,
+  IsIn,
   MaxLength,
   IsBoolean,
   MinLength,
   Matches,
+  ArrayMaxSize,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -40,12 +42,14 @@ export class UpdateStoreDto {
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
+  @MaxLength(350000, { message: 'Logo image must be under 250KB' })
   logoBase64?: string;
 
   @ApiProperty({ required: false })
   @IsOptional()
   @IsArray()
-  @IsString({ each: true })
+  @ArrayMaxSize(5)
+  @IsIn(['USDC', 'USDT', 'MVGA', 'SOL'], { each: true })
   acceptedTokens?: string[];
 
   @ApiProperty({ required: false })

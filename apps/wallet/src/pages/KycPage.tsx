@@ -21,6 +21,7 @@ function PersonaFlow({
   onComplete: () => void;
   onError: (msg: string) => void;
 }) {
+  const { t } = useTranslation();
   useEffect(() => {
     let mounted = true;
     let client: { destroy?: () => void } | null = null;
@@ -86,7 +87,7 @@ function PersonaFlow({
     <div className="min-h-[400px] bg-white/5 border border-white/10 flex items-center justify-center">
       <div className="text-center space-y-3">
         <div className="w-8 h-8 border-2 border-gold-500 border-t-transparent rounded-full animate-spin mx-auto" />
-        <p className="text-sm text-white/40">Loading verification...</p>
+        <p className="text-sm text-white/40">{t('kyc.loadingVerification')}</p>
       </div>
     </div>
   );

@@ -3,9 +3,11 @@ import {
   IsOptional,
   IsArray,
   IsEnum,
+  IsIn,
   MaxLength,
   Matches,
   MinLength,
+  ArrayMaxSize,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -37,6 +39,7 @@ export class CreateStoreDto {
 
   @ApiProperty({ type: [String], default: ['USDC'] })
   @IsArray()
-  @IsString({ each: true })
+  @ArrayMaxSize(5)
+  @IsIn(['USDC', 'USDT', 'MVGA', 'SOL'], { each: true })
   acceptedTokens: string[];
 }

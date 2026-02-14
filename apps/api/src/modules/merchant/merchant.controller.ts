@@ -8,6 +8,7 @@ import {
   Param,
   Query,
   UseGuards,
+  BadRequestException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
@@ -255,7 +256,7 @@ export class MerchantController {
   @ApiOperation({ summary: 'Public checkout' })
   async storefrontCheckout(@Param('slug') slug: string, @Body() dto: CreateCheckoutDto) {
     if (!dto.items || dto.items.length === 0) {
-      throw new Error('Items required for storefront checkout');
+      throw new BadRequestException('Items required for storefront checkout');
     }
     return this.merchantService.createStorefrontCheckout(slug, dto.items, dto.token);
   }

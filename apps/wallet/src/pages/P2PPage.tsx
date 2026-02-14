@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import FiatValue from '../components/FiatValue';
 import { track, AnalyticsEvents } from '../lib/analytics';
+import { showToast } from '../hooks/useToast';
 
 interface P2POffer {
   id: string;
@@ -53,6 +54,8 @@ export default function P2PPage() {
   const [offers, setOffers] = useState<P2POffer[]>([]);
   const [loading, setLoading] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [accepting, setAccepting] = useState(false);
 
   // Create offer form state
   const [newOffer, setNewOffer] = useState<{
@@ -142,6 +145,7 @@ export default function P2PPage() {
 
   const handleCreateOffer = async () => {
     if (!publicKey) return;
+    setCreating(true);
 
     try {
       const response = await fetch(`${API_URL}/p2p/offers`, {
@@ -164,6 +168,7 @@ export default function P2PPage() {
 
       if (response.ok) {
         track(AnalyticsEvents.P2P_OFFER_CREATED, { paymentMethod: newOffer.paymentMethod });
+        showToast('success', t('p2p.offerCreated'));
         setShowCreateModal(false);
         fetchOffers();
         setNewOffer({
@@ -175,14 +180,20 @@ export default function P2PPage() {
           minAmount: '10',
           maxAmount: '500',
         });
+      } else {
+        const err = await response.json().catch(() => ({}));
+        showToast('error', err.message || t('common.somethingWrong'));
       }
     } catch {
-      // Create offer failed — modal stays open for retry
+      showToast('error', t('common.somethingWrong'));
+    } finally {
+      setCreating(false);
     }
   };
 
   const handleAcceptOffer = async () => {
     if (!publicKey || !selectedOffer || !tradeAmount) return;
+    setAccepting(true);
 
     try {
       const response = await fetch(`${API_URL}/p2p/offers/${selectedOffer.id}/accept`, {
@@ -199,12 +210,18 @@ export default function P2PPage() {
 
       if (response.ok) {
         const trade = await response.json();
+        showToast('success', t('p2p.tradeAccepted'));
         setSelectedOffer(null);
         setTradeAmount('');
         navigate(`/p2p/trade/${trade.id}`);
+      } else {
+        const err = await response.json().catch(() => ({}));
+        showToast('error', err.message || t('common.somethingWrong'));
       }
     } catch {
-      // Accept failed — modal stays open for retry
+      showToast('error', t('common.somethingWrong'));
+    } finally {
+      setAccepting(false);
     }
   };
 
@@ -497,10 +514,10 @@ export default function P2PPage() {
 
             <button
               onClick={handleCreateOffer}
-              disabled={!newOffer.cryptoAmount}
+              disabled={!newOffer.cryptoAmount || creating}
               className="w-full btn-primary disabled:opacity-50"
             >
-              {t('p2p.createOfferTitle')}
+              {creating ? t('common.processing') : t('p2p.createOfferTitle')}
             </button>
           </div>
         </div>
@@ -567,11 +584,16 @@ export default function P2PPage() {
               disabled={
                 !tradeAmount ||
                 parseFloat(tradeAmount) < selectedOffer.minAmount ||
-                parseFloat(tradeAmount) > selectedOffer.maxAmount
+                parseFloat(tradeAmount) > selectedOffer.maxAmount ||
+                accepting
               }
               className="w-full btn-primary disabled:opacity-50"
             >
-              {selectedOffer.type === 'SELL' ? t('p2p.buyNow') : t('p2p.sellNow')}
+              {accepting
+                ? t('common.processing')
+                : selectedOffer.type === 'SELL'
+                  ? t('p2p.buyNow')
+                  : t('p2p.sellNow')}
             </button>
 
             <p className="text-xs text-gray-500 text-center">{t('p2p.escrowNote')}</p>
